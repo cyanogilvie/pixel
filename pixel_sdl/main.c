@@ -319,7 +319,7 @@ static int glue_get_caps(ClientData foo, Tcl_Interp *interp,
 }
 
 
-// do_frame sdl_pmap {{{1
+// do_frame sdl_pmap ?rects? {{{1
 static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
 {
@@ -328,10 +328,15 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 	SDL_Surface *		console;
 	sp_info *			sp;
 	sdl_console_inf *	ci;
+	int					rectsc = 0;
+	Tcl_Obj				**rectsv;
 	
-	CHECK_ARGS(1, "sdl_pmap");
+	if (objc < 2 || objc > 3)
+		CHECK_ARGS(1, "sdl_pmap");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+	if (objc == 3)
+		TEST_OK(Tcl_ListObjGetElements(interp, objv[2], &rectsc, &rectsv));
 
 	sp = (sp_info *)objv[1]->internalRep.twoPtrValue.ptr2;
 	
@@ -370,15 +375,40 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 	
 	sdl_frame_time(ci);
 	ci->frames++;
-	if (ci->need_updaterects) {
-		SDL_Rect	rect;
-		rect.x = 0;
-		rect.y = 0;
-		rect.w = console->w;
-		rect.h = console->h;
-		SDL_UpdateRects(console, 1, &rect);
+	if (rectsc == 0) {
+		if (ci->need_updaterects) {
+			SDL_Rect	rect;
+			rect.x = 0;
+			rect.y = 0;
+			rect.w = console->w;
+			rect.h = console->h;
+			SDL_UpdateRects(console, 1, &rect);
+			fprintf(stderr, "Trivial updaterects\n");
+		} else {
+			SDL_UpdateRect(console, 0, 0, 0, 0);
+			fprintf(stderr, "No updaterects\n");
+		}
 	} else {
-		SDL_UpdateRect(console, 0, 0, 0, 0);
+		SDL_Rect	rect[rectsc];
+		int			i;
+		Tcl_Obj		**c;
+		int			l;
+		for (i=0; i<rectsc; i++) {
+			int x,y,w,h;
+			TEST_OK(Tcl_ListObjGetElements(interp, rectsv[i], &l, &c));
+			TEST_OK(Tcl_GetIntFromObj(interp, c[0], &x));
+			TEST_OK(Tcl_GetIntFromObj(interp, c[1], &y));
+			TEST_OK(Tcl_GetIntFromObj(interp, c[2], &w));
+			TEST_OK(Tcl_GetIntFromObj(interp, c[3], &h));
+			rect[i].x = x;
+			rect[i].y = y;
+			rect[i].w = w;
+			rect[i].h = h;
+			fprintf(stderr, "sdl do_frame rect %d %d %d %d\n",
+					x, y, w, h);
+		}
+		fprintf(stderr, "Fancy updaterects\n");
+		SDL_UpdateRects(console, rectsc, rect);
 	}
 
 	return TCL_OK;
