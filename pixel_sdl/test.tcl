@@ -57,36 +57,12 @@ proc key {evname sdl_event} {
 	}
 }
 
-
 proc joystick {evname sdl_event} {
 	array set ev $sdl_event
-
-	switch -- $evname {
-		"jaxis" {
-			puts "jaxis:"
-			parray ev
-		}
-
-		"jball" {
-			puts "jball:"
-			parray ev
-		}
-
-		"jhat" {
-			puts "jhat:"
-			parray ev
-		}
-
-		"jbutton" {
-			puts "jbutton:"
-			parray ev
-		}
-		
-		default {
-			puts stderr "Unexpected joystick evname: ($evname)"
-		}
-	}
+	puts "got ($evname)"
+	parray ev
 }
+
 
 pixel::sdl::bind_events key key
 pixel::sdl::bind_events button general
@@ -97,6 +73,15 @@ pixel::sdl::bind_events jball joystick
 pixel::sdl::bind_events jhat joystick
 pixel::sdl::bind_events jbutton joystick
 pixel::sdl::bind_events quit quit
+
+puts "Found [pixel::sdl::numjoysticks] joysticks"
+
+for {set i 0} {$i < [pixel::sdl::numjoysticks]} {incr i} {
+	puts "  Joystick #$i: ([pixel::sdl::joystickname $i])"
+	catch {unset jsinfo}
+	array set jsinfo	[pixel::sdl::joystickopen $i]
+	parray jsinfo
+}
 
 ml::register_cb poll "" poll
 ml::enter_mainloop

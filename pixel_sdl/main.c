@@ -825,7 +825,7 @@ static int glue_dispatch_events(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
-static int glue_toggle_fullscreen(ClientData foo, Tcl_Interp *interp,
+static int glue_toggle_fullscreen(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
 	gimp_image_t *		pmap;
@@ -855,7 +855,7 @@ static int glue_toggle_fullscreen(ClientData foo, Tcl_Interp *interp,
 }
 
 
-static int glue_show_cursor(ClientData foo, Tcl_Interp *interp,
+static int glue_show_cursor(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
 	int		vis;
@@ -870,16 +870,81 @@ static int glue_show_cursor(ClientData foo, Tcl_Interp *interp,
 }
 
 
+static int glue_numjoysticks(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	CHECK_ARGS(0, "");
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(SDL_NumJoysticks()));
+
+	return TCL_OK;
+}
+
+
+static int glue_joystickname(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	int		idx;
+
+	CHECK_ARGS(1, "index");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &idx));
+
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(SDL_JoystickName(idx), -1));
+	
+	return TCL_OK;
+}
+
+
+static int glue_joystickopen(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	int				idx;
+	SDL_Joystick	*joy;
+	Tcl_Obj			*res;
+
+	CHECK_ARGS(1, "index");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &idx));
+
+	joy = SDL_JoystickOpen(idx);
+	if (joy == NULL)
+		THROW_ERROR("Cannot open joystick");
+
+	res = Tcl_NewListObj(0, NULL);
+
+	ADD_SUBLIST_LABEL("name", res);
+	ADD_SUBLIST_OBJ(Tcl_NewStringObj(SDL_JoystickName(idx), -1), res);
+
+	ADD_SUBLIST_LABEL("axes", res);
+	ADD_SUBLIST_OBJ(Tcl_NewIntObj(SDL_JoystickNumAxes(joy)), res);
+	
+	ADD_SUBLIST_LABEL("balls", res);
+	ADD_SUBLIST_OBJ(Tcl_NewIntObj(SDL_JoystickNumBalls(joy)), res);
+	
+	ADD_SUBLIST_LABEL("hats", res);
+	ADD_SUBLIST_OBJ(Tcl_NewIntObj(SDL_JoystickNumHats(joy)), res);
+	
+	ADD_SUBLIST_LABEL("buttons", res);
+	ADD_SUBLIST_OBJ(Tcl_NewIntObj(SDL_JoystickNumButtons(joy)), res);
+
+	Tcl_SetObjResult(interp, res);
+	
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_sdl_Init(Tcl_Interp *interp)
 {
 	int i;
 
-	if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_NOPARACHUTE) < 0)
+	if (SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_NOPARACHUTE) < 0)
 		THROW_ERROR("Couldn't initialize SDL", SDL_GetError());
 	
 	atexit(SDL_Quit);
-
+	
+	SDL_JoystickEventState(1);
 	SDL_EnableUNICODE(1);
 
 	for (i=0; i<g_sdl_ev_last; i++)
@@ -896,6 +961,16 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::sdl::dispatch_events", glue_dispatch_events);
 	NEW_CMD("pixel::sdl::toggle_fullscreen", glue_toggle_fullscreen);
 	NEW_CMD("pixel::sdl::show_cursor", glue_show_cursor);
+	NEW_CMD("pixel::sdl::numjoysticks", glue_numjoysticks);
+	NEW_CMD("pixel::sdl::joystickname", glue_joystickname);
+	NEW_CMD("pixel::sdl::joystickopen", glue_joystickopen);
+//	NEW_CMD("pixel::sdl::", glue_);
+//	NEW_CMD("pixel::sdl::", glue_);
+//	NEW_CMD("pixel::sdl::", glue_);
+//	NEW_CMD("pixel::sdl::", glue_);
+//	NEW_CMD("pixel::sdl::", glue_);
+//	NEW_CMD("pixel::sdl::", glue_);
+//	NEW_CMD("pixel::sdl::", glue_);
 
 	return TCL_OK;
 }
