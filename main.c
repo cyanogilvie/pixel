@@ -359,6 +359,39 @@ static int glue_put_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_digest_region(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	gimp_image_t	*src;
+	int				x, y, w, h;
+	unsigned int	r, g, b, a;
+	Tcl_Obj			*res;
+
+	CHECK_ARGS(5, "src x y w h");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &y));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &h));
+
+	digest_region(src, x, y, w, h, &r, &g, &b, &a);
+
+	res = Tcl_NewObj();
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(r)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(g)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(b)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(a)));
+	
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
 // render_ttf colour fft_face px_size text ?width? {{{1
 static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
@@ -589,10 +622,12 @@ static int glue_ttf_info(cdata, interp, objc, objv)
 								Tcl_NewStringObj("TT_APPLE_ID_UNICODE_2_0", -1));
 						break;
 
+#ifdef TT_APPLE_ID_UNICODE_32
 					case TT_APPLE_ID_UNICODE_32:
 						Tcl_ListObjAppendElement(interp, item,
 								Tcl_NewStringObj("TT_APPLE_ID_UNICODE_32", -1));
 						break;
+#endif
 
 					default:
 						Tcl_ListObjAppendElement(interp, item,
@@ -1244,6 +1279,7 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::blend", glue_blend);
 	NEW_CMD("pixel::center", glue_center);
 	NEW_CMD("pixel::put_pixel", glue_put_pixel);
+	NEW_CMD("pixel::digest_region", glue_digest_region);
 
 	// Primitives
 	NEW_CMD("pixel::box", glue_box);

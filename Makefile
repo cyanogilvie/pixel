@@ -67,7 +67,8 @@ DEFS := $(DEFS) -DASM_BUF_DRAW_BOX
 		   -I/$(BASE)/include/tcl$(TCLVER) \
 		   -I/$(BASE)/include/tcl$(TCLVER)/tcl-private/generic 
 INCLUDES = `freetype-config --cflags` \
-		   -I/$(BASE)/include
+		   -I/$(BASE)/include \
+		   -I/usr/include/tcl8.3
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
 
 

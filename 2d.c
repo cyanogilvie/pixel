@@ -714,6 +714,73 @@ gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) //{{{1
 }
 
 
+void digest_region(src, x, y, w, h, r, g, b, a) //{{{1
+	gimp_image_t	*src;
+	int				x, y, w, h;
+	unsigned int	*r;
+	unsigned int	*g;
+	unsigned int	*b;
+	unsigned int	*a;
+{
+	unsigned int	lr, lg, lb, la, lx, ly, span, considered;
+	_pel			*s;
+
+	lr = lg = lb = la = 0;
+
+	if (w < 0) {
+		x += w;
+		w = abs(w);
+	}
+	if (h < 0) {
+		y += h;
+		h = abs(h);
+	}
+
+	if (x < 0) {
+		w += x;
+		x = 0;
+	}
+	if (y < 0) {
+		h += y;
+		y = 0;
+	}
+
+	if (x + w > src->width) {
+		w = src->width - x;
+	}
+	if (y + h > src->height) {
+		y = src->height - y;
+	}
+
+	s = src->pixel_data + y * src->width + x;
+	span = src->width - w;
+	for (ly = 0; ly < h; ly++) {
+		for (lx = 0; lx < w; lx++) {
+			lr += s->ch.r;
+			lg += s->ch.g;
+			lb += s->ch.b;
+			la += s->ch.a;
+			s++;
+		}
+		s += span;
+	}
+
+	considered = w * h;
+
+	if (considered > 0) {
+		*r = lr / considered;
+		*g = lg / considered;
+		*b = lb / considered;
+		*a = la / considered;
+	} else {
+		*r = 0;
+		*g = 0;
+		*b = 0;
+		*a = 0;
+	}
+}
+
+
 void put_pixel(gimp_image_t *dest, int x, int y, _pel col, int flags) //{{{1
 {
 	_pel		*d;
