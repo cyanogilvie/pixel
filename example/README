@@ -14,6 +14,7 @@ textbutton-dropshadow
 textbutton-dropshadow-alpha
 blur
 center
+pixiedust
 
 There are far too many aspects of the libs to demo here, consult main.c in
 the Pixel sources for a reference of the tcl commands, and 2d.c for details
