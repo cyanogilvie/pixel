@@ -1,0 +1,113 @@
+# vim: foldmarker=<<<,>>>
+
+class pixel::fonts::Font {
+	constructor {args} {}
+
+	public {
+		method add_font_spec {specfile}
+		method add_font {basename attribs filename}
+
+		method get_font {basename attribs}
+		method list_basenames {}
+	}
+
+	private {
+		variable attribmap
+
+		method compile_fontname {basename attribs}
+	}
+}
+
+
+body pixel::fonts::Font::constructor {args} { #<<<1
+	set attribmap(normal)	0
+	set exp					0
+	foreach attrib {
+		normal bold italic underline strikethrough mono superscript subscript
+	} {
+		set attribmap($attrib)	[expr {1 << $exp}]
+		incr exp
+	}
+
+	add_font_spec [file join $::pixel::fonts::library fonts fonts.spec]
+	
+	eval configure $args
+}
+
+
+body pixel::fonts::Font::get_font {basename attribs} { #<<<1
+	set name	[compile_fontname $basename $attribs]
+	if {![info exists reg($name)]} {
+		error "No such font: $basename, $attribs"
+	}
+
+	# Force face compilation on our copy, so it's only done once per font
+	pixel::compile_face $reg($name)
+
+	return $reg($name)
+}
+
+
+body pixel::fonts::Font::compile_fontname {basename attribs} { #<<<1
+	set name	[string tolower [string trim $basename]]
+	append name	,
+	set aid		0
+	foreach attrib $attribs {
+		set attrib	[string tolower [string trim $attrib]]
+		if {[info exists attribmap($attrib)]} {
+			incr aid	$attribmap($attrib)
+		} else {
+			error "No such font attribute: ($attrib)"
+		}
+	}
+	append name	$aid
+
+	return $name
+}
+
+
+body pixel::fonts::Font::add_font_spec {specfile} { #<<<1
+	if {![file exists $specfile]} {
+		error "Specfile doesn't exist: ($specfile)"
+	}
+
+	set fp	[open $specfile r]
+	set dat	[read $fp]
+	close $fp
+
+	foreach {basename spec} $dat {
+		catch {unset tmp}
+		array set tmp {
+			attribs			{}
+		}
+		array set tmp $spec
+		if {![info exists tmp(filename)] || ![file exists $tmp(filename)]} {
+			error "font $basename in $specfile doesn't give valid filename"
+		}
+		set attribs		$tmp(attribs)
+		set filename	$tmp(filename)
+
+		add_font $basename $attribs $filename
+	}
+}
+
+
+body pixel::fonts::Font::add_font {basename attribs filename} { #<<<1
+	set name		[compile_fontname $basename $attribs]
+	set hold		[pwd]
+	cd [file dirname $basename]
+	set reg($name)	[file join [pwd] $basename]
+	cd $hold
+}
+
+
+body pixel::fonts::Font::list_basenames {} { #<<<1
+	set build	{}
+	foreach name [array names reg] {
+		lappend build	[lindex [split $name ,] 0]
+	}
+
+	return [lsort -dictionary -unique $build]
+}
+
+
