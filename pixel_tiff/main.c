@@ -124,7 +124,7 @@ int Pixel_tiff_Init(Tcl_Interp *interp)
 {
 	NEW_CMD("pixel::tiff::loadtiff", glue_loadtiff);
 	NEW_CMD("pixel::tiff::savetiff", glue_savetiff);
-	
+
 	return TCL_OK;
 }
 
