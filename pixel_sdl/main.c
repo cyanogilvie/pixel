@@ -16,8 +16,8 @@
 
 #include <SDL/SDL.h>
 
-#include <sys/time.h>
-#include <unistd.h>
+//#include <sys/time.h>
+//#include <unistd.h>
 #include "sdl_timestuff.h"
 
 #include <tcl.h>
@@ -389,16 +389,14 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 static int glue_gettimeofday(ClientData foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
 {
-	struct timeval	tv;
 	int				big;
 //	Tcl_WideInt		big;
 	
 	CHECK_ARGS(0, "");
 
-	gettimeofday(&tv, NULL);
+	big = SDL_GetTicks();
 
-	big = tv.tv_usec;
-	big += tv.tv_sec * 1000000;
+	big = big * 1000;
 
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(big));
 //	Tcl_SetObjResult(interp, Tcl_NewWideIntObj(big));
