@@ -13,6 +13,8 @@ DEBUG=-g -DDEBUG
 #DEBUG=
 OFLAGS0= -O0
 OFLAGS1= -O3 -march=pentium3 -mtune=pentium3
+OFLAGS2= -O3
+
 
 OFLAGS=$(OFLAGS0)
 DEFS = 
