@@ -7,10 +7,17 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
+typedef void (* ttf_feedback_cb)(void *clientdata, int what, int value);
+
+enum {
+	TTF_FEEDBACK_LINESTART,
+	TTF_FEEDBACK_CHAR
+};
+
 EXTERN_C FT_Library	ft_library;
 EXTERN_C Tcl_ObjType	tcl_ttf_face;
 
-EXTERN_C pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width);
+EXTERN_C pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width, ttf_feedback_cb cb, void *clientdata);
 EXTERN_C int new_face(char *ttf_file, int px_height);
 EXTERN_C int init_ttf();
 

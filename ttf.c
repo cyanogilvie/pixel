@@ -58,7 +58,7 @@ static void blit_glyph(int x, int y, _pel base_col, FT_Bitmap *glyph,
 }
 
 
-pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width)
+pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width, ttf_feedback_cb cb, void *clientdata)
 {
 	int				n, from_glyph, glyphno, numchars, numwchars, error;
 	int				pen_x, pen_y, size;
@@ -146,6 +146,20 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 		if (res == 0) 
 			break;			// Is this right??
 
+		if (*mbptr == '\n') {
+			pen_x = 0;
+			pen_y = 0;
+			previous = 0;
+
+			(int)(curr_pmap->clientdata) = glyphno-1;	// Last glyph
+			curr_pmap->next = (pmap_list *)malloc(sizeof(pmap_list) * 1);
+			curr_pmap = curr_pmap->next;
+			curr_pmap->pmap = NULL;
+			curr_pmap->next = NULL;
+			curr_pmap->clientdata = NULL;
+			mbptr += res;
+			continue;
+		}
 		mbptr += res;
 		
 		// retrieve glyph index from character code
@@ -287,9 +301,13 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 						base_col,
 						&bitmap->bitmap,
 						pmap);
+				if (cb != NULL)
+					cb(clientdata, TTF_FEEDBACK_CHAR, bitmap->left + glyphs[n].pos.x - bbox.xMin);
 			}
 			FT_Done_Glyph(image);
 		}
+		if (cb != NULL)
+			cb(clientdata, TTF_FEEDBACK_LINESTART, from_glyph);
 		from_glyph = last_glyph + 1;
 		curr_pmap = curr_pmap->next;
 	}

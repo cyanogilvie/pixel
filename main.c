@@ -26,6 +26,12 @@
 #define	SINE		1
 #define LINEAR		2
 
+typedef struct ttf_feedback_data {
+	Tcl_Interp	*interp;
+	Tcl_Obj		*res;
+	Tcl_Obj		*line;
+} ttf_feedback_data;
+
 // pmap_new x y colour {{{1
 static int glue_pmap_new(ClientData *foo, Tcl_Interp *interp, 
 		int objc, Tcl_Obj *CONST objv[])
@@ -373,7 +379,8 @@ static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 	} else {
 		width = 0;
 	}
-	pmaps = render_ttf(base_col, face, px_size, Tcl_GetString(objv[4]), width);
+	pmaps = render_ttf(base_col, face, px_size, 
+			Tcl_GetString(objv[4]), width, NULL, NULL);
 
 	if (pmaps == NULL)
 		THROW_ERROR("Could not render text: ", Tcl_NewStringObj(ttf_last_error_txt(), -1));
@@ -398,6 +405,108 @@ static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 
 		Tcl_SetObjResult(interp, res);
 	}
+
+	return TCL_OK;
+}
+
+
+// render_ttf_adv meta text {{{1
+
+static void render_ttf_feedback(void *clientdata, int what, int value)
+{
+	ttf_feedback_data	*feedback = (ttf_feedback_data *)clientdata;
+
+	switch (what) {
+		case TTF_FEEDBACK_LINESTART:
+			//fprintf(stderr, "render_ttf_feedback: TTF_FEEDBACK_LINESTART: %d\n", value);
+			Tcl_ListObjAppendElement(feedback->interp, feedback->res,
+					Tcl_NewIntObj(value));
+			Tcl_ListObjAppendElement(feedback->interp, feedback->res,
+					feedback->line);
+			feedback->line = Tcl_NewListObj(0, NULL);
+			break;
+
+		case TTF_FEEDBACK_CHAR:
+			//fprintf(stderr, "render_ttf_feedback: TTF_FEEDBACK_CHAR: %d\n", value);
+			Tcl_ListObjAppendElement(feedback->interp, feedback->line,
+					Tcl_NewIntObj(value));
+			break;
+
+		default:
+			fprintf(stderr, "render_ttf_feedback called with bogus tag\n");
+			break;
+	}
+}
+
+static int glue_render_ttf_adv(ClientData *foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST objv[])
+{
+	Tcl_Obj				*base_col_o;
+	Tcl_Obj				*face_o;
+	Tcl_Obj				*px_size_o;
+	Tcl_Obj				*width_o;
+	ttf_feedback_data	feedback;
+	int					px_size;
+	pmap_list			*pmaps;
+	pmap_list			*next;
+	_pel				base_col;
+	FT_Face				face;
+	int					len, width;
+	char				*utf8;
+	Tcl_Obj				*res;
+	char				*base_arr;
+	
+	
+	
+	CHECK_ARGS(2, "meta text");
+
+	width = 0;
+	px_size = 14;
+	base_col.c = 0xff000000;
+
+	base_arr = Tcl_GetString(objv[1]);
+
+	if ((base_col_o	= Tcl_GetVar2Ex(interp, base_arr, "base_col", 0)) != NULL)
+		TEST_OK(Tcl_GetIntFromObj(interp, base_col_o, (int *)&base_col.c));
+	if ((face_o		= Tcl_GetVar2Ex(interp, base_arr, "face", 0)) != NULL)
+		TEST_OK(Tcl_GetTTFFaceFromObj(interp, face_o, &face));
+	if ((px_size_o	= Tcl_GetVar2Ex(interp, base_arr, "px_size", 0)) != NULL)
+		TEST_OK(Tcl_GetIntFromObj(interp, px_size_o, &px_size));
+	if ((width_o	= Tcl_GetVar2Ex(interp, base_arr, "width", 0)) != NULL)
+		TEST_OK(Tcl_GetIntFromObj(interp, width_o, &width));
+
+	feedback.interp = interp;
+	feedback.res = Tcl_NewListObj(0, NULL);
+	feedback.line = Tcl_NewListObj(0, NULL);
+
+	pmaps = render_ttf(base_col, face, px_size, 
+			Tcl_GetString(objv[2]), width, render_ttf_feedback, (void *)&feedback);
+
+	if (pmaps == NULL)
+		THROW_ERROR("Could not render text: ", Tcl_NewStringObj(ttf_last_error_txt(), -1));
+
+	if (width == 0) {
+		Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmaps->pmap));
+		free(pmaps);
+	} else {
+		res = Tcl_NewListObj(0, NULL);
+
+		while (1) {
+			Tcl_ListObjAppendElement(interp, res, Tcl_NewPMAPObj(pmaps->pmap));
+			if (pmaps->next == NULL) {
+				break;
+			} else {
+				next = pmaps->next;
+				free(pmaps);
+				pmaps = next;
+			}
+		}
+		free(pmaps);
+
+		Tcl_SetObjResult(interp, res);
+	}
+
+	Tcl_ObjSetVar2(interp, objv[1], Tcl_NewStringObj("feedback", -1), feedback.res, 0);
 
 	return TCL_OK;
 }
@@ -573,6 +682,7 @@ int Pixel_Init(Tcl_Interp *interp)
 
 	// TrueType font rendering
 	NEW_CMD("pixel::render_ttf", glue_render_ttf);
+	NEW_CMD("pixel::render_ttf_adv", glue_render_ttf_adv);
 	NEW_CMD("pixel::compile_face", glue_compile_face);
 
 	return TCL_OK;
