@@ -2,6 +2,7 @@ DESTDIR=
 TARGETDIR=$(DESTDIR)/win32/lib/pixel_sdl
 
 CC=i586-mingw32msvc-gcc
+STRIP=i586-mingw32msvc-strip
 SOEXT=dll
 
 #OBJS = main.o timestuff.o widget.o
@@ -26,20 +27,20 @@ DEFS =
 DEBUG=-g
 #DEBUG=-g -DDEBUG
 INCLUDE = -I.. \
-		   -I/win32/include/tcl8.3 \
-		   -I/win32/include/tcl8.3/tcl-private/generic 
-CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE) `sdl-config --cflags`
+		   -I/win32/include
+CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE)
 
 
 STATIC = 
-LLIBS = 
-LIBS =
-LDFLAGS = -ltcl8.3 -ltk8.3 `sdl-config --libs` -lm
+LLIBS = -L/win32/lib
+LIBS = -lpixel -ltcl84 -ltk84 -lSDL -lm
+LDFLAGS = $(STATIC) $(LLIBS) $(LIBS)
 
 all:    libpixel_sdl.$(SOEXT)
 
 libpixel_sdl.$(SOEXT):	$(OBJS)
 	$(CC) --shared -o libpixel_sdl.$(SOEXT) $(OBJS) $(LDFLAGS)
+	$(STRIP) libpixel_sdl.$(SOEXT)
 
 main.o:	main.c
 	$(CC) -c main.c $(CFLAGS) $(INCLUDES)

@@ -5,7 +5,7 @@ load [file join $::pixel::sdl::library libpixel_sdl.so]
 namespace eval ::pixel::sdl {
 	namespace export *
 
-	variable version 1.0
+	variable version 1.1
 }
 
 lappend auto_path [file join $::pixel::sdl::library scripts]

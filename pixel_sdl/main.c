@@ -405,6 +405,24 @@ static int glue_gettimeofday(ClientData foo, Tcl_Interp *interp,
 }
 
 
+// getticks {{{1
+static int glue_getticks(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST objv[])
+{
+	unsigned int	big;
+//	Tcl_WideInt		big;
+	
+	CHECK_ARGS(0, "");
+
+	big = SDL_GetTicks();
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(big));
+//	Tcl_SetObjResult(interp, Tcl_NewWideIntObj(big));
+	
+	return TCL_OK;
+}
+
+
 static int glue_elapsed(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
@@ -957,6 +975,7 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::sdl::get_caps", glue_get_caps);
 	NEW_CMD("pixel::sdl::do_frame", glue_do_frame);
 	NEW_CMD("pixel::sdl::gettimeofday", glue_gettimeofday);
+	NEW_CMD("pixel::sdl::getticks", glue_getticks);
 	NEW_CMD("pixel::sdl::elapsed", glue_elapsed);
 	NEW_CMD("pixel::sdl::frames", glue_frames);
 	NEW_CMD("pixel::sdl::fps", glue_fps);
