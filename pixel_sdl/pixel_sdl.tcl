@@ -1,6 +1,10 @@
 package require Pixel
 
-load [file join $::pixel::sdl::library libpixel_sdl.so]
+if {$::tcl_platform(platform) == "windows"} {
+	load [file join $::pixel::sdl::library libpixel_sdl.dll]
+} else {
+	load [file join $::pixel::sdl::library libpixel_sdl.so]
+}
 
 namespace eval ::pixel::sdl {
 	namespace export *
