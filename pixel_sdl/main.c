@@ -946,9 +946,14 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 	
 	SDL_JoystickEventState(1);
 	SDL_EnableUNICODE(1);
+	SDL_JoystickEventState(1);
 
 	for (i=0; i<g_sdl_ev_last; i++)
 		g_sdl_ev_handlers[i] = NULL;
+
+	for (i=0; i<SDL_NumJoysticks(); i++) {
+		SDL_JoystickOpen(i);
+	}
 	
 	NEW_CMD("pixel::sdl::setup_screen", glue_setup_screen);
 	NEW_CMD("pixel::sdl::get_caps", glue_get_caps);

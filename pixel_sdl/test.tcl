@@ -9,7 +9,7 @@ namespace import ::pixel::*
 #namespace import ::pixel::sdl::*
 namespace import ::pixel::tiff::*
 
-set scr	[pixel::sdl::setup_screen 1024 768 32 {SDL_ANYFORMAT SDL_RESIZABLE}]
+set scr	[pixel::sdl::setup_screen 512 384 32 {SDL_ANYFORMAT SDL_RESIZABLE}]
 
 puts "caps:\n[pixel::sdl::get_caps $scr]"
 
