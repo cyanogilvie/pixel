@@ -21,8 +21,8 @@ OFLAGS=$(OFLAGS2)
 
 
 DEFS =
-DEBUG=-g
-#DEBUG=-g -DDEBUG
+#DEBUG=-g
+DEBUG=-g -DDEBUG
 INCLUDE = -I.. \
 		   -I/usr/include/tcl8.3 \
 		   -I/usr/include/tcl8.3/tcl-private/generic \

@@ -377,6 +377,18 @@ static void tkimage_configure_instance(pmap_instance *instancePtr) //{{{1
 			imagePtr->byte_order = (kludge.i == 1) ? LSBFirst : MSBFirst;
 			_XInitImageFuncPtrs(imagePtr);
 		}
+
+		DBG("Dest instance format:\n\tbpp: %d\n\trmask: %08x\n\tgmask: %08x\n\tbmask: %08x\n",
+				imagePtr->bits_per_pixel,
+				imagePtr->red_mask,
+				imagePtr->green_mask,
+				imagePtr->blue_mask);
+		instancePtr->destformat = Hermes_FormatNew(
+				imagePtr->bits_per_pixel,
+				imagePtr->red_mask,
+				imagePtr->green_mask,
+				imagePtr->blue_mask,
+				0, 0);
 	}
 	
 	/*
@@ -442,17 +454,6 @@ static ClientData getproc(Tk_Window tkwin, ClientData masterData) //{{{1
 		switch (visInfoPtr->class) {
 			case DirectColor:
 			case TrueColor:
-				//fprintf(stderr, "Dest instance format:\n\tbpp: %d\n\trmask: %08x\n\tgmask: %08x\n\tbmask: %08x\n",
-				//		visInfoPtr->depth,
-				//		visInfoPtr->red_mask,
-				//		visInfoPtr->green_mask,
-				//		visInfoPtr->blue_mask);
-				instancePtr->destformat = Hermes_FormatNew(
-						visInfoPtr->depth,
-						visInfoPtr->red_mask,
-						visInfoPtr->green_mask,
-						visInfoPtr->blue_mask,
-						0, 0);
 				break;
 			case PseudoColor:
 			case StaticColor:
@@ -556,7 +557,7 @@ static void freeproc(ClientData clientData, Display *display) //{{{1
 
 	//fprintf(stderr, "freeproc\n");
 	instancePtr->refCount -= 1;
-	DBG("instance %p refcount-- %d\n", instancePtr, refCount);
+	DBG("instance %p refcount-- %d\n", instancePtr, instancePtr->refCount);
 	if (instancePtr->refCount > 0)
 		return;
 
