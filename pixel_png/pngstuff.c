@@ -108,6 +108,8 @@ gimp_image_t *read_png(char *filename) //{{{1
 	png_read_png(png_ptr, info_ptr, 
 			PNG_TRANSFORM_STRIP_16 |
 			PNG_TRANSFORM_PACKING |
+			PNG_TRANSFORM_SHIFT |
+			PNG_TRANSFORM_BGR |
 			PNG_TRANSFORM_EXPAND, NULL);
 
 	free(row_pointers);  row_pointers = NULL;

@@ -7,6 +7,7 @@ package require Pixel_png
 package require Pixel_tkimage
 
 set filename	"testpat.png"
+#set filename	"/mysrc/kudzu/client/images/summary.png"
 puts "dimensions: ([pixel::png::png_dimensions $filename])"
 puts "is_png(test.png): ([pixel::png::is_png test.png])"
 puts "is_png(test.gif): ([pixel::png::is_png test.gif])"
