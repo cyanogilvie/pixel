@@ -32,7 +32,8 @@ MODULES = \
 	pixel_ptc \
 	pixel_imlib2 \
 	pixel_tkimage \
-	pixel_hermes
+	pixel_hermes \
+	pixel_fonts
 
 DEBUG=-g -DDEBUG
 #DEBUG=
