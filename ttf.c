@@ -250,8 +250,8 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 		pmap->height = bbox.yMax - bbox.yMin + 1;
 		pmap->bytes_per_pixel = 4;
 //		g_total_pmaps++;
-		fprintf(stderr, "allocing pmap: w: %d h: %d  %p\n",
-				pmap->width, pmap->height, pmap); fflush(stderr);
+//		fprintf(stderr, "allocing pmap: w: %d h: %d  %p\n",
+//				pmap->width, pmap->height, pmap); fflush(stderr);
 
 //		fprintf(stderr, "width: (%d) height: (%d)\n", pmap->width, pmap->height);
 		size = pmap->width * pmap->height * pmap->bytes_per_pixel;
