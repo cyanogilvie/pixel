@@ -156,6 +156,7 @@ static int glue_elapsed(ClientData foo, Tcl_Interp *interp, //{{{1
 
 	ci = (console_inf *)sp->info;
 
+	update_elapsed(ci);
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(ci->elapsed));
 
 	return TCL_OK;

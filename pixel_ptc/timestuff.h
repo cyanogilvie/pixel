@@ -9,5 +9,6 @@ extern long long	frames;
 
 extern void init_timestuff(console_inf *inf);
 extern void frame_time(console_inf *inf);
+extern void update_elapsed(console_inf *inf);
 
 #endif

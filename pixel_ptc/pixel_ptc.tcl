@@ -5,7 +5,7 @@ load [file join $::pixel::ptc::library libpixel_ptc.so]
 namespace eval ::pixel::ptc {
 	namespace export *
 
-	variable version 1.0
+	variable version 1.1
 }
 
 lappend auto_path [file join $::pixel::ptc::library scripts]

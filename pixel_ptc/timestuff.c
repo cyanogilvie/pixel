@@ -15,6 +15,14 @@ void frame_time(console_inf *inf)
 }
 
 
+void update_elapsed(console_inf *inf)
+{
+	struct timeval	tv;
+	gettimeofday( &tv, NULL );
+//	inf->elapsed = tv.tv_usec - inf->lastusec + (tv.tv_sec-inf->lastsec)*1000000;
+}
+
+
 void init_timestuff(console_inf *inf)
 {
 	struct timeval	tv;
