@@ -29,7 +29,9 @@ OBJS = \
 
 MODULES = \
 		  pixel_sdl \
-		  pixel_tiff
+		  pixel_tiff \
+		  pixel_tkimage \
+		  pixel_hermes
 
 DEBUG=-g -DDEBUG
 #DEBUG=

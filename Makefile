@@ -26,7 +26,8 @@ MODULES = \
 	pixel_xcf \
 	pixel_ptc \
 	pixel_imlib2 \
-	pixel_tkimage
+	pixel_tkimage \
+	pixel_hermes
 
 DEBUG=-g -DDEBUG
 #DEBUG=

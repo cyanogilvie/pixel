@@ -527,7 +527,7 @@ static void disposeinstance(ClientData clientData) //{{{1
 	pmap_instance	*instancePtr = (pmap_instance *)clientData;
 	pmap_instance	*prevPtr;
 
-	//fprintf(stderr, "disposeinstance\n");
+	DBG("disposeinstance\n");
 	if (instancePtr->pixels != None) {
 		Tk_FreePixmap(instancePtr->display, instancePtr->pixels);
 	}
@@ -570,7 +570,7 @@ static void deleteproc(ClientData clientData) //{{{1
 	pmap_master		*masterPtr = (pmap_master *)clientData;
 	pmap_instance	*instancePtr;
 
-	//fprintf(stderr, "deleteproc\n");
+	DBG("deleteproc\n");
 	while ((instancePtr = masterPtr->instancePtr) != NULL) {
 		if (instancePtr->refCount > 0) {
 			panic("tried to delete photo image when instances still exist");
