@@ -148,7 +148,12 @@ void row_set(_pel *dest, _pel colour, int len, int flags) //{{{1
 			P_ADDITIVE(d, s);
 	} else if (flags & MD_BLIT) {
 	} else {
+#ifndef _WINDOWS
 		asm_pelset(d, colour, len);
+#else
+		for (; d<last; d++)
+			*d = *s;
+#endif
 	}
 }
 

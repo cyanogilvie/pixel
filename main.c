@@ -11,6 +11,7 @@
 #define	SINE		1
 #define LINEAR		2
 
+
 typedef struct ttf_feedback_data {
 	Tcl_Interp	*interp;
 	Tcl_Obj		*res;
@@ -1255,6 +1256,63 @@ static int glue_rle_decode(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t	*pmap;
+	unsigned char	*bmp;
+	_pel			*s;
+	unsigned char	*d;
+	unsigned int	size, pixels, bperline, pad;
+	int				x, y;
+
+	CHECK_ARGS(1, "pmap");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+
+	pixels = pmap->width * pmap->height;
+	bperline = pmap->width * 3;
+	while (bperline & 0x3) bperline++;
+	pad = bperline - pmap->width * 3;
+	size = 54 + bperline * pmap->height;
+	d = bmp = (unsigned char *)malloc(size);
+
+	*d++ = 'B';
+	*d++ = 'M';
+	*((unsigned int *)d)++ = size; 
+	*((unsigned int *)d)++ = 0;
+	*((unsigned int *)d)++ = 54;
+	*((unsigned int *)d)++ = 40;
+	*((unsigned int *)d)++ = pmap->width;
+	*((unsigned int *)d)++ = pmap->height;
+	*((unsigned int *)d)++ = 1 + (24 << 16);
+	*((unsigned int *)d)++ = 0;
+	*((unsigned int *)d)++ = bperline * pmap->height;
+	*((unsigned int *)d)++ = 75*39;
+	*((unsigned int *)d)++ = 75*39;
+	*((unsigned int *)d)++ = 0;
+	*((unsigned int *)d)++ = 0;
+	for (y = pmap->height-1; y >= 0; y--) {
+		s = pmap->pixel_data + (y * pmap->width);
+		for (x = 0; x < pmap->width; x++, s++) {
+			*d++ = s->ch.b;
+			*d++ = s->ch.g;
+			*d++ = s->ch.r;
+		}
+		for (x = 0; x < pad; x++)
+			*d++ = 0;
+		if ((unsigned int)d - (unsigned int)bmp > size)
+			fprintf(stderr, "Eeek! overran buffer\n");
+	}
+	
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(bmp, size));
+
+	free(bmp);
+
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_Init(Tcl_Interp *interp)
 {
@@ -1297,6 +1355,7 @@ int Pixel_Init(Tcl_Interp *interp)
 	// Misc
 	NEW_CMD("pixel::rle_encode", glue_rle_encode);
 	NEW_CMD("pixel::rle_decode", glue_rle_decode);
+	NEW_CMD("pixel::pmap2bmp", glue_pmap2bmp);
 
 	return TCL_OK;
 }

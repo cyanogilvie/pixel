@@ -1,5 +1,6 @@
 DESTDIR =
-BASE = tcl8.4
+#BASE = tcl8.4
+BASE = usr
 TCLVER = 8.3
 
 MAJ = 1
@@ -39,6 +40,7 @@ MODULES = \
 	pixel_fonts \
 	pixel_xcf \
 	pixel_png \
+	pixel_tkutils \
 	pixel_ptc
 
 DEBUG=-g -DDEBUG
