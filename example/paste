@@ -1,0 +1,39 @@
+#!/usr/bin/itkwish3.1
+
+# vim: ft=tcl
+
+
+# Simple example demonstrating loading an image and displaying it on a label
+
+
+package require Pixel
+namespace import pixel::*
+package require Pixel_imlib2
+package require Pixel_tkimage
+
+
+set img		[pixel::imlib2::load_image "kenshin2.png"]
+
+# Load a buttom image
+set buttonimg	[pixel::imlib2::load_image "window.png"]
+
+# Wrap it in a tkimage (Pixel_tkimage adds the "pmap" handler for image)
+image create pmap tkimg -pmap $img
+
+label .img_l -text "Image:"
+label .img -image tkimg
+
+pack .img_l .img -side top -anchor w
+
+# Make sure everything is displayed
+update
+
+# Wait 2 seconds
+after 2000
+
+# Paste the button pmap onto the img pmap at x 150 y 150, alpha blended
+pmap_paste $img $buttonimg 150 150 $::MD_ALPHA
+
+# Get the tkimage to update itself from the underlying pmap (img)
+tkimg do_frame
+

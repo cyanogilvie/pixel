@@ -1,0 +1,33 @@
+#!/usr/bin/itkwish3.1
+
+# vim: ft=tcl
+
+
+package require Pixel
+namespace import pixel::*
+package require Pixel_imlib2
+package require Pixel_tkimage
+
+
+set img		[pixel::imlib2::load_image "kenshin2.png"]
+set buttonimg	[pixel::imlib2::load_image "window.png"]
+
+set scaled	[pixel::imlib2::scale_pmap $buttonimg 140 60]
+
+image create pmap tkimg -pmap $img
+
+label .img_l -text "Image:"
+label .img -image tkimg
+
+pack .img_l .img -side top -anchor w
+
+update
+
+after 2000
+
+pmap_paste $img $buttonimg 150 150 $::MD_ALPHA
+
+pmap_paste $img $scaled 150 200 $::MD_ALPHA
+
+tkimg do_frame
+

@@ -1,0 +1,64 @@
+#!/usr/bin/itkwish3.1
+
+# vim: ft=tcl
+
+
+package require Pixel
+namespace import pixel::*
+package require Pixel_imlib2
+package require Pixel_tkimage
+package require Pixel_fonts
+
+set img		[pixel::imlib2::load_image "kenshin2.png"]
+set buttonimg	[pixel::imlib2::load_image "window.png"]
+
+# Construct a ttf font registry
+pixel::fonts::Font fontreg
+
+# Render some ttf text into a pmap
+array set text_info [list \
+	base_col	0xff1070ff \
+	face		[fontreg get_face {arial {bold italic}}] \
+	px_size		18 \
+]
+set textimg	[render_ttf_adv text_info "Hello world"]
+
+# Get width and height info from our text pmap
+set pmap_info	[pmap_info $textimg]
+foreach {width height} $pmap_info break
+
+# Scale image inner, leaving border unscaled
+# Parameters are:
+#	source pmap
+#	new width
+#	new height
+#	smooth scaling? (boolean)
+#	borderwidth left
+#	borderwidth right
+#	borderheight top
+#	borderheight bottom
+set scaled	[pixel::imlib2::scale_pmap $buttonimg \
+		[expr {$width+16}] \
+		[expr {$height+16}] \
+		1 2 2 2 2]
+
+# Paste our text pmap onto the button
+pmap_paste $scaled $textimg 8 8 $::MD_ALPHA
+
+image create pmap tkimg -pmap $img
+
+label .img_l -text "Image:"
+label .img -image tkimg
+
+pack .img_l .img -side top -anchor w
+
+update
+
+after 2000
+
+pmap_paste $img $buttonimg 150 150 $::MD_ALPHA
+
+pmap_paste $img $scaled 150 200 $::MD_ALPHA
+
+tkimg do_frame
+
