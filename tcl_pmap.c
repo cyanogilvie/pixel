@@ -60,7 +60,8 @@ static void update_string_rep(Tcl_Obj * obj)
 	char *			str;
 	int				length;
 
-//	fprintf(stderr, "tcl_pmap: Called update_string_rep\n");
+	//fprintf(stderr, "tcl_pmap: Called update_string_rep\n");
+	//Tcl_Panic("Bang");
 	
 	objv[0] = Tcl_NewIntObj(pmap->width);
 	objv[1] = Tcl_NewIntObj(pmap->height);
@@ -93,7 +94,7 @@ static int set_pmap_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	_pel *			pixel_data;
 	int				size, src_size;
 	
-	fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: (%s)\n", Tcl_GetString(obj));
+	//fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: (%s)\n", Tcl_GetString(obj));
 	//THROW_ERROR("Bang");
 
 	if (oldtype == &tcl_pmap)

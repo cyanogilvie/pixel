@@ -2,7 +2,7 @@
 #define _TCL_PMAP_H
 
 #include <tcl.h>
-#include <tclInt.h>
+//#include <tclInt.h>
 #include "2d.h"
 
 

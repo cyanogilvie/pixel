@@ -21,6 +21,7 @@
 #include <tk.h>
 #include <tkInt.h>
 #include <tkIntXlibDecls.h>
+#include <tkIntDecls.h>
 #include <tclstuff.h>
 #include <Hermes.h>
 

@@ -1,4 +1,6 @@
 DESTDIR =
+BASE = usr
+TCLVER = 8.3
 
 MAJ = 1
 MIN = 0
@@ -59,15 +61,17 @@ DEFS = \
 	   -DVERSION=\"1.0\"
 DEFS := $(DEFS) -DASM_BUF_DRAW_BOX
 
+#INCLUDES = `freetype-config --cflags` \
+		   -I/$(BASE)/include/tcl$(TCLVER) \
+		   -I/$(BASE)/include/tcl$(TCLVER)/tcl-private/generic 
 INCLUDES = `freetype-config --cflags` \
-		   -I/usr/include/tcl8.3 \
-		   -I/usr/include/tcl8.3/tcl-private/generic 
+		   -I/$(BASE)/include
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
 
 
 STATIC =
-LLIBS = -L/usr/X11R6/lib
-LIBS = $(LLIBS) `freetype-config --libs` -lm -ltcl8.3
+LLIBS = -L/usr/X11R6/lib -L/$(BASE)/lib
+LIBS = $(LLIBS) `freetype-config --libs` -lm -ltcl$(TCLVER)
 LDFLAGS = $(STATIC) $(LIBS)
 
 
@@ -110,20 +114,20 @@ scripts-stamp: scripts/*.itcl
 	touch scripts-stamp
 
 install: all
-	install -d $(DESTDIR)/usr/lib/pixel
-	install -d $(DESTDIR)/usr/include/pixel
-	install -d $(DESTDIR)/usr/lib/pixel/scripts
-	install $(TARGET) $(DESTDIR)/usr/lib/pixel
-	install libpixel_base.a $(DESTDIR)/usr/lib
-	install libpixel_base.so $(DESTDIR)/usr/lib
-	install pkgIndex.tcl $(DESTDIR)/usr/lib/pixel
-	install pixel.tcl $(DESTDIR)/usr/lib/pixel
-#	install bg.tiff $(DESTDIR)/usr/lib/pixel
-#	install block.tiff $(DESTDIR)/usr/lib/pixel
-	install test.tcl $(DESTDIR)/usr/lib/pixel
-	install scripts/*.itcl $(DESTDIR)/usr/lib/pixel/scripts
-	install scripts/tclIndex $(DESTDIR)/usr/lib/pixel/scripts
-	cp $(HDRS) $(DESTDIR)/usr/include/pixel
+	install -d $(DESTDIR)/$(BASE)/lib/pixel
+	install -d $(DESTDIR)/$(BASE)/include/pixel
+	install -d $(DESTDIR)/$(BASE)/lib/pixel/scripts
+	install $(TARGET) $(DESTDIR)/$(BASE)/lib/pixel
+	install libpixel_base.a $(DESTDIR)/$(BASE)/lib
+	install libpixel_base.so $(DESTDIR)/$(BASE)/lib
+	install pkgIndex.tcl $(DESTDIR)/$(BASE)/lib/pixel
+	install pixel.tcl $(DESTDIR)/$(BASE)/lib/pixel
+#	install bg.tiff $(DESTDIR)/$(BASE)/lib/pixel
+#	install block.tiff $(DESTDIR)/$(BASE)/lib/pixel
+	install test.tcl $(DESTDIR)/$(BASE)/lib/pixel
+	install scripts/*.itcl $(DESTDIR)/$(BASE)/lib/pixel/scripts
+	install scripts/tclIndex $(DESTDIR)/$(BASE)/lib/pixel/scripts
+	cp $(HDRS) $(DESTDIR)/$(BASE)/include/pixel
 	@for i in $(MODULES); do \
 		echo "====> make $@ in $$i"; \
 		make -C $$i $@ || exit 1; \

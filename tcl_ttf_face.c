@@ -91,7 +91,7 @@ static int set_ttf_face_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	if (objc < 1 || objc > 2)
 		THROW_ERROR("TTFFace expects a list of: filename ?face_index?");
 
-	filename = Tcl_GetString(objv[0]);
+	filename = strdup(Tcl_GetString(objv[0]));
 	if (objc == 2) {
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &face_index));
 	} else {

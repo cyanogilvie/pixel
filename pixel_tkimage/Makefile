@@ -1,5 +1,7 @@
-DESTDIR=
-TARGETDIR=$(DESTDIR)/usr/lib/pixel_tkimage
+DESTDIR =
+BASE = usr
+TARGETDIR = $(DESTDIR)/$(BASE)/lib/pixel_tkimage
+TCLVER = 8.3
 
 CC=gcc
 
@@ -15,26 +17,34 @@ OFLAGS2= -O9 -fforce-mem -fforce-addr -finline-functions \
 -funroll-loops -fmove-all-movables -fomit-frame-pointer \
 -mcpu=i686 -march=i686 -malign-loops=4 -malign-jumps=4 \
 -malign-functions=4
+OFLAGS3= -O6 -march=pentium3 -mtune=pentium3 -fexceptions -funit-at-a-time
 
 #OFLAGS=$(OFLAGS0)
-OFLAGS=$(OFLAGS2)
+OFLAGS=$(OFLAGS3)
 
 
 DEFS =
 DEBUG=-g
 #DEBUG=-g -DDEBUG
-INCLUDE = -I.. \
+#INCLUDE = -I.. \
 		   -I/usr/include/tcl8.3 \
 		   -I/usr/include/tcl8.3/tcl-private/generic \
 		   -I/usr/include/tcl8.3/tk-private/generic \
+		   -I/usr/include/Hermes
+INCLUDE = -I.. \
+		   -I/$(BASE)/include \
+		   -I/src/cvs/tcl/tk/generic \
+		   -I/src/cvs/tcl/tk/unix \
+		   -I/src/cvs/tcl/tcl/generic \
+		   -I/src/cvs/tcl/tcl/unix \
 		   -I/usr/include/Hermes
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE)
 
 
 STATIC = 
-LLIBS = 
-LIBS =
-LDFLAGS = -ltcl8.3 -ltk8.3 -lm -lHermes
+LLIBS = -L/$(BASE)/lib
+LIBS = -ltcl$(TCLVER) -ltk$(TCLVER) -lm -lHermes
+LDFLAGS = -Wall $(STATIC) $(LLIBS) $(LIBS)
 
 all:    pixel_tkimage.so
 
