@@ -383,10 +383,24 @@ void pmap_filter(gimp_image_t *dest, int flags, double factor) // {{{1
 			memcpy( scanline[2], e + dest->width, dest->width << 2 ); 
 			e++;
 			for (x=1; x<dest->width-1; x++) {
-				b = 0;
-				g = 0;
-				r = 0;
-				a = 0;
+				a  = fact[ scanline[0][x-1].ch.a ][ W_2 ];
+				a += fact[   scanline[0][x].ch.a ][ W_1 ];
+				a += fact[ scanline[0][x+1].ch.a ][ W_2 ];
+				
+				a += fact[ scanline[1][x-1].ch.a ][ W_1 ];
+				a += fact[   scanline[1][x].ch.a ][ W_0 ];
+				a += fact[ scanline[1][x+1].ch.a ][ W_1 ];
+
+				a += fact[ scanline[2][x-1].ch.a ][ W_2 ];
+				a += fact[   scanline[2][x].ch.a ][ W_1 ];
+				a += fact[ scanline[2][x+1].ch.a ][ W_2 ];
+
+				if (a == 0) {
+					// HACK: if we're completely transparent, skip the rest
+					e->c = 0;
+					e++;
+					continue;
+				}
 				
 				b  = fact[ scanline[0][x-1].ch.b ][ W_2 ];
 				b += fact[   scanline[0][x].ch.b ][ W_1 ];
@@ -425,19 +439,6 @@ void pmap_filter(gimp_image_t *dest, int flags, double factor) // {{{1
 				r += fact[ scanline[2][x-1].ch.r ][ W_2 ];
 				r += fact[   scanline[2][x].ch.r ][ W_1 ];
 				r += fact[ scanline[2][x+1].ch.r ][ W_2 ];
-				
-				
-				a  = fact[ scanline[0][x-1].ch.a ][ W_2 ];
-				a += fact[   scanline[0][x].ch.a ][ W_1 ];
-				a += fact[ scanline[0][x+1].ch.a ][ W_2 ];
-				
-				a += fact[ scanline[1][x-1].ch.a ][ W_1 ];
-				a += fact[   scanline[1][x].ch.a ][ W_0 ];
-				a += fact[ scanline[1][x+1].ch.a ][ W_1 ];
-
-				a += fact[ scanline[2][x-1].ch.a ][ W_2 ];
-				a += fact[   scanline[2][x].ch.a ][ W_1 ];
-				a += fact[ scanline[2][x+1].ch.a ][ W_2 ];
 				
 				e->ch.b = b;
 				e->ch.g = g;
