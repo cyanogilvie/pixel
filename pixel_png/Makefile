@@ -14,7 +14,7 @@ DEBUG=-g -DDEBUG
 OFLAGS0= -O0
 OFLAGS1= -O3 -march=pentium3 -mtune=pentium3
 
-OFLAGS=$(OFLAGS1)
+OFLAGS=$(OFLAGS0)
 DEFS = 
 INCLUDES = -I. -I.. \
 		   -I/usr/include/tcl8.3 \
