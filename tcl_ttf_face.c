@@ -86,7 +86,11 @@ static int set_ttf_face_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	if (oldtype == &tcl_ttf_face)
 		return TCL_OK;
 
+	// TODO: optimize for the case that oldtype is a filesystem path
+
 	TEST_OK(Tcl_ListObjGetElements(interp, obj, &objc, &objv));
+
+	oldtype = obj->typePtr;
 	
 	if (objc < 1 || objc > 2)
 		THROW_ERROR("TTFFace expects a list of: filename ?face_index?");

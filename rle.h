@@ -43,7 +43,7 @@ typedef struct {
 // Bad chunk type
 #define RLE_STATUS_BAD_CHUNK			-8
 
-// Maptable key size is not one of 1, 2, 4
+// Maptable key size is not one of 1, 2
 #define RLE_STATUS_INVALID_KEYSIZE		-9
 
 // Maptable key points beyond map

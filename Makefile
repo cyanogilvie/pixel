@@ -1,5 +1,5 @@
 DESTDIR =
-BASE = usr
+BASE = tcl8.4
 TCLVER = 8.3
 
 MAJ = 1
@@ -38,6 +38,7 @@ MODULES = \
 	pixel_hermes \
 	pixel_fonts \
 	pixel_xcf \
+	pixel_png \
 	pixel_ptc
 
 DEBUG=-g -DDEBUG
@@ -72,7 +73,7 @@ CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
 
 STATIC =
 LLIBS = -L/usr/X11R6/lib -L/$(BASE)/lib
-LIBS = $(LLIBS) `freetype-config --libs` -lm -ltcl$(TCLVER)
+LIBS = $(LLIBS) `freetype-config --libs` -lm
 LDFLAGS = $(STATIC) $(LIBS)
 
 
