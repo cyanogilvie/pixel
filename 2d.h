@@ -202,6 +202,12 @@ typedef struct {
 } gimp_image_t;
 
 
+typedef struct pmap_list {
+	gimp_image_t	*pmap;
+	void			*clientdata;
+	struct pmap_list		*next;
+} pmap_list;
+
 // lookups
 EXTERN_C uint8	fact[256][256];	// [a][b] = a * (b/255.0)
 EXTERN_C uint8	scale_lookup_square[256][256];

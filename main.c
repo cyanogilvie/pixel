@@ -257,38 +257,56 @@ static int glue_dup(ClientData *foo, Tcl_Interp *interp,
 	return TCL_OK;
 }
 
-// render_ttf colour fft_face px_size text {{{1
+// render_ttf colour fft_face px_size text ?width? {{{1
 static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
 {
 	int				px_size;
-	gimp_image_t *	pmap;
+	pmap_list		*pmaps;
+	pmap_list		*next;
 	_pel			base_col;
 	FT_Face			face;
-	int				len;
+	int				len, width;
 	char			*utf8;
-	Tcl_UniChar		*unicode;
+	Tcl_Obj			*res;
 	
 	
-	CHECK_ARGS(4, "colour fft_face px_size text");
+	if (objc < 5 || objc > 6)
+		CHECK_ARGS(4, "colour fft_face px_size text ?width?");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int *)&base_col));
 	TEST_OK(Tcl_GetTTFFaceFromObj(interp, objv[2], &face));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &px_size));
-
 	utf8 = Tcl_GetStringFromObj(objv[4], &len);
-//	fprintf(stderr, "Number of utf8 chars: %d\n", Tcl_NumUtfChars(utf8, len));
-	pmap = render_ttf(base_col, face, px_size, Tcl_GetString(objv[4]));
+	if (objc == 6) {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &width));
+	} else {
+		width = 0;
+	}
+	pmaps = render_ttf(base_col, face, px_size, Tcl_GetString(objv[4]), width);
 
-//	unicode = Tcl_GetUnicode(objv[4]);
-//	fprintf(stderr, "Number of unicode chars: %d\n", Tcl_UniCharLen(unicode));
-//	pmap = render_ttf(base_col, face, px_size, unicode);
-	
-	if (pmap == NULL)
+	if (pmaps == NULL)
 		THROW_ERROR("Could not render text: ", Tcl_NewStringObj(ttf_last_error_txt(), -1));
-	
-	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
-	
+
+	if (width == 0) {
+		Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmaps->pmap));
+	} else {
+		res = Tcl_NewListObj(0, NULL);
+
+		while (1) {
+			Tcl_ListObjAppendElement(interp, res, Tcl_NewPMAPObj(pmaps->pmap));
+			if (pmaps->next == NULL) {
+				break;
+			} else {
+				next = pmaps->next;
+				free(pmaps);
+				pmaps = next;
+			}
+		}
+
+		Tcl_SetObjResult(interp, res);
+	}
+
 	return TCL_OK;
 }
 

@@ -59,7 +59,7 @@ CFLAGS = -D_WINDOWS -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
 
 STATIC =
 LLIBS = -L/win32/lib
-LIBS = $(LLIBS) `/win32/lib/freetype-config --libs` -lm -ltcl84
+LIBS = $(LLIBS) `/win32/lib/freetype-config --libs` -lm -ltcl84 -mwindows
 LDFLAGS = $(STATIC) $(LIBS)
 
 
@@ -103,8 +103,8 @@ install: all
 	install $(TARGET) $(DESTDIR)/win32/lib/pixel
 	install pkgIndex.tcl $(DESTDIR)/win32/lib/pixel
 	install pixel.tcl $(DESTDIR)/win32/lib/pixel
-	install bg.tiff $(DESTDIR)/win32/lib/pixel
-	install block.tiff $(DESTDIR)/win32/lib/pixel
+#	install bg.tiff $(DESTDIR)/win32/lib/pixel
+#	install block.tiff $(DESTDIR)/win32/lib/pixel
 	install test.tcl $(DESTDIR)/win32/lib/pixel
 #	install scripts/*.tcl $(DESTDIR)/win32/lib/pixel/scripts
 #	install scripts/tclIndex $(DESTDIR)/win32/lib/pixel/scripts

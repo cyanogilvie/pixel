@@ -10,7 +10,7 @@
 EXTERN_C FT_Library	ft_library;
 EXTERN_C Tcl_ObjType	tcl_ttf_face;
 
-EXTERN_C gimp_image_t *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text);
+EXTERN_C pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width);
 EXTERN_C int new_face(char *ttf_file, int px_height);
 EXTERN_C int init_ttf();
 
