@@ -1,4 +1,4 @@
-#!/test/bin/tclsh8.4
+#!/tcl8.4/bin/tclsh8.4
 
 package require Pixel
 package require Pixel_jpeg
@@ -6,6 +6,8 @@ package require Pixel_ptc
 package require ML
 
 set filename	"test.jpg"
+array set info	[pixel::jpeg::jpeg_info $filename]
+parray info
 set img		[pixel::jpeg::loadjpeg $filename]
 foreach {width height} [pixel::pmap_info $img] break
 
@@ -26,7 +28,7 @@ fconfigure $fp -translation binary
 puts -nonewline $fp $jpeg_data
 close $fp
 
-pixel::draw_box $console 10 10 100 100 0xff00ffff 0
+pixel::box $console 10 10 100 100 0xff00ffff 0
 
 set img2		[pixel::jpeg::decodejpeg $jpeg_data]
 pixel::pmap_paste $console $img2 0 0 0
