@@ -27,10 +27,6 @@ while {[incr it -1]} {
 	lappend flares	$new
 }
 
-# Blur the background
-pmap_filter $img $::MD_FILTER_SMOOTH 1
-pmap_filter $img $::MD_FILTER_SMOOTH 1
-pmap_filter $img $::MD_FILTER_SMOOTH 1
 
 set buttonimg	[pixel::imlib2::load_image "window.png"]
 
