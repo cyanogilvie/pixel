@@ -83,7 +83,7 @@ static int set_ttf_face_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	char *			filename;
 	int				face_index, error;
 	
-	fprintf(stderr, "tcl_ttf_face: Called set_pmap_from_any\n");
+	fprintf(stderr, "tcl_ttf_face: Called set_ttf_face_from_any\n");
 
 	if (oldtype == &tcl_ttf_face)
 		return TCL_OK;
