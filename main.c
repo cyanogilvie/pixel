@@ -314,7 +314,7 @@ static int glue_blend(ClientData foo, Tcl_Interp *interp,
 }
 
 
-// center x y w h pmap <<<1
+// center x y w h pmap {{{1
 static int glue_center(ClientData foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
 {
