@@ -1,6 +1,6 @@
 #include "all.h"
 
-int get_png_dimensions(char *filename, int *x, int *y)
+int get_png_dimensions(char *filename, int *x, int *y) //{{{1
 {
 	png_structp		png_ptr;
 	png_infop		info_ptr;
@@ -46,7 +46,7 @@ int get_png_dimensions(char *filename, int *x, int *y)
 }
 
 
-gimp_image_t *read_png(char *filename)
+gimp_image_t *read_png(char *filename) //{{{1
 {
 	png_structp		png_ptr;
 	png_infop		info_ptr;
