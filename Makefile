@@ -21,7 +21,8 @@ OBJS = \
 	   primitives.o \
 	   ttf.o \
 	   shaders.o \
-	   bezierstuff.o
+	   bezierstuff.o \
+	   rle.o
 
 HDRS = \
 	   2d.h \

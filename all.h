@@ -5,6 +5,7 @@
 #include "shaders.h"
 #include "tcl_pmap.h"
 #include "ttf.h"
+#include "rle.h"
 
 #include <stdio.h>
 #include <stdlib.h>

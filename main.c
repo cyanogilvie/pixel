@@ -655,6 +655,50 @@ static int glue_bezier(ClientData foo, Tcl_Interp *interp,
 }
 
 
+static int glue_rle_encode(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t	*pmap;
+	unsigned char	*rle_data;
+	unsigned int	len;
+	int				status;
+
+	CHECK_ARGS(1, "pmap");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+
+	rle_data = rle_encode(pmap, &len, &status);
+	if (rle_data == NULL)
+		THROW_ERROR("Error encoding RLE: ", Tcl_GetString(Tcl_NewIntObj(status)));
+
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(rle_data, len));
+	
+	return TCL_OK;
+}
+
+
+static int glue_rle_decode(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t	*pmap;
+	unsigned char	*rle_data;
+	unsigned int	len;
+	int				status;
+
+	CHECK_ARGS(1, "rle_data");
+
+	rle_data = Tcl_GetByteArrayFromObj(objv[1], &len);
+
+	pmap = rle_decode(rle_data, len, &status);
+	if (pmap == NULL)
+		THROW_ERROR("Error decoding RLE: ", Tcl_GetString(Tcl_NewIntObj(status)));
+
+	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
+	
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_Init(Tcl_Interp *interp)
 {
@@ -691,6 +735,10 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::render_ttf", glue_render_ttf);
 	NEW_CMD("pixel::render_ttf_adv", glue_render_ttf_adv);
 	NEW_CMD("pixel::compile_face", glue_compile_face);
+
+	// Misc
+	NEW_CMD("pixel::rle_encode", glue_rle_encode);
+	NEW_CMD("pixel::rle_decode", glue_rle_decode);
 
 	return TCL_OK;
 }
