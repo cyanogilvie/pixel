@@ -311,6 +311,20 @@ static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 }
 
 
+// compile_face fft_face {{{1
+static int glue_compile_face(ClientData *foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST objv[])
+{
+	FT_Face			face;
+	
+	CHECK_ARGS(1, "fft_face");
+
+	TEST_OK(Tcl_GetTTFFaceFromObj(interp, objv[1], &face));
+
+	return TCL_OK;
+}
+
+
 // box dest x y w h colour flags {{{1
 static int glue_box(ClientData *foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
@@ -464,6 +478,7 @@ int Pixel_Init(Tcl_Interp *interp)
 
 	// TrueType font rendering
 	NEW_CMD("pixel::render_ttf", glue_render_ttf);
+	NEW_CMD("pixel::compile_face", glue_compile_face);
 
 	return TCL_OK;
 }
