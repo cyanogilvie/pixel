@@ -13,10 +13,10 @@ set scr	[pixel::sdl::setup_screen 1024 768 32 {SDL_ANYFORMAT SDL_RESIZABLE}]
 
 puts "caps:\n[pixel::sdl::get_caps $scr]"
 
-set bg		[loadtiff [file join .. bg.tiff]]
-set block	[loadtiff [file join .. block.tiff]]
+#set bg		[loadtiff [file join .. bg.tiff]]
+#set block	[loadtiff [file join .. block.tiff]]
 
-pmap_paste $scr $bg 0 0 0
+#pmap_paste $scr $bg 0 0 0
 pixel::sdl::do_frame $::scr
 
 proc poll {clientdata} {
@@ -57,10 +57,45 @@ proc key {evname sdl_event} {
 	}
 }
 
+
+proc joystick {evname sdl_event} {
+	array set ev $sdl_event
+
+	switch -- $evname {
+		"jaxis" {
+			puts "jaxis:"
+			parray ev
+		}
+
+		"jball" {
+			puts "jball:"
+			parray ev
+		}
+
+		"jhat" {
+			puts "jhat:"
+			parray ev
+		}
+
+		"jbutton" {
+			puts "jbutton:"
+			parray ev
+		}
+		
+		default {
+			puts stderr "Unexpected joystick evname: ($evname)"
+		}
+	}
+}
+
 pixel::sdl::bind_events key key
 pixel::sdl::bind_events button general
 pixel::sdl::bind_events expose expose
 pixel::sdl::bind_events resize resize
+pixel::sdl::bind_events jaxis joystick
+pixel::sdl::bind_events jball joystick
+pixel::sdl::bind_events jhat joystick
+pixel::sdl::bind_events jbutton joystick
 pixel::sdl::bind_events quit quit
 
 ml::register_cb poll "" poll
