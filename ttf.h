@@ -6,6 +6,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
+#include <freetype2/freetype/ttnameid.h>
+#include <freetype2/freetype/ftsnames.h>
 
 typedef void (* ttf_feedback_cb)(void *clientdata, int what, int value);
 
