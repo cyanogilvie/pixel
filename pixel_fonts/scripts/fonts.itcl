@@ -10,11 +10,13 @@ class pixel::fonts::Font {
 		method get_face {fontdesc}
 		method list_basenames {}
 		method list_attribs {basename}
+		method add_ttf_files {files}
 	}
 
 	private {
 		variable reg
 		variable attribmap
+		variable allowed_attribs	{normal bold italic mono}
 
 		method compile_fontname {basename attribs}
 	}
@@ -102,11 +104,13 @@ body pixel::fonts::Font::add_font_spec {specfile} { #<<<1
 
 
 body pixel::fonts::Font::add_font {basename attribs filename} { #<<<1
+	puts "add_font: ($basename) ($attribs) ($filename)"
 	set name		[compile_fontname $basename $attribs]
 	set hold		[pwd]
 	cd [file dirname $basename]
-	set reg($name)	[file join [pwd] $filename]
+	set reg($name)	[list [file join [pwd] $filename]]
 	cd $hold
+	puts "\t$name - $reg($name)"
 }
 
 
@@ -134,6 +138,65 @@ body pixel::fonts::Font::list_attribs {basename} { #<<<1
 		lappend build	$thisrow
 	}
 	return $build
+}
+
+
+body pixel::fonts::Font::add_ttf_files {files} { #<<<1
+	foreach file $files {
+		if {![file exists $file]} {
+			error "File ($file) doesn't exist"
+		}
+		array set altinf	{}
+		if {[catch {
+			set inf	[pixel::ttf_info [list $file]]
+		} msg]} {
+			error "Couldn't get font info from ($file): $msg"
+		}
+		foreach item $inf {
+			array unset fields
+			array set fields $item
+			if {$fields(platform) == "TT_PLATFORM_MACINTOSH" && [string trim $fields(string)] != ""} {
+				set altinf($fields(type))	$fields(string)
+				if {$fields(type) == "TT_NAME_ID_FONT_SUBFAMILY"} {
+					if {![info exists used($fields(string))]} {
+						set used($fields(string))	1
+					} else {
+						incr used($fields(string))
+					}
+				}
+			}
+		}
+
+		if {![info exists altinf(TT_NAME_ID_FONT_SUBFAMILY)]} {
+			error "Can't get subfamily info from ($file)"
+		}
+		if {![info exists altinf(TT_NAME_ID_FONT_FAMILY)]} {
+			error "Can't get family info from ($file)"
+		}
+		set raw		[string tolower $altinf(TT_NAME_ID_FONT_SUBFAMILY)]
+		set attribs	{}
+		foreach attrib $raw {
+			switch -- $attrib {
+				"regular" -
+				"normal" {
+					continue
+				}
+
+				"oblique" {
+					lappend attribs	"italic"
+				}
+
+				default {
+					if {[lsearch $allowed_attribs $attrib] == -1} {
+						continue
+					}
+					lappend attribs	$attrib
+				}
+			}
+		}
+		#puts "$file - {[list [string tolower $altinf(TT_NAME_ID_FONT_FAMILY)] $attribs]}"
+		add_font $altinf(TT_NAME_ID_FONT_FAMILY) $attribs $file
+	}
 }
 
 
