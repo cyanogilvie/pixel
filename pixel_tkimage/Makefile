@@ -25,14 +25,16 @@ DEBUG=-g
 #DEBUG=-g -DDEBUG
 INCLUDE = -I.. \
 		   -I/usr/include/tcl8.3 \
-		   -I/usr/include/tcl8.3/tcl-private/generic 
+		   -I/usr/include/tcl8.3/tcl-private/generic \
+		   -I/usr/include/tcl8.3/tk-private/generic \
+		   -I/usr/include/Hermes
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE)
 
 
 STATIC = 
 LLIBS = 
 LIBS =
-LDFLAGS = -ltcl8.3 -ltk8.3 -lm
+LDFLAGS = -ltcl8.3 -ltk8.3 -lm -lHermes
 
 all:    pixel_tkimage.so
 

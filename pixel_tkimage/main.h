@@ -1,7 +1,6 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
-#include <SDL/SDL.h>
 #include <tcl.h>
 #include "2d.h"
 
@@ -49,6 +48,7 @@ EXTERN_C int glue_main_loop(ClientData foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[]);
 */
 
+/*
 typedef struct {
 	SDL_Surface		*console;
 	SDL_Surface		*surface;
@@ -60,8 +60,8 @@ typedef struct {
 	gimp_image_t	*prebuffer;
 	int				need_updaterects;
 } sdl_console_inf;
+*/
 
-
-EXTERN_C int Pixel_sdl_Init(Tcl_Interp *interp);
+EXTERN_C int Pixel_tkimage_Init(Tcl_Interp *interp);
 
 #endif

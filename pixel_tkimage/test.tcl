@@ -2,7 +2,7 @@
 
 set auto_path [concat . $auto_path]
 
-package require Pixel_sdl
+#package require Pixel_sdl
 package require Pixel_tkimage
 package require Pixel_jpeg
 
@@ -10,7 +10,9 @@ set img	[pixel::jpeg::loadjpeg "test.jpg"]
 foreach {width height} [pixel::pmap_info $img] break
 
 if {0} {
-	image create pmap testimg -width $width -height $height
+	catch {
+		image create pmap testimg -width $width -height $height
+	}
 
 	set scrpmap	[testimg pmap]
 	pixel::pmap_paste $scrpmap $img 0 0 0
