@@ -28,10 +28,7 @@ MODULES = \
 	pixel_jpeg \
 	pixel_sdl \
 	pixel_tiff \
-	pixel_xcf \
-	pixel_ptc \
 	pixel_imlib2 \
-	pixel_tkimage \
 	pixel_hermes \
 	pixel_fonts
 
