@@ -665,7 +665,7 @@ static int construct_sdl_ev_list(Tcl_Interp *interp, //{{{1
 			ADD_SUBLIST_LABEL("axis", *res);
 			ADD_SUBLIST_OBJ(Tcl_NewIntObj(event->jaxis.axis), *res);
 			ADD_SUBLIST_LABEL("value", *res);
-			ADD_SUBLIST_OBJ(Tcl_NewDoubleObj(event->jaxis.value / 32768.0), *res);
+			ADD_SUBLIST_OBJ(Tcl_NewDoubleObj(event->jaxis.value / 32767.0), *res);
 			break;
 		case SDL_JOYBALLMOTION:
 			ADD_SUBLIST_LABEL("which", *res);
@@ -758,7 +758,8 @@ static int glue_dispatch_events(ClientData foo, Tcl_Interp *interp, //{{{1
 {
 	SDL_Event	event;
 	int			type, i;
-	Tcl_Obj		*o[3];
+	Tcl_Obj		*o[4];
+	Tcl_Obj		*tmp;
 	char		*evname;
 	
 	CHECK_ARGS(0, "");
@@ -824,16 +825,20 @@ static int glue_dispatch_events(ClientData foo, Tcl_Interp *interp, //{{{1
 
 		if (g_sdl_ev_handlers[type] == NULL) continue;
 
-		o[0] = g_sdl_ev_handlers[type];
-		o[1] = Tcl_NewStringObj(evname, -1);
-		TEST_OK(construct_sdl_ev_list(interp, &event, &o[2]));
-		for (i=0; i<3; i++)
+		o[0] = Tcl_NewStringObj("uplevel", -1);
+		o[1] = Tcl_NewStringObj("#0", -1);
+		o[2] = g_sdl_ev_handlers[type];
+		o[3] = Tcl_NewListObj(0, NULL);
+		Tcl_ListObjAppendElement(interp, o[3], Tcl_NewStringObj(evname, -1));
+		TEST_OK(construct_sdl_ev_list(interp, &event, &tmp));
+		Tcl_ListObjAppendElement(interp, o[3], tmp);
+		for (i=0; i<4; i++)
 			Tcl_IncrRefCount(o[i]);
 
-		if (Tcl_EvalObjv(interp, 3, o, TCL_EVAL_GLOBAL) == TCL_ERROR)
+		if (Tcl_EvalObjv(interp, 4, o, TCL_EVAL_GLOBAL) == TCL_ERROR)
 			Tcl_BackgroundError(interp);
 		
-		for (i=0; i<3; i++)
+		for (i=0; i<4; i++)
 			Tcl_DecrRefCount(o[i]);
 	}
 
