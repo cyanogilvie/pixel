@@ -11,7 +11,7 @@ namespace import ::pixel::tiff::*
 
 set scr	[pixel::sdl::setup_screen 512 384 32 {SDL_ANYFORMAT SDL_RESIZABLE}]
 
-puts "caps:\n[pixel::sdl::get_caps $scr]"
+puts "caps:\n[join [pixel::sdl::get_caps $scr] \n]"
 
 #set bg		[loadtiff [file join .. bg.tiff]]
 #set block	[loadtiff [file join .. block.tiff]]
