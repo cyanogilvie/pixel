@@ -72,7 +72,7 @@ GCC = gcc
 GXX = g++
 
 
-all:    $(TARGET)
+all:    $(TARGET) scripts
 	@for i in $(MODULES); do \
 		echo "====> make $@ in $$i"; \
 		make -C $$i $@ || exit 1; \
@@ -80,7 +80,6 @@ all:    $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(GCC) --shared -o $(TARGET) $(OBJS) $(LDFLAGS)
-
 
 ctags:
 	ctags -R * /usr/include/tcl8.3 /usr/include/ptc /usr/include/SDL /usr/include/Imlib2.h
@@ -96,7 +95,7 @@ misc.o:	misc.asm
 
 scripts: scripts-stamp
 
-scripts-stamp: scripts/*.tcl
+scripts-stamp: scripts/*.itcl
 	./make_tclIndex.tcl
 	touch scripts-stamp
 
@@ -110,8 +109,8 @@ install: all
 #	install bg.tiff $(DESTDIR)/usr/lib/pixel
 #	install block.tiff $(DESTDIR)/usr/lib/pixel
 	install test.tcl $(DESTDIR)/usr/lib/pixel
-#	install scripts/*.tcl $(DESTDIR)/usr/lib/pixel/scripts
-#	install scripts/tclIndex $(DESTDIR)/usr/lib/pixel/scripts
+	install scripts/*.itcl $(DESTDIR)/usr/lib/pixel/scripts
+	install scripts/tclIndex $(DESTDIR)/usr/lib/pixel/scripts
 	cp $(HDRS) $(DESTDIR)/usr/include/pixel
 	@for i in $(MODULES); do \
 		echo "====> make $@ in $$i"; \

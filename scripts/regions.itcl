@@ -1,0 +1,305 @@
+# vim: foldmarker=<<<,>>>
+class pixel::Regions {
+	constructor {args} {}
+
+	public {
+		method add_region {x1 y1 x2 y2}
+		method add_pmap {pmap x y}
+		method subtract {robj}
+		method union {robj}
+		method data_ref {}
+		method clear {}
+		method get_boxes {}
+		method load_from {robj}
+	}
+
+	private {
+		variable st
+		variable et
+		variable sb
+		variable eb
+	}
+}
+
+
+body pixel::Regions::constructor {args} { #<<<1
+	if {[llength $args] == 1} {
+		load_from [lindex $args 0]
+	} else {
+		array set st	{}
+		array set et	{}
+		array set sb	{}
+		array set eb	{}
+	}
+}
+
+
+body pixel::Regions::add_region {x1 y1 x2 y2} { #<<<1
+	lappend st($y1)	$x1
+	lappend et($y1)	$x2
+	lappend sb($y2)	$x1
+	lappend eb($y2)	$x2
+}
+
+
+body pixel::Regions::subtract {robj} { #<<<1
+	foreach myvar {ost oet ocb} othervar [$robj data_ref] {
+		upvar #0 $othervar $myvar
+	}
+
+	set all_y	[lsort -integer -unique [concat \
+			[array names st] [array names et] \
+			[array names sb] [array names eb] \
+			[array names ost] [array names oet] \
+			[array names osb] [array names oeb] \
+	]]
+
+	set regions_s	{}
+	set regions_e	{}
+	foreach y $all_y {
+		set starting	[expr {[info exists st($y)] ? [lsort -integer $st($y)] : {}}]
+		set ending		[expr {[info exists et($y)] ? [lsort -integer $et($y)] : {}}]
+
+		# Strip out cancelled regions
+		if {[info exists sb($y)]} {
+			set cancelling	[lsort -integer $sb($y)]
+#			puts "y: $y, cancelling: ($cancelling)"
+			set new			{}
+			set i1			0
+			set i2			0
+			while {1} {
+				if {$i1 == [llength $cancelling]} {
+					eval lappend new	[lrange $regions_s $i2 end]
+					break
+				}
+				if {$i2 == [llength $regions_s]} break
+				set cx		[lindex $cancelling $i1]
+				set rx		[lindex $regions_s $i2]
+#				puts "rx($rx) cx($cx)"
+				if {$cx == $rx} {
+					incr i1
+					incr i2
+				} elseif {$rx > $cx} {
+					incr i1
+				} else {
+					lappend new [lindex $regions_s $i2]
+					incr i2
+				}
+			}
+			set regions_s	$new
+		}
+		if {[info exists eb($y)]} {
+			set cancelling	[lsort -integer $eb($y)]
+#			puts "y: $y, cancelling: ($cancelling)"
+			set new			{}
+			set i1			0
+			set i2			0
+			while {1} {
+				if {$i1 == [llength $cancelling]} {
+					eval lappend new	[lrange $regions_e $i2 end]
+					break
+				}
+				if {$i2 == [llength $regions_e]} break
+				set cx		[lindex $cancelling $i1]
+				set rx		[lindex $regions_e $i2]
+#				puts "rx($rx) cx($cx)"
+				if {$cx == $rx} {
+					incr i1
+					incr i2
+				} elseif {$rx > $cx} {
+					incr i1
+				} else {
+					lappend new [lindex $regions_e $i2]
+					incr i2
+				}
+			}
+			set regions_e	$new
+		}
+#		puts "regions: ($regions)"
+
+		if {[llength $starting] != [llength $ending]} {
+			error "Unbalanced start and end ranges"
+		}
+
+		set regions_s	[lsort -integer [concat $regions_s $starting]]
+		set regions_e	[lsort -integer [concat $regions_e $ending]]
+
+		set t_regions_s	$regions_s
+		set t_regions_e	$regions_e
+		
+		set regions	{}
+		set depth	0
+		while {[llength $t_regions_s] || [llength $t_regions_e]} {
+			set this_s	[lindex $t_regions_s 0]
+			set this_e	[lindex $t_regions_e 0]
+#			puts "this_s: ($this_s) this_e: ($this_e) llength t_regions_s [llength $t_regions_s]"
+			if {[llength $t_regions_s] == 0 || $this_e < $this_s} {
+#				puts "case 1"
+				incr depth -1
+				if {$depth == 0} {lappend regions $this_e}
+				set t_regions_e	[lrange $t_regions_e 1 end]
+			} else {
+#				puts "case 2"
+				incr depth
+				if {$depth == 1} {lappend regions $this_s}
+				set t_regions_s	[lrange $t_regions_s 1 end]
+			}
+#			puts "($t_regions_s) ($t_regions_e)"
+#			puts $depth
+		}
+
+		puts "y: $y, ($regions_s) ($regions_e)\t\t($regions)"
+#		puts ""
+	}
+}
+
+
+body pixel::Regions::data_ref {} { #<<<1
+	return [list [scope st] [scope et] [scope sb] [scope eb]]
+}
+
+
+body pixel::Regions::add_pmap {pmap x y} { #<<<1
+	foreach {w h} [pixel::pmap_info $pmap] break
+	add_region $x $y [expr {$x + $w}] [expr {$y + $h}]
+}
+
+
+body pixel::Regions::clear {} { #<<<1
+	catch {unset st}
+	catch {unset et}
+	catch {unset sb}
+	catch {unset eb}
+	array set st	{}
+	array set et	{}
+	array set sb	{}
+	array set eb	{}
+}
+
+
+body pixel::Regions::get_boxes {} { #<<<1
+	set all_y	[lsort -integer -unique [concat \
+			[array names st] [array names et] \
+			[array names sb] [array names eb] \
+	]]
+
+	set boxes		{}
+	set regions_s	{}
+	set regions_e	{}
+	set previous	{}
+	foreach y $all_y {
+		set starting	[expr {[info exists st($y)] ? [lsort -integer $st($y)] : {}}]
+		set ending		[expr {[info exists et($y)] ? [lsort -integer $et($y)] : {}}]
+
+		# Strip out cancelled regions
+		if {[info exists sb($y)]} {
+			set cancelling	[lsort -integer $sb($y)]
+#			puts "y: $y, cancelling: ($cancelling)"
+			set new			{}
+			set i1			0
+			set i2			0
+			while {1} {
+				if {$i1 == [llength $cancelling]} {
+					eval lappend new	[lrange $regions_s $i2 end]
+					break
+				}
+				if {$i2 == [llength $regions_s]} break
+				set cx		[lindex $cancelling $i1]
+				set rx		[lindex $regions_s $i2]
+#				puts "rx($rx) cx($cx)"
+				if {$cx == $rx} {
+					incr i1
+					incr i2
+				} elseif {$rx > $cx} {
+					incr i1
+				} else {
+					lappend new [lindex $regions_s $i2]
+					incr i2
+				}
+			}
+			set regions_s	$new
+		}
+		if {[info exists eb($y)]} {
+			set cancelling	[lsort -integer $eb($y)]
+#			puts "y: $y, cancelling: ($cancelling)"
+			set new			{}
+			set i1			0
+			set i2			0
+			while {1} {
+				if {$i1 == [llength $cancelling]} {
+					eval lappend new	[lrange $regions_e $i2 end]
+					break
+				}
+				if {$i2 == [llength $regions_e]} break
+				set cx		[lindex $cancelling $i1]
+				set rx		[lindex $regions_e $i2]
+#				puts "rx($rx) cx($cx)"
+				if {$cx == $rx} {
+					incr i1
+					incr i2
+				} elseif {$rx > $cx} {
+					incr i1
+				} else {
+					lappend new [lindex $regions_e $i2]
+					incr i2
+				}
+			}
+			set regions_e	$new
+		}
+#		puts "regions: ($regions)"
+
+		if {[llength $starting] != [llength $ending]} {
+			error "Unbalanced start and end ranges"
+		}
+
+		set regions_s	[lsort -integer [concat $regions_s $starting]]
+		set regions_e	[lsort -integer [concat $regions_e $ending]]
+
+		set t_regions_s	$regions_s
+		set t_regions_e	$regions_e
+		
+		set regions	{}
+		set depth	0
+		while {[llength $t_regions_s] || [llength $t_regions_e]} {
+			set this_s	[lindex $t_regions_s 0]
+			set this_e	[lindex $t_regions_e 0]
+#			puts "this_s: ($this_s) this_e: ($this_e) llength t_regions_s [llength $t_regions_s]"
+			if {[llength $t_regions_s] == 0 || $this_e < $this_s} {
+#				puts "case 1"
+				incr depth -1
+				if {$depth == 0} {lappend regions $this_e}
+				set t_regions_e	[lrange $t_regions_e 1 end]
+			} else {
+#				puts "case 2"
+				incr depth
+				if {$depth == 1} {lappend regions $this_s}
+				set t_regions_s	[lrange $t_regions_s 1 end]
+			}
+#			puts "($t_regions_s) ($t_regions_e)"
+#			puts $depth
+		}
+
+		if {$previous != {}} {
+			foreach {x1 x2} $previous {
+				lappend boxes	[list $x1 $previous_y [expr {$x2 - $x1}] [expr {$y - $previous_y}]]
+			}
+		}
+		set previous	$regions
+		set previous_y	$y
+	}
+	
+	return $boxes
+}
+
+
+body pixel::Regions::load_from {robj} { #<<<1
+	foreach myvar {ost oet ocb} othervar [$robj data_ref] {
+		upvar #0 $othervar $myvar
+	}
+	array set st	[array get ost]
+	array set et	[array get oet]
+	array set sb	[array get osb]
+	array set eb	[array get oeb]
+}
+
+

@@ -3,7 +3,10 @@
 
 set auto_path [concat . $auto_path]
 
-package require Pixel 2.0
+package require Itcl
+namespace import -force itcl::*
+
+package require Pixel 2.4
 namespace import pixel::*
 package require Pixel_ptc
 namespace import pixel::ptc::*
@@ -12,6 +15,8 @@ namespace import pixel::tiff::*
 
 package require ML
 namespace import ml::*
+
+set reg		[pixel::Regions ::#auto]
 
 set ::opacity_degs	0
 proc idle_handler {clientdata} {

@@ -1,3 +1,6 @@
+package require Itcl 3.1
+namespace import -force ::itcl::*
+
 if {$tcl_platform(platform) == "windows"} {
 	load [file join $::pixel::library libpixel.dll]
 } else {
@@ -7,7 +10,7 @@ if {$tcl_platform(platform) == "windows"} {
 namespace eval ::pixel {
 	namespace export *
 
-	variable version 2.3
+	variable version 2.4
 
 	namespace eval :: {
 		# effects flags
