@@ -304,18 +304,31 @@ void pmap_patch(gimp_image_t *dest, gimp_image_t *src, int sx, int sy, int sw, i
 gimp_image_t *pmap_compose(gimp_image_t *pmap1, gimp_image_t *pmap2, int xofs, int yofs, int flags) //{{{1
 {
 	int					width, height;
+	int					w1, w2, h1, h2;
+	int					x1, x2, y1, y2;
 	gimp_image_t		*new;
 	_pel				blank;
 
 	blank.c = 0;
+
+	x1 = (xofs < 0 ? abs(xofs) : 0);
+	y1 = (yofs < 0 ? abs(yofs) : 0);
+	x2 = (xofs > 0 ? xofs : 0);
+	y2 = (yofs > 0 ? yofs : 0);
 	
-	width = pmap1->width + xofs + pmap2->width;
-	height = pmap1->height + yofs + pmap2->height;
+	w1 = pmap1->width + x1;
+	h1 = pmap1->height + y1;
+	w2 = pmap2->width + x2;
+	h2 = pmap2->height + y2;
+	
+	width = (w1 > w2 ? w1 : w2);
+	height = (h1 > h2 ? h1 : h2);
 	
 	new = pmap_new(width, height, blank);
+	memset(new->pixel_data, 0, width * height * 4);
 
-	pmap_paste(new, pmap1, 0, 0, 0);
-	pmap_paste(new, pmap2, xofs, yofs, flags);
+	pmap_paste(new, pmap1, x1, y1, 0);
+	pmap_paste(new, pmap2, x2, y2, flags);
 
 	return new;
 }

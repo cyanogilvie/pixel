@@ -35,6 +35,7 @@
 #define P_CPY(d,s) \
 	*d = *s;
 
+/*
 #define P_BLEND(d,s) \
 	{ \
 		uint32	na; \
@@ -54,6 +55,7 @@
 			} \
 		} \
 	}
+*/
 
 /*
 #define P_BLEND(d,s) \
@@ -74,6 +76,7 @@
 	}
 */
 
+/*
 #define P_ALPHA(d,s) \
 	{ \
 		uint8   *sa; \
@@ -93,7 +96,30 @@
 			} \
 		} \
 	}
+*/
+#define P_ALPHA(d,s) \
+	{ \
+		uint8   *sa; \
+		uint8   *sia; \
+		if (s->ch.a == 0) { \
+		} else if (d->ch.a == 0 || s->ch.a == 255) { \
+			*d = *s; \
+		} else { \
+			sa = (uint8 *)(fact + s->ch.a); \
+			sia = (uint8 *)(fact + 255 - s->ch.a); \
+			d->ch.b = sa[s->ch.b] + sia[d->ch.b]; \
+			d->ch.g = sa[s->ch.g] + sia[d->ch.g]; \
+			d->ch.r = sa[s->ch.r] + sia[d->ch.r]; \
+			d->ch.a = s->ch.a + sia[d->ch.a]; \
+		} \
+	}
 
+
+// P_BLEND is deprecated, use P_ALPHA instead
+#define P_BLEND(d,s) \
+	P_ALPHA(d,s);
+
+/*
 #define P_ALPHA_UNDER(d,s) \
 	{ \
 		uint8   *sa; \
@@ -111,6 +137,23 @@
 			} else { \
 				*d = *s; \
 			} \
+		} \
+	}
+*/
+#define P_ALPHA_UNDER(d,s) \
+	{ \
+		uint8   *da; \
+		uint8   *dia; \
+		if (d->ch.a == 0) { \
+			*d = *s; \
+		} else if (s->ch.a == 0 || d->ch.a == 255) { \
+		} else { \
+			da = (uint8 *)(fact + d->ch.a); \
+			dia = (uint8 *)(fact + 255 - d->ch.a); \
+			d->ch.b = da[d->ch.b] + dia[s->ch.b]; \
+			d->ch.g = da[d->ch.g] + dia[s->ch.g]; \
+			d->ch.r = da[d->ch.r] + dia[s->ch.r]; \
+			d->ch.a = d->ch.a + dia[s->ch.a]; \
 		} \
 	}
 

@@ -19,11 +19,13 @@
 
 ; asm_pelset(_pel *dest, _pel colour, uint32 count)
 asm_pelset:
+			pushaf
 			mov		edi,[esp+4]
 			mov		eax,[esp+8]
 			mov		ecx,[esp+12]
 			cld
 			rep		stosd
+			popaf
 			ret
 
 

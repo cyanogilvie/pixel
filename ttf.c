@@ -114,7 +114,9 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 		if (*mbptr == ' ') {
 			last_break = mbptr;
 			since_break = 0;
+#ifdef VDEBUG
 			fprintf(stderr, "whitespace found at %p, glyphno %d\n", last_break, glyphno);
+#endif
 		} else {
 			since_break++;
 		}
@@ -174,8 +176,10 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 		glyphno++;
 
 		if (wrap_width > 0 && pen_x > wrap_width) {
+#ifdef VDEBUG
 			fprintf(stderr, "pen_x (%d) > wrap_width (%d), wrapping\n",
 					pen_x, wrap_width);
+#endif
 			pen_x = 0;
 			pen_y = 0;
 			previous = 0;
@@ -184,8 +188,10 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 			glyph -= since_break;
 			glyphno -= since_break;
 			(int)(curr_pmap->clientdata) = glyphno-1;	// Last glyph
+#ifdef VDEBUG
 			fprintf(stderr, "falling back to glyphno %d, mbptr %p\n",
 					glyphno, mbptr);
+#endif
 			curr_pmap->next = (pmap_list *)malloc(sizeof(pmap_list) * 1);
 			curr_pmap = curr_pmap->next;
 			curr_pmap->pmap = NULL;
@@ -199,8 +205,10 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 	from_glyph = 0;
 	while (curr_pmap != NULL) {
 		int	last_glyph = (int)(curr_pmap->clientdata);
+#ifdef VDEBUG
 		fprintf(stderr, "processing line ending glyph %d\n",
 				last_glyph);
+#endif
 		// Get bounding box {{{
 		bbox.xMin = bbox.yMin = 32000;
 		bbox.xMax = bbox.yMax = -32000;
