@@ -420,7 +420,10 @@ static ClientData getproc(Tk_Window tkwin, ClientData masterData) //{{{1
 	instancePtr->display = Tk_Display(tkwin);
 	instancePtr->colormap = Tk_Colormap(tkwin);
 	Tk_PreserveColormap(instancePtr->display, instancePtr->colormap);
+	instancePtr->refCount = 1;
 	instancePtr->pixels = None;
+	instancePtr->width = 0;
+	instancePtr->height = 0;
 	instancePtr->imagePtr = 0;
 	instancePtr->nextPtr = masterPtr->instancePtr;
 	masterPtr->instancePtr = instancePtr;
@@ -553,6 +556,7 @@ static void freeproc(ClientData clientData, Display *display) //{{{1
 
 	//fprintf(stderr, "freeproc\n");
 	instancePtr->refCount -= 1;
+	DBG("instance %p refcount-- %d\n", instancePtr, refCount);
 	if (instancePtr->refCount > 0)
 		return;
 
