@@ -290,6 +290,7 @@ static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 
 	if (width == 0) {
 		Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmaps->pmap));
+		free(pmaps);
 	} else {
 		res = Tcl_NewListObj(0, NULL);
 
@@ -303,6 +304,7 @@ static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 				pmaps = next;
 			}
 		}
+		free(pmaps);
 
 		Tcl_SetObjResult(interp, res);
 	}

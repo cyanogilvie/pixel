@@ -35,6 +35,7 @@ uint32	abs_r_sh, abs_g_sh, abs_b_sh;
 void asm_memcpy( _pel *dest_buf, _pel *src_buf, uint32 len );
 #endif
 
+//int g_total_pmaps = 0;
 gimp_image_t *pmap_new(int x, int y, _pel colour) //{{{1
 {
 	gimp_image_t	*new;
@@ -45,6 +46,10 @@ gimp_image_t *pmap_new(int x, int y, _pel colour) //{{{1
 	new->bytes_per_pixel = 4;
 	new->pixel_data = (_pel *)malloc(x*y*4);
 //	asm_pelset(new->pixel_data, colour, x*y);
+
+//	g_total_pmaps++;
+//	fprintf(stderr, "allocing pmap: w: %d h: %d  %p %d\n",
+//			x, y, new, g_total_pmaps);
 
 	return new;
 }
@@ -337,6 +342,8 @@ gimp_image_t *pmap_compose(gimp_image_t *pmap1, gimp_image_t *pmap2, int xofs, i
 
 void pmap_free(gimp_image_t **pmap) // {{{1
 {
+//	g_total_pmaps--;
+//	fprintf(stderr, "freeing pmap: w: %d h: %d  %p %d\n", (*pmap)->width, (*pmap)->height, *pmap, g_total_pmaps);
 	free((*pmap)->pixel_data);
 	free(*pmap);
 	*pmap = NULL;

@@ -7,6 +7,10 @@ arial {
 	filename	"Arial_Bold.ttf"
 }
 arial {
+	attribs		{italic}
+	filename	"Arial_Italic.ttf"
+}
+arial {
 	attribs		{bold italic}
 	filename	"Arial_Bold_Italic.ttf"
 }
@@ -74,7 +78,7 @@ tahoma {
 	attribs		{}
 	filename	"tahoma.ttf"
 }
-tahomabd {
+tahoma {
 	attribs		{bold}
 	filename	"tahomabd.ttf"
 }

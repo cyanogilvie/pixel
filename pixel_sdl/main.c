@@ -602,7 +602,11 @@ static int construct_sdl_ev_list(Tcl_Interp *interp, //{{{1
 			ADD_SUBLIST_LABEL("mod", *res);
 			ADD_SUBLIST_OBJ(Tcl_NewIntObj(event->key.keysym.mod), *res);
 			ADD_SUBLIST_LABEL("unicode", *res);
-			ADD_SUBLIST_OBJ(Tcl_NewUnicodeObj(&event->key.keysym.unicode,1), *res);
+			if (event->key.keysym.unicode != 0) {
+				ADD_SUBLIST_OBJ(Tcl_NewUnicodeObj(&event->key.keysym.unicode,1), *res);
+			} else {
+				ADD_SUBLIST_OBJ(Tcl_NewStringObj("", 0), *res);
+			}
 			break;
 
 		case SDL_MOUSEMOTION:

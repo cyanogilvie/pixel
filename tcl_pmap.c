@@ -96,7 +96,7 @@ static int set_pmap_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	_pel *			pixel_data;
 	int				size, src_size;
 	
-//	fprintf(stderr, "tcl_pmap: Called set_pmap_from_any\n");
+	fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: (%s)\n", Tcl_GetString(obj));
 
 	if (oldtype == &tcl_pmap)
 		return TCL_OK;

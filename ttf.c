@@ -10,6 +10,8 @@
 #include "2d.h"
 #include "ttf.h"
 
+//extern int g_total_pmaps;
+
 
 FT_Library  ft_library;
 //FT_Face		face;
@@ -187,6 +189,8 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 			mbptr = last_break + 1;		// TODO: check out-of-bounds
 			glyph -= since_break;
 			glyphno -= since_break;
+			for (n = glyphno; n < glyphno + since_break; n++)
+				FT_Done_Glyph(glyphs[n].image);
 			(int)(curr_pmap->clientdata) = glyphno-1;	// Last glyph
 #ifdef VDEBUG
 			fprintf(stderr, "falling back to glyphno %d, mbptr %p\n",
@@ -245,7 +249,11 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 		pmap->width = bbox.xMax - bbox.xMin + 1;
 		pmap->height = bbox.yMax - bbox.yMin + 1;
 		pmap->bytes_per_pixel = 4;
-		//	fprintf(stderr, "width: (%d) height: (%d)\n", pmap->width, pmap->height);
+//		g_total_pmaps++;
+		fprintf(stderr, "allocing pmap: w: %d h: %d  %p\n",
+				pmap->width, pmap->height, pmap); fflush(stderr);
+
+//		fprintf(stderr, "width: (%d) height: (%d)\n", pmap->width, pmap->height);
 		size = pmap->width * pmap->height * pmap->bytes_per_pixel;
 		pmap->pixel_data = (_pel *)malloc(size);
 		//	memset(pmap->pixel_data, 0xc0, size);
@@ -268,7 +276,7 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 			error = FT_Glyph_To_Bitmap(&image,
 					ft_render_mode_normal,
 					0,		// no additional translation
-					0);		// don't destroy copy in "image"
+					1);		// destroy copy in "image"
 
 			if (!error) {
 				FT_BitmapGlyph	bitmap = (FT_BitmapGlyph)image;
@@ -279,18 +287,26 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 						base_col,
 						&bitmap->bitmap,
 						pmap);
-				FT_Done_Glyph(image);
 			}
+			FT_Done_Glyph(image);
 		}
 		from_glyph = last_glyph + 1;
 		curr_pmap = curr_pmap->next;
 	}
 	
+	if (glyphs != NULL) {
+		for (n = 0; n < glyphno; n++)
+			FT_Done_Glyph(glyphs[n].image);
+		free(glyphs); glyphs = NULL;
+	}
 	return reslist;
 
 error:
-	if (glyphs != NULL)
+	if (glyphs != NULL) {
+		for (n = 0; n < glyphno; n++)
+			FT_Done_Glyph(glyphs[n].image);
 		free(glyphs);
+	}
 	while (reslist != NULL) {
 		curr_pmap = reslist->next;
 		if (reslist->pmap != NULL)

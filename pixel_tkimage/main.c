@@ -102,6 +102,7 @@ static int img_pmap_cmd(ClientData clientData, Tcl_Interp *interp,
 static void img_pmap_cmd_deleted(ClientData clientData);
 static void deleteproc(ClientData clientData);
 static void tkimage_instance_set_size(pmap_instance *instancePtr);
+static void redraw(pmap_instance *instancePtr);
 
 
 static int createproc(Tcl_Interp *interp, char *name, //{{{1
@@ -249,7 +250,21 @@ static int img_pmap_cmd(ClientData clientData, Tcl_Interp *interp, //{{{1
 			break;
 
 		case PMAP_DO_FRAME:
-			THROW_ERROR("Not supported yet");
+			{
+				pmap_instance		*inst;
+				
+				Tk_ImageChanged(masterPtr->tkMaster, 0, 0, masterPtr->width,
+						masterPtr->height, masterPtr->width, masterPtr->height);
+				masterPtr->flags |= TKIMAGE_IMAGE_CHANGED;
+				
+				//fprintf(stderr, "do_frame\n");
+				inst = masterPtr->instancePtr;
+				while (inst != NULL) {
+					//fprintf(stderr, "do_frame: redraw_instance\n");
+					redraw(inst);
+					inst = inst->nextPtr;
+				}
+			}
 			break;
 
 		case PMAP_CONFIGURE:
@@ -307,7 +322,7 @@ static void redraw(pmap_instance *instancePtr) //{{{1
 	XImage			*imagePtr;
 	gimp_image_t	*pmap = instancePtr->masterPtr->pmap;
 	
-	//fprintf(stderr, "redraw\n");
+	//fprintf(stderr, "redraw instance\n");
 	imagePtr = instancePtr->imagePtr;
 	if (imagePtr == NULL)
 		return;
@@ -537,6 +552,9 @@ static void disposeinstance(ClientData clientData) //{{{1
 	if (instancePtr->imagePtr != NULL) {
 		XFree((char *)instancePtr->imagePtr);
 	}
+	if (instancePtr->destformat != NULL) {
+		Hermes_FormatFree(instancePtr->destformat);
+	}
 
 	if (instancePtr->masterPtr->instancePtr == instancePtr) {
 		instancePtr->masterPtr->instancePtr = instancePtr->nextPtr;
@@ -586,7 +604,7 @@ static void deleteproc(ClientData clientData) //{{{1
 		TkDestroyRegion(masterPtr->validRegion);
 	}
 
-	// TODO: Do we free the original pmap, or deref it?
+	Tcl_DecrRefCount(masterPtr->pmapObj);
 
 //	Tk_FreeOptions(configSpecs, (char *)masterPtr, (Display *)NULL, 0);
 	ckfree((char *)masterPtr);

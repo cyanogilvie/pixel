@@ -21,7 +21,7 @@ static void free_internal_rep(Tcl_Obj *obj)
 	FT_Face		face = (FT_Face)obj->internalRep.twoPtrValue.ptr1;
 	char *		filename = (char *)obj->internalRep.twoPtrValue.ptr2;
 
-//	fprintf(stderr, "tcl_ttf_face: Called free_internal_rep\n");
+	fprintf(stderr, "tcl_ttf_face: Called free_internal_rep\n");
 
 	FT_Done_Face(face);
 	free(filename);
@@ -83,7 +83,7 @@ static int set_ttf_face_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	char *			filename;
 	int				face_index, error;
 	
-//	fprintf(stderr, "tcl_ttf_face: Called set_pmap_from_any\n");
+	fprintf(stderr, "tcl_ttf_face: Called set_pmap_from_any\n");
 
 	if (oldtype == &tcl_ttf_face)
 		return TCL_OK;

@@ -7,11 +7,13 @@ class pixel::fonts::Font {
 		method add_font_spec {specfile}
 		method add_font {basename attribs filename}
 
-		method get_font {basename attribs}
+		method get_face {fontdesc}
 		method list_basenames {}
+		method list_attribs {basename}
 	}
 
 	private {
+		variable reg
 		variable attribmap
 
 		method compile_fontname {basename attribs}
@@ -20,10 +22,11 @@ class pixel::fonts::Font {
 
 
 body pixel::fonts::Font::constructor {args} { #<<<1
+	array set reg	{}
 	set attribmap(normal)	0
 	set exp					0
 	foreach attrib {
-		normal bold italic underline strikethrough mono superscript subscript
+		normal bold italic mono
 	} {
 		set attribmap($attrib)	[expr {1 << $exp}]
 		incr exp
@@ -35,7 +38,9 @@ body pixel::fonts::Font::constructor {args} { #<<<1
 }
 
 
-body pixel::fonts::Font::get_font {basename attribs} { #<<<1
+body pixel::fonts::Font::get_face {fontdesc} { #<<<1
+	set basename	[lindex $fontdesc 0]
+	set attribs		[lindex $fontdesc 1]
 	set name	[compile_fontname $basename $attribs]
 	if {![info exists reg($name)]} {
 		error "No such font: $basename, $attribs"
@@ -81,11 +86,15 @@ body pixel::fonts::Font::add_font_spec {specfile} { #<<<1
 			attribs			{}
 		}
 		array set tmp $spec
-		if {![info exists tmp(filename)] || ![file exists $tmp(filename)]} {
+		if {![info exists tmp(filename)]} {
+			error "font $basename in $specfile doesn't give valid filename"
+		}
+		set fn	[file join [file dirname $specfile] $tmp(filename)]
+		if {![file exists $fn]} {
 			error "font $basename in $specfile doesn't give valid filename"
 		}
 		set attribs		$tmp(attribs)
-		set filename	$tmp(filename)
+		set filename	$fn
 
 		add_font $basename $attribs $filename
 	}
@@ -96,7 +105,7 @@ body pixel::fonts::Font::add_font {basename attribs filename} { #<<<1
 	set name		[compile_fontname $basename $attribs]
 	set hold		[pwd]
 	cd [file dirname $basename]
-	set reg($name)	[file join [pwd] $basename]
+	set reg($name)	[file join [pwd] $filename]
 	cd $hold
 }
 
@@ -104,10 +113,27 @@ body pixel::fonts::Font::add_font {basename attribs filename} { #<<<1
 body pixel::fonts::Font::list_basenames {} { #<<<1
 	set build	{}
 	foreach name [array names reg] {
+		puts "list_basenames: processing ($name)"
 		lappend build	[lindex [split $name ,] 0]
 	}
 
 	return [lsort -dictionary -unique $build]
+}
+
+
+body pixel::fonts::Font::list_attribs {basename} { #<<<1
+	set build	{}
+	foreach name [array names reg "$basename,*"] {
+		set tmp		[lindex [split $name ,] 1]
+		set thisrow	{}
+		foreach {attrib aid} [array get attribmap] {
+			if {$tmp & $aid} {
+				lappend thisrow	$attrib
+			}
+		}
+		lappend build	$thisrow
+	}
+	return $build
 }
 
 

@@ -86,6 +86,21 @@ static int glue_set_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_get_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	int cache_size;
+	
+	CHECK_ARGS(0, "");
+
+	cache_size = imlib_get_cache_size();
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cache_size));
+	
+	return TCL_OK;
+}
+
+
 static int glue_set_font_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
@@ -339,8 +354,11 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 int Pixel_imlib_Init(Tcl_Interp *interp) //{{{1
 {
 	imlib_set_color_usage(128);
+	imlib_set_cache_size(0);
+	imlib_set_font_cache_size(0);
 
 	NEW_CMD("pixel::imlib2::set_cache_size", glue_set_cache_size);
+	NEW_CMD("pixel::imlib2::get_cache_size", glue_get_cache_size);
 	NEW_CMD("pixel::imlib2::set_font_cache_size", glue_set_font_cache_size);
 	NEW_CMD("pixel::imlib2::add_path_to_font_path", glue_add_path_to_font_path);
 	NEW_CMD("pixel::imlib2::set_color_usage", glue_set_color_usage);

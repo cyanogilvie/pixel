@@ -19,6 +19,11 @@ OBJS = \
 	   bezierstuff.o \
 	   tcl_pmap.o
 
+HDRS = \
+	   2d.h \
+	   tcl_pmap.h \
+	   primitives.h
+
 MODULES = \
 	pixel_jpeg \
 	pixel_sdl \
@@ -96,6 +101,7 @@ scripts-stamp: scripts/*.tcl
 
 install: all
 	install -d $(DESTDIR)/usr/lib/pixel
+	install -d $(DESTDIR)/usr/include/pixel
 	install -d $(DESTDIR)/usr/lib/pixel/scripts
 	install $(TARGET) $(DESTDIR)/usr/lib/pixel
 	install pkgIndex.tcl $(DESTDIR)/usr/lib/pixel
@@ -105,6 +111,7 @@ install: all
 	install test.tcl $(DESTDIR)/usr/lib/pixel
 #	install scripts/*.tcl $(DESTDIR)/usr/lib/pixel/scripts
 #	install scripts/tclIndex $(DESTDIR)/usr/lib/pixel/scripts
+	cp $(HDRS) $(DESTDIR)/usr/include/pixel
 	@for i in $(MODULES); do \
 		echo "====> make $@ in $$i"; \
 		make -C $$i $@ || exit 1; \
