@@ -281,6 +281,72 @@ static int glue_dup(ClientData *foo, Tcl_Interp *interp,
 	return TCL_OK;
 }
 
+// blend frompel topel degree {{{1
+static int glue_blend(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST objv[])
+{
+	_pel			frompel, topel, newpel;
+	double			degree;
+
+	CHECK_ARGS(3, "frompel topel degree");
+	
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int *)&frompel.c));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], (int *)&topel.c));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &degree));
+
+	if (degree < 0 || degree > 1.0)
+		THROW_ERROR("degree out of range [0.0 - 1.0]");
+
+//	fprintf(stderr, "frompel: 0x%08x topel: 0x%08x degree: %f\n",
+//			frompel.c, topel.c, degree);
+	newpel.ch.a = frompel.ch.a + (int)((topel.ch.a - frompel.ch.a) * degree);
+	newpel.ch.r = frompel.ch.r + (int)((topel.ch.r - frompel.ch.r) * degree);
+	newpel.ch.g = frompel.ch.g + (int)((topel.ch.g - frompel.ch.g) * degree);
+	newpel.ch.b = frompel.ch.b + (int)((topel.ch.b - frompel.ch.b) * degree);
+//	fprintf(stderr, "newpel.ch.a[%x] = frompel.ch.a[%x] + (int)((topel.ch.a[%x] - frompel.ch.a)[%x] * degree[%f]);\n", newpel.ch.a, frompel.ch.a, topel.ch.a, topel.ch.a - frompel.ch.a, degree);
+//	fprintf(stderr, "newpel.ch.r[%x] = frompel.ch.r[%x] + (int)((topel.ch.r[%x] - frompel.ch.r)[%x] * degree[%f]);\n", newpel.ch.r, frompel.ch.r, topel.ch.r, topel.ch.r - frompel.ch.r, degree);
+//	fprintf(stderr, "newpel.ch.g[%x] = frompel.ch.g[%x] + (int)((topel.ch.g[%x] - frompel.ch.g)[%x] * degree[%f]);\n", newpel.ch.g, frompel.ch.g, topel.ch.g, topel.ch.g - frompel.ch.g, degree);
+//	fprintf(stderr, "newpel.ch.b[%x] = frompel.ch.b[%x] + (int)((topel.ch.b[%x] - frompel.ch.b)[%x] * degree[%f]);\n", newpel.ch.b, frompel.ch.b, topel.ch.b, topel.ch.b - frompel.ch.b, degree);
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(newpel.c));
+	
+	return TCL_OK;
+}
+
+
+// center x y w h pmap <<<1
+static int glue_center(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST objv[])
+{
+	int				x, y, w, h, pw, ph, cx, cy;
+	gimp_image_t	*pmap;
+	Tcl_Obj			*res;
+
+	CHECK_ARGS(5, "x y w h pmap");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &x));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &y));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &h));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[5], &pmap));
+	
+	pw = pmap->width;
+	ph = pmap->height;
+
+	res = Tcl_NewListObj(0, NULL);
+
+	cx = x + (int)(w/2.0 - pw/2.0);
+	cy = y + (int)(h/2.0 - ph/2.0);
+
+	Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(cx));
+	Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(cy));
+	
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
 // render_ttf colour fft_face px_size text ?width? {{{1
 static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
@@ -495,6 +561,8 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::pmap_rotate", glue_pmap_rotate);
 	NEW_CMD("pixel::pmap_info", glue_pmap_info);
 	NEW_CMD("pixel::dup", glue_dup);
+	NEW_CMD("pixel::blend", glue_blend);
+	NEW_CMD("pixel::center", glue_center);
 
 	// Primitives
 	NEW_CMD("pixel::box", glue_box);
