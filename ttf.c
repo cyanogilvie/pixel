@@ -4,12 +4,15 @@
 #include <math.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <wchar.h>
+#include <locale.h>
 #include "2d.h"
 #include "ttf.h"
 
 
 FT_Library  ft_library;
 //FT_Face		face;
+char		*g_last_error = "";
 
 
 typedef struct TGlyph_
@@ -52,10 +55,10 @@ static void blit_glyph(int x, int y, _pel base_col, FT_Bitmap *glyph,
 }
 
 
-#define MAX_GLYPHS		1000
-gimp_image_t *render_ttf(_pel base_col, FT_Face face, int px_size, char *text)
+#define MAX_GLYPHS		10000
+gimp_image_t *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text)
 {
-	int				i, n, numchars, error, pen_x, pen_y, size;
+	int				n, numchars, error, pen_x, pen_y, size;
 	FT_GlyphSlot	slot = face->glyph;
 	FT_Bool			use_kerning;
 	FT_UInt			previous;
@@ -64,6 +67,19 @@ gimp_image_t *render_ttf(_pel base_col, FT_Face face, int px_size, char *text)
 	FT_UInt			num_glyphs;
 	FT_BBox			bbox;
 	gimp_image_t *	pmap;
+	wchar_t			this_wchar;
+	char			*mbptr = utf8_text;
+	int				res;
+	mbstate_t		ps;
+
+#ifdef VDEBUG
+#define ERRDUMP	fprintf(stderr, "%s offset: %d numchars: %d 0x%x 0x%x 0x%x 0x%x\n", g_last_error, mbptr - utf8_text, numchars, (unsigned char)mbptr[0], (unsigned char)mbptr[1], (unsigned char)mbptr[2], (unsigned char)mbptr[3])
+#else
+#define ERRDUMP
+#endif
+	setlocale(LC_CTYPE, "en_GB.UTF-8");
+
+	memset(&ps, 0, sizeof(mbstate_t));
 
 	error = FT_Set_Pixel_Sizes(
 			face,
@@ -78,11 +94,53 @@ gimp_image_t *render_ttf(_pel base_col, FT_Face face, int px_size, char *text)
 
 	glyph = glyphs;
 
-	numchars = strlen(text);
+	numchars = strlen(utf8_text);
+#ifdef VDEBUG
+	fprintf(stderr, "numchars: %d\n", numchars);
+	{
+		wchar_t			xbuff[1024];
+		int				xres;
+		char			*xsrc = utf8_text;
+		int				xlen = numchars;
+		mbstate_t		xps;
 
-	for (i=0; i<numchars; i++) {
+		memset(&xps, 0, sizeof(mbstate_t));
+		
+		xres = mbsrtowcs(xbuff, &xsrc, xlen, &xps);
+		fprintf(stderr, "DEBUG:\n\txres: %d\n\txsrc: %p\n\tutf8_text: %p\n",
+				xres, xsrc, utf8_text);
+	}
+#endif
+
+	while (numchars - (mbptr - utf8_text) > 0) {
+		res = mbrtowc(&this_wchar, mbptr, numchars - (mbptr - utf8_text), &ps);
+		if (res < 0) {
+			switch (res) {
+				case -1:
+					g_last_error = "No complete multibyte character while decoding input";
+					ERRDUMP;
+					return NULL;
+					break;
+				case -2:
+					g_last_error = "Invalid multibyte character in input";
+					ERRDUMP;
+					return NULL;
+					break;
+				default:
+					g_last_error = "Unknown error processing input";
+					ERRDUMP;
+					return NULL;
+					break;
+			}
+		}
+		
+		if (res == 0) 
+			break;			// Is this right??
+
+		mbptr += res;
+		
 		// retrieve glyph index from character code
-		glyph->index = FT_Get_Char_Index(face, text[i]);
+		glyph->index = FT_Get_Char_Index(face, this_wchar);
 
 		if (use_kerning && previous && glyph->index) {
 			FT_Vector	delta;
@@ -188,6 +246,12 @@ gimp_image_t *render_ttf(_pel base_col, FT_Face face, int px_size, char *text)
 	
 	// Return pmap
 	return pmap;
+}
+
+
+char *ttf_last_error_txt()
+{
+	return g_last_error;
 }
 
 

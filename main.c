@@ -16,6 +16,7 @@
 #include <tclstuff.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <wchar.h>
 #include "2d.h"
 #include "ttf.h"
 #include "tcl_pmap.h"
@@ -264,6 +265,9 @@ static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 	gimp_image_t *	pmap;
 	_pel			base_col;
 	FT_Face			face;
+	int				len;
+	char			*utf8;
+	Tcl_UniChar		*unicode;
 	
 	
 	CHECK_ARGS(4, "colour fft_face px_size text");
@@ -271,8 +275,17 @@ static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int *)&base_col));
 	TEST_OK(Tcl_GetTTFFaceFromObj(interp, objv[2], &face));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &px_size));
-	
+
+	utf8 = Tcl_GetStringFromObj(objv[4], &len);
+//	fprintf(stderr, "Number of utf8 chars: %d\n", Tcl_NumUtfChars(utf8, len));
 	pmap = render_ttf(base_col, face, px_size, Tcl_GetString(objv[4]));
+
+//	unicode = Tcl_GetUnicode(objv[4]);
+//	fprintf(stderr, "Number of unicode chars: %d\n", Tcl_UniCharLen(unicode));
+//	pmap = render_ttf(base_col, face, px_size, unicode);
+	
+	if (pmap == NULL)
+		THROW_ERROR("Could not render text: ", Tcl_NewStringObj(ttf_last_error_txt(), -1));
 	
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
 	
