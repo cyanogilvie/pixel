@@ -24,11 +24,11 @@ OBJS = \
 #MODULES = \
 #	pixel_jpeg \
 #	pixel_ptc \
-#	pixel_sdl \
 #	pixel_tiff \
 #	pixel_xcf
 
 MODULES = \
+		  pixel_sdl \
 		  pixel_tiff
 
 DEBUG=-g -DDEBUG
@@ -64,6 +64,7 @@ LDFLAGS = $(STATIC) $(LIBS)
 
 
 GCC = i586-mingw32msvc-gcc
+STRIP = i586-mingw32msvc-strip
 GXX = i586-mingw32msvc-g++
 
 
@@ -75,6 +76,7 @@ all:    $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(GCC) --shared -o $(TARGET) $(OBJS) $(LDFLAGS)
+	$(STRIP) $(TARGET)
 
 
 ctags:

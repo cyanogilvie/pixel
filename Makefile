@@ -21,10 +21,10 @@ OBJS = \
 
 MODULES = \
 	pixel_jpeg \
-	pixel_ptc \
 	pixel_sdl \
 	pixel_tiff \
 	pixel_xcf \
+	pixel_ptc \
 	pixel_imlib2
 
 DEBUG=-g -DDEBUG
