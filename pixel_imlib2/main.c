@@ -155,7 +155,7 @@ static int glue_load_image(ClientData foo, Tcl_Interp *interp, //{{{1
 
 	image = imlib_load_image_with_error_return(Tcl_GetString(objv[1]), &error);
 	if (error != IMLIB_LOAD_ERROR_NONE)
-		THROW_ERROR("Cannot load image", Tcl_GetString(objv[1]), ": ", 
+		THROW_ERROR("Cannot load image ", Tcl_GetString(objv[1]), ": ", 
 				lookup_load_error(error));
 
 	imlib_context_set_image(image);
