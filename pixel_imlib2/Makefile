@@ -1,7 +1,7 @@
 DESTDIR=
-TARGETDIR=/usr/lib/pixel_magick
+TARGETDIR=/usr/lib/pixel_imlib2
 
-TARGET = pixel_magick.so
+TARGET = pixel_imlib2.so
 
 CC=gcc
 
@@ -28,12 +28,13 @@ DEBUG=-g
 INCLUDE = -I.. \
 		   -I/usr/include/tcl8.3 \
 		   -I/usr/include/tcl8.3/tcl-private/generic 
-CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE) `Magick-config --cflags --cppflags`
+CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE) `imlib2-config --cflags`
+
 
 STATIC = 
 LLIBS = 
 LIBS =
-LDFLAGS = -ltcl8.3 -ltk8.3 `Magick-config --ldflags --libs` -lm
+LDFLAGS = -ltcl8.3 -ltk8.3 `imlib2-config --libs` -lm
 
 all:    $(TARGET)
 
@@ -47,7 +48,7 @@ install: all
 	install -d $(TARGETDIR)
 	install $(TARGET) $(TARGETDIR)
 	install pkgIndex.tcl $(TARGETDIR)
-	install pixel_magick.tcl $(TARGETDIR)
+	install pixel_imlib2.tcl $(TARGETDIR)
 
 clean:
 	-rm -f $(TARGET) core *.o test_save.*
