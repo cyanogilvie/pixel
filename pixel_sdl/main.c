@@ -383,10 +383,10 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 			rect.w = console->w;
 			rect.h = console->h;
 			SDL_UpdateRects(console, 1, &rect);
-			fprintf(stderr, "Trivial updaterects\n");
+			//fprintf(stderr, "Trivial updaterects\n");
 		} else {
 			SDL_UpdateRect(console, 0, 0, 0, 0);
-			fprintf(stderr, "No updaterects\n");
+			//fprintf(stderr, "No updaterects\n");
 		}
 	} else {
 		SDL_Rect	rect[rectsc];
@@ -404,10 +404,10 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 			rect[i].y = y;
 			rect[i].w = w;
 			rect[i].h = h;
-			fprintf(stderr, "sdl do_frame rect %d %d %d %d\n",
-					x, y, w, h);
+			//fprintf(stderr, "sdl do_frame rect %d %d %d %d\n",
+			//		x, y, w, h);
 		}
-		fprintf(stderr, "Fancy updaterects\n");
+		//fprintf(stderr, "Fancy updaterects\n");
 		SDL_UpdateRects(console, rectsc, rect);
 	}
 
