@@ -52,6 +52,7 @@ typedef struct pmap_master {
 	int						flags;
 	int						width;
 	int						height;
+	TkRegion				validRegion;
 } pmap_master;
 
 
@@ -102,18 +103,21 @@ static void img_pmap_cmd_deleted(ClientData clientData);
 static void deleteproc(ClientData clientData);
 
 
-static int createproc(Tcl_Interp *interp, char *name,
+static int createproc(Tcl_Interp *interp, char *name, //{{{1
 		int objc, Tcl_Obj *CONST objv[], Tk_ImageType *typePtr,
 		Tk_ImageMaster master, ClientData *clientDataPtr)
 {
 	pmap_master		*masterPtr;
 
+	fprintf(stderr, "createproc\n");
 	masterPtr = (pmap_master *)ckalloc(sizeof(pmap_master));
 	memset((void *)masterPtr, 0, sizeof(pmap_master));
 	masterPtr->tkMaster = master;
 	masterPtr->interp = interp;
 	masterPtr->imgCmd = Tcl_CreateObjCommand(interp, name, img_pmap_cmd,
 			(ClientData)masterPtr, img_pmap_cmd_deleted);
+	masterPtr->instancePtr = NULL;
+	masterPtr->validRegion = TkCreateRegion();
 
 	if (img_pmap_configure(interp, masterPtr, objc, objv, 0) != TCL_OK) {
 		deleteproc((ClientData)masterPtr);
@@ -125,10 +129,11 @@ static int createproc(Tcl_Interp *interp, char *name,
 }
 
 
-static void img_pmap_cmd_deleted(ClientData clientData)
+static void img_pmap_cmd_deleted(ClientData clientData) //{{{1
 {
 	pmap_master		*masterPtr = (pmap_master *)clientData;
 
+	fprintf(stderr, "img_pmap_cmd_deleted\n");
 	masterPtr->imgCmd = NULL;
 	if (masterPtr->tkMaster != NULL) {
 		Tk_DeleteImage(masterPtr->interp, Tk_NameOfImage(masterPtr->tkMaster));
@@ -136,18 +141,24 @@ static void img_pmap_cmd_deleted(ClientData clientData)
 }
 
 
-static int img_pmap_configure(Tcl_Interp *interp, pmap_master *masterPtr,
+static int img_pmap_configure(Tcl_Interp *interp, pmap_master *masterPtr, //{{{1
 		int objc, Tcl_Obj *CONST objv[], int flags)
 {
 	int				i;
 	char			*tmp;
+	int				width = 0;
+	int				height = 0;
 	pmap_instance	*instancePtr;
+	XRectangle		rect;
 
-	for (i=1; i<objc; i++) {
+	fprintf(stderr, "img_pmap_configure\n");
+	for (i=0; i<objc; i++) {
 		tmp = Tcl_GetString(objv[i]);
+		fprintf(stderr, "Processing option word #%d\n", i);
 		if (tmp[0] != '-') THROW_ERROR("Expected option, got ", tmp);
 		if (i >= objc-1) THROW_ERROR("No value given for option: ", tmp);
 		if (strcmp("-pmap", tmp) == 0) {
+			fprintf(stderr, "Got -pmap option, looking for value\n");
 			if (masterPtr->pmapObj != NULL) {
 				Tcl_DecrRefCount(masterPtr->pmapObj);
 				masterPtr->pmapObj = NULL;
@@ -155,21 +166,47 @@ static int img_pmap_configure(Tcl_Interp *interp, pmap_master *masterPtr,
 			TEST_OK(Tcl_GetPMAPFromObj(interp, objv[i+1], &(masterPtr->pmap)));
 			masterPtr->pmapObj = objv[i+1];
 			Tcl_IncrRefCount(masterPtr->pmapObj);
+			fprintf(stderr, "Got value for -pmap option\n");
+			i++;
+		} else if (strcmp("-width", tmp) == 0) {
+			fprintf(stderr, "Got -width option, looking for value\n");
+			TEST_OK(Tcl_GetIntFromObj(interp, objv[i+1], &width));
+			fprintf(stderr, "Got value for -width option\n");
+			i++;
+		} else if (strcmp("-height", tmp) == 0) {
+			fprintf(stderr, "Got -height option, looking for value\n");
+			TEST_OK(Tcl_GetIntFromObj(interp, objv[i+1], &height));
+			fprintf(stderr, "Got value for -height option\n");
+			i++;
 		} else {
 			THROW_ERROR("Unknown option: ", tmp);
 		}
 	}
+
+	if (masterPtr->pmap != NULL) {
+		if (width == 0) width = masterPtr->pmap->width;
+		if (height == 0) height = masterPtr->pmap->height;
+	}
+
+	masterPtr->width = width;
+	masterPtr->height = height;
 	
 	for (instancePtr = masterPtr->instancePtr; instancePtr != NULL;
 			instancePtr = instancePtr->nextPtr) {
 		tkimage_configure_instance(instancePtr);
 	}
+
+	rect.x = 0;
+	rect.y = 0;
+	rect.width = masterPtr->width;
+	rect.height = masterPtr->height;
+	TkUnionRectWithRegion(&rect, masterPtr->validRegion, masterPtr->validRegion);
 	
 	return TCL_OK;
 }
 
 
-static int img_pmap_cmd(ClientData clientData, Tcl_Interp *interp,
+static int img_pmap_cmd(ClientData clientData, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
 	int				index;
@@ -181,6 +218,7 @@ static int img_pmap_cmd(ClientData clientData, Tcl_Interp *interp,
 		PMAP_PMAP, PMAP_DO_FRAME, PMAP_CONFIGURE
 	};
 	
+	fprintf(stderr, "img_pmap_cmd\n");
 	CHECK_ARGS(1, "command");
 
 	if (Tcl_GetIndexFromObj(interp, objv[1], pmap_options, "command", 0, 
@@ -208,14 +246,16 @@ static int img_pmap_cmd(ClientData clientData, Tcl_Interp *interp,
 }
 
 
-static void tkimage_instance_set_size(pmap_instance *instancePtr)
+static void tkimage_instance_set_size(pmap_instance *instancePtr) //{{{1
 {
 	pmap_master		*masterPtr = (pmap_master *)instancePtr->masterPtr;
 	Pixmap			newPixmap;
 	int				mwidth, mheight;
 	
-	mwidth = masterPtr->pmap->width;
-	mheight = masterPtr->pmap->height;
+	fprintf(stderr, "img_pmap_cmd\n");
+	mwidth = masterPtr->width;
+	mheight = masterPtr->height;
+
 	if (
 			(instancePtr->pixels == None) 
 			|| (instancePtr->width != mwidth)
@@ -244,11 +284,12 @@ static void tkimage_instance_set_size(pmap_instance *instancePtr)
 }
 
 
-static void redraw(pmap_instance *instancePtr)
+static void redraw(pmap_instance *instancePtr) //{{{1
 {
 	XImage			*imagePtr;
 	gimp_image_t	*pmap = instancePtr->masterPtr->pmap;
 	
+	fprintf(stderr, "redraw\n");
 	imagePtr = instancePtr->imagePtr;
 	if (imagePtr == NULL)
 		return;
@@ -258,6 +299,9 @@ static void redraw(pmap_instance *instancePtr)
 	imagePtr->bytes_per_line = ((imagePtr->bits_per_pixel * imagePtr->width + 31) >> 3) & ~3;
 	imagePtr->data = (char *)ckalloc((unsigned)(imagePtr->bytes_per_line * imagePtr->height));
 
+	fprintf(stderr, "Hermes_ConverterCopy:\n\tsrc: %p\n\t(x, y): (%d, %d)\t(w, h): (%d, %d)\trowstride: %d\n\tdest: %p\n\t(x, y): (%d, %d)\t(w, h): (%d, %d)\trowstride: %d\n",
+			pmap->pixel_data, 0, 0, pmap->width, pmap->height, pmap->width * 4,
+			imagePtr->data, 0, 0, imagePtr->width, imagePtr->height, imagePtr->bytes_per_line);
 	Hermes_ConverterCopy(g_hermes_handle,
 			pmap->pixel_data, 0, 0, pmap->width, pmap->height, pmap->width * 4,
 			imagePtr->data, 0, 0, imagePtr->width, imagePtr->height, imagePtr->bytes_per_line);
@@ -271,11 +315,13 @@ static void redraw(pmap_instance *instancePtr)
 }
 
 
-static void tkimage_configure_instance(pmap_instance *instancePtr)
+static void tkimage_configure_instance(pmap_instance *instancePtr) //{{{1
 {
 	XImage		*imagePtr;
 	int			bitsPerPixel;
+	XRectangle	validBox;
 
+	fprintf(stderr, "tkimage_configure_instance\n");
 	bitsPerPixel = instancePtr->visualInfo.depth;
 
 	if ((instancePtr->imagePtr == NULL)
@@ -324,19 +370,23 @@ static void tkimage_configure_instance(pmap_instance *instancePtr)
 
 	if (
 			(instancePtr->pixels == None) 
-			|| (instancePtr->width != instancePtr->masterPtr->pmap->width)
-			|| (instancePtr->height != instancePtr->masterPtr->pmap->height)
+			|| (instancePtr->width != instancePtr->masterPtr->width)
+			|| (instancePtr->height != instancePtr->masterPtr->height)
 		) {
 		tkimage_instance_set_size(instancePtr);
 	}
 
-	if (instancePtr->masterPtr->flags & TKIMAGE_IMAGE_CHANGED) {
-		redraw(instancePtr);
-	}
+//	if (instancePtr->masterPtr->flags & TKIMAGE_IMAGE_CHANGED) {
+//		redraw(instancePtr);
+//	}
+	TkClipBox(instancePtr->masterPtr->validRegion, &validBox);
+	fprintf(stderr, "validbox: x: %d y: %d w: %d h: %d\n",
+			validBox.x, validBox.y, validBox.width, validBox.height);
+	redraw(instancePtr);
 }
 
 
-static ClientData getproc(Tk_Window tkwin, ClientData masterData)
+static ClientData getproc(Tk_Window tkwin, ClientData masterData) //{{{1
 {
 	pmap_master		*masterPtr = (pmap_master *)masterData;
 	pmap_instance	*instancePtr;
@@ -345,6 +395,7 @@ static ClientData getproc(Tk_Window tkwin, ClientData masterData)
 	int				numVisuals;
 	XGCValues		gcValues;
 
+	fprintf(stderr, "getproc\n");
 	instancePtr = (pmap_instance *)ckalloc(sizeof(pmap_instance));
 	instancePtr->masterPtr = masterPtr;
 	instancePtr->display = Tk_Display(tkwin);
@@ -369,6 +420,11 @@ static ClientData getproc(Tk_Window tkwin, ClientData masterData)
 		switch (visInfoPtr->class) {
 			case DirectColor:
 			case TrueColor:
+				fprintf(stderr, "Dest instance format:\n\tbpp: %d\n\trmask: %08x\n\tgmask: %08x\n\tbmask: %08x\n",
+						visInfoPtr->depth,
+						visInfoPtr->red_mask,
+						visInfoPtr->green_mask,
+						visInfoPtr->blue_mask);
 				instancePtr->destformat = Hermes_FormatNew(
 						visInfoPtr->depth,
 						visInfoPtr->red_mask,
@@ -410,33 +466,45 @@ static ClientData getproc(Tk_Window tkwin, ClientData masterData)
 
 	if (instancePtr->nextPtr == NULL) {
 		Tk_ImageChanged(masterPtr->tkMaster, 0, 0, 0, 0,
-				masterPtr->pmap->width, masterPtr->pmap->height);
+				masterPtr->width, masterPtr->height);
 	}
 
 	return (ClientData)instancePtr;
 }
 
 
-static void displayproc(ClientData clientData, Display *display,
+static void displayproc(ClientData clientData, Display *display, //{{{1
 		Drawable drawable, int imageX, int imageY, int width, int height,
 		int drawableX, int drawableY)
 {
 	pmap_instance	*instancePtr = (pmap_instance *)clientData;
+	XRectangle		validBox;
 
+	fprintf(stderr, "displayproc\n");
 	if (instancePtr->pixels == None)
 		return;
 
+	TkClipBox(instancePtr->masterPtr->validRegion, &validBox);
+	fprintf(stderr, "display validbox: x: %d y: %d w: %d h: %d\n",
+			validBox.x, validBox.y, validBox.width, validBox.height);
+
+	TkSetRegion(display, instancePtr->gc, instancePtr->masterPtr->validRegion);
+	XSetClipOrigin(display, instancePtr->gc, drawableX - imageX,
+			drawableY - imageY);
     XCopyArea(display, instancePtr->pixels, drawable, instancePtr->gc,
 			imageX, imageY, (unsigned)width, (unsigned)height,
 			drawableX, drawableY);
+	XSetClipMask(display, instancePtr->gc, None);
+	XSetClipOrigin(display, instancePtr->gc, 0, 0);
 }
 
 
-static void disposeinstance(ClientData clientData)
+static void disposeinstance(ClientData clientData) //{{{1
 {
 	pmap_instance	*instancePtr = (pmap_instance *)clientData;
 	pmap_instance	*prevPtr;
 
+	fprintf(stderr, "disposeinstance\n");
 	if (instancePtr->pixels != None) {
 		Tk_FreePixmap(instancePtr->display, instancePtr->pixels);
 	}
@@ -460,10 +528,11 @@ static void disposeinstance(ClientData clientData)
 }
 
 
-static void freeproc(ClientData clientData, Display *display)
+static void freeproc(ClientData clientData, Display *display) //{{{1
 {
 	pmap_instance	*instancePtr = (pmap_instance *)clientData;
 
+	fprintf(stderr, "freeproc\n");
 	instancePtr->refCount -= 1;
 	if (instancePtr->refCount > 0)
 		return;
@@ -472,11 +541,12 @@ static void freeproc(ClientData clientData, Display *display)
 }
 
 
-static void deleteproc(ClientData clientData)
+static void deleteproc(ClientData clientData) //{{{1
 {
 	pmap_master		*masterPtr = (pmap_master *)clientData;
 	pmap_instance	*instancePtr;
 
+	fprintf(stderr, "deleteproc\n");
 	while ((instancePtr = masterPtr->instancePtr) != NULL) {
 		if (instancePtr->refCount > 0) {
 			panic("tried to delete photo image when instances still exist");
@@ -487,6 +557,9 @@ static void deleteproc(ClientData clientData)
 	masterPtr->tkMaster = NULL;
 	if (masterPtr->imgCmd != NULL) {
 		Tcl_DeleteCommandFromToken(masterPtr->interp, masterPtr->imgCmd);
+	}
+	if (masterPtr->validRegion != NULL) {
+		TkDestroyRegion(masterPtr->validRegion);
 	}
 
 	// TODO: Do we free the original pmap, or deref it?
@@ -538,6 +611,11 @@ int Pixel_tkimage_Init(Tcl_Interp *interp)
 	if (Hermes_Init() == 0)
 		THROW_ERROR("Failed to initialize Hermes");
 	g_hermes_handle = Hermes_ConverterInstance(HERMES_CONVERT_DITHER);
+	fprintf(stderr, "Dest instance format:\n\tbpp: %d\n\trmask: %08x\n\tgmask: %08x\n\tbmask: %08x\n",
+			32,
+			MD_MASK_RED,
+			MD_MASK_GREEN,
+			MD_MASK_BLUE);
 	g_hermes_pmap_format = Hermes_FormatNew(32,
 			MD_MASK_RED, MD_MASK_GREEN, MD_MASK_BLUE, MD_MASK_ALPHA, 0);
 
