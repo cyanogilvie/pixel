@@ -301,7 +301,7 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &h));
 	if (objc >= 5)
 		TEST_OK(Tcl_GetBooleanFromObj(interp, objv[4], &anti_alias));
-	if (objc == 9) {
+	if (objc >= 9) {
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &border.left));
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[6], &border.right));
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[7], &border.top));

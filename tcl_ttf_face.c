@@ -1,6 +1,4 @@
-#include <tclInt.h>
-#include <tclstuff.h>
-#include "ttf.h"
+#include "all.h"
 
 static void free_internal_rep(Tcl_Obj *obj);
 static void update_string_rep(Tcl_Obj *obj);

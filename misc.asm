@@ -12,9 +12,8 @@
 	EXTERN abs_r_sh
 	EXTERN abs_g_sh
 	EXTERN abs_b_sh
-	EXTERN bpp
 
-	SECTION .text
+;	SECTION .text
 
 
 ; asm_pelset(_pel *dest, _pel colour, uint32 count)
@@ -52,6 +51,7 @@ xasm_buf_draw_box:
 
 ; asm_buf_draw_box(_pel *dest_buf, int width, int x1, int y1, int x2, int y2, _pel rgba)
 asm_buf_draw_box:
+			ret
 			mov		eax,[esp+16]		; y1
 			mov		ebx,[esp+24]		; y2
 			sub		ebx,eax

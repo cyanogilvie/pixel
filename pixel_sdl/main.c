@@ -330,9 +330,13 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 	sdl_console_inf *	ci;
 	int					rectsc = 0;
 	Tcl_Obj				**rectsv;
+	SDL_Rect			*rect;
+	int					i;
+	Tcl_Obj				**c;
+	int					l;
 	
 	if (objc < 2 || objc > 3)
-		CHECK_ARGS(1, "sdl_pmap");
+		CHECK_ARGS(1, "sdl_pmap ?update_rects?");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 	if (objc == 3)
@@ -371,28 +375,8 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 		if (SDL_MUSTLOCK(surface))
 			SDL_UnlockSurface(surface);
 	}
-	SDL_BlitSurface(surface, NULL, console, NULL);
-	
-	sdl_frame_time(ci);
-	ci->frames++;
-	if (rectsc == 0) {
-		if (ci->need_updaterects) {
-			SDL_Rect	rect;
-			rect.x = 0;
-			rect.y = 0;
-			rect.w = console->w;
-			rect.h = console->h;
-			SDL_UpdateRects(console, 1, &rect);
-			//fprintf(stderr, "Trivial updaterects\n");
-		} else {
-			SDL_UpdateRect(console, 0, 0, 0, 0);
-			//fprintf(stderr, "No updaterects\n");
-		}
-	} else {
-		SDL_Rect	rect[rectsc];
-		int			i;
-		Tcl_Obj		**c;
-		int			l;
+	if (rectsc > 0) {
+		rect = (SDL_Rect *)malloc(sizeof(SDL_Rect) * rectsc);
 		for (i=0; i<rectsc; i++) {
 			int x,y,w,h;
 			TEST_OK(Tcl_ListObjGetElements(interp, rectsv[i], &l, &c));
@@ -404,13 +388,42 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 			rect[i].y = y;
 			rect[i].w = w;
 			rect[i].h = h;
+			if (x+w > pmap->width || y+h > pmap->height) {
+				free(rect);
+				THROW_ERROR("Rectangle ", Tcl_GetString(Tcl_NewIntObj(i)), " out of bounds");
+			}
 			//fprintf(stderr, "sdl do_frame rect %d %d %d %d\n",
 			//		x, y, w, h);
+
+			SDL_BlitSurface(surface, &rect[i], console, &rect[i]);
 		}
+	} else {
+		SDL_BlitSurface(surface, NULL, console, NULL);
+	}
+	
+	sdl_frame_time(ci);
+	ci->frames++;
+	if (rectsc == 0) {
+		if (ci->need_updaterects) {
+			SDL_Rect	r;
+			r.x = 0;
+			r.y = 0;
+			r.w = console->w;
+			r.h = console->h;
+			SDL_UpdateRects(console, 1, &r);
+			//fprintf(stderr, "Trivial updaterects\n");
+		} else {
+			SDL_UpdateRect(console, 0, 0, 0, 0);
+			//fprintf(stderr, "No updaterects\n");
+		}
+	} else {
 		//fprintf(stderr, "Fancy updaterects\n");
 		SDL_UpdateRects(console, rectsc, rect);
 	}
 
+	if (rectsc > 0)
+		free(rect);
+	
 	return TCL_OK;
 }
 
@@ -989,6 +1002,50 @@ static int glue_joystickopen(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_wm_grabinput(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	int					i;
+	SDL_GrabMode		mode, omode;
+	
+	if (objc >= 3) {
+		CHECK_ARGS(1, "mode");
+	}
+
+
+	if (objc == 1) {
+		mode = SDL_GRAB_QUERY;
+	} else {
+		TEST_OK(Tcl_GetBooleanFromObj(interp, objv[1], &i));
+		if (i) {
+			mode = SDL_GRAB_ON;
+		} else {
+			mode = SDL_GRAB_OFF;
+		}
+	}
+	
+	omode = SDL_WM_GrabInput(mode);
+
+	if (mode == SDL_GRAB_QUERY) {
+		switch (omode) {
+			case SDL_GRAB_OFF:
+				Tcl_SetObjResult(interp, Tcl_NewBooleanObj(0));
+				break;
+
+			case SDL_GRAB_ON:
+				Tcl_SetObjResult(interp, Tcl_NewBooleanObj(1));
+				break;
+
+			default:
+				THROW_ERROR("Unknown mode returned");
+				break;
+		}
+	}
+	
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_sdl_Init(Tcl_Interp *interp)
 {
@@ -1025,7 +1082,7 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::sdl::numjoysticks", glue_numjoysticks);
 	NEW_CMD("pixel::sdl::joystickname", glue_joystickname);
 	NEW_CMD("pixel::sdl::joystickopen", glue_joystickopen);
-//	NEW_CMD("pixel::sdl::", glue_);
+	NEW_CMD("pixel::sdl::wm_grabinput", glue_wm_grabinput);
 //	NEW_CMD("pixel::sdl::", glue_);
 //	NEW_CMD("pixel::sdl::", glue_);
 //	NEW_CMD("pixel::sdl::", glue_);

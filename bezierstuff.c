@@ -1,5 +1,4 @@
-#include <math.h>
-#include "bezierstuff.h"
+#include "all.h"
 
 // Code originally from Milton Friedman <uncle@stein.u.washington.edu> _____________
 #define sqr(x) (x * x)
@@ -21,8 +20,7 @@ typedef struct {
 static double balf(double t)                   // Bezier Arc Length Function
 {
 	double result = q5 + t*(q4 + t*(q3 + t*(q2 + t*q1)));
-	result = sqrt(result);
-	return result;
+	return sqrt(result);
 }
 
 //---------------------------------------------------------------------------
@@ -99,8 +97,7 @@ double BezierArcLength(point2d p1, point2d p2, point2d p3, point2d p4)
 	q4 = 4.0*(k2.x*k3.x + k2.y*k3.y);
 	q5 = sqr(k3.x) + sqr(k3.y);
 
-	double result = Simpson(balf, 0, 1, 1024, 0.001);
-	return result;
+	return Simpson(balf, 0, 1, 1024, 0.001);
 }
 
 // Code originally from Milton Friedman <uncle@stein.u.washington.edu> ~~~~~~~~~~~~~~

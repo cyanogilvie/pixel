@@ -32,7 +32,7 @@ CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE)
 
 
 STATIC = 
-LLIBS = -L/win32/lib
+LLIBS = -L/win32/lib -L/win32/lib/pixel -L/win32/bin
 LIBS = -lpixel -ltcl84 -ltk84 -lSDL -lm
 LDFLAGS = $(STATIC) $(LLIBS) $(LIBS)
 

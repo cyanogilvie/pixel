@@ -1,4 +1,4 @@
-#include "2d.h"
+#include "all.h"
 
 
 void quadshade(double x, double y, _pel colour, int osa, int flags, gimp_image_t *dest)

@@ -8,21 +8,24 @@ LIBNAME = libpixel
 #TARGET = $(SONAME).$(MIN)
 TARGET = $(LIBNAME).so
 
+TCL_OBJS = \
+		   main.o \
+		   tcl_pmap.o \
+		   tcl_ttf_face.o
+
 OBJS = \
-	   main.o \
 	   2d.o \
 	   misc.o \
 	   primitives.o \
 	   ttf.o \
-	   tcl_ttf_face.o \
 	   shaders.o \
-	   bezierstuff.o \
-	   tcl_pmap.o
+	   bezierstuff.o
 
 HDRS = \
 	   2d.h \
 	   tcl_pmap.h \
-	   primitives.h
+	   primitives.h \
+	   misc.h
 
 MODULES = \
 	pixel_jpeg \
@@ -46,16 +49,17 @@ OFLAGS2= -O9 -fforce-mem -fforce-addr -finline-functions \
 -funroll-loops -fmove-all-movables -fomit-frame-pointer \
 -mcpu=i686 -march=i686 -malign-loops=4 -malign-jumps=4 \
 -malign-functions=4
+OFLAGS3= -march=pentium3 -mtune=pentium3 -O9 -fexceptions -funit-at-a-time
+OFLAGS4= -O9 -fexceptions
 
-#OFLAGS=$(OFLAGS0)
-OFLAGS=$(OFLAGS2)
+OFLAGS=$(OFLAGS0)
+#OFLAGS=$(OFLAGS3)
 
 DEFS = \
 	   -DVERSION=\"1.0\"
 DEFS := $(DEFS) -DASM_BUF_DRAW_BOX
 
 INCLUDES = `freetype-config --cflags` \
-		   -I. -Ilib -I/test/include \
 		   -I/usr/include/tcl8.3 \
 		   -I/usr/include/tcl8.3/tcl-private/generic 
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
@@ -68,17 +72,21 @@ LDFLAGS = $(STATIC) $(LIBS)
 
 
 GCC = gcc
-GXX = g++
+GXX = g++-3.3
+AR = ar -rs
 
 
-all:    $(TARGET) scripts
+all:    $(TARGET) libpixel_base.so scripts
 	@for i in $(MODULES); do \
 		echo "====> make $@ in $$i"; \
 		make -C $$i $@ || exit 1; \
 	done
 
-$(TARGET): $(OBJS)
-	$(GCC) --shared -o $(TARGET) $(OBJS) $(LDFLAGS)
+$(TARGET): libpixel_base.a $(TCL_OBJS)
+	$(GCC) --shared -o $(TARGET) $(TCL_OBJS) $(LDFLAGS) libpixel_base.a
+
+gch: *.h
+	$(CC) -c all.h $(INCLUDES)
 
 ctags:
 	ctags -R * /usr/include/tcl8.3 /usr/include/ptc /usr/include/SDL /usr/include/Imlib2.h
@@ -86,13 +94,16 @@ ctags:
 %.o: %.cc
 	$(GCC) -c $< $(CFLAGS)
 
-bezierstuff.o: bezierstuff.c
-	$(GXX) -c bezierstuff.c $(CFLAGS)
-
 misc.o:	misc.asm
-	nasm -f elf misc.asm
+	nasm -f elf -g misc.asm
 
 scripts: scripts-stamp
+
+libpixel_base.so: $(OBJS)
+	$(CC) --shared -o libpixel_base.so $(OBJS) `freetype-config --libs`
+
+libpixel_base.a: $(OBJS)
+	$(AR) libpixel_base.a $(OBJS)
 
 scripts-stamp: scripts/*.itcl
 	./make_tclIndex.tcl
@@ -103,6 +114,8 @@ install: all
 	install -d $(DESTDIR)/usr/include/pixel
 	install -d $(DESTDIR)/usr/lib/pixel/scripts
 	install $(TARGET) $(DESTDIR)/usr/lib/pixel
+	install libpixel_base.a $(DESTDIR)/usr/lib
+	install libpixel_base.so $(DESTDIR)/usr/lib
 	install pkgIndex.tcl $(DESTDIR)/usr/lib/pixel
 	install pixel.tcl $(DESTDIR)/usr/lib/pixel
 #	install bg.tiff $(DESTDIR)/usr/lib/pixel
@@ -118,6 +131,8 @@ install: all
 
 clean:
 	-rm -f libpixel.so*
+	-rm -f libpixel_base.*
+	-rm -f *.gch
 	-rm -f *.o
 	-rm -f core
 #	-rm -f scripts/tclIndex scripts-stamp

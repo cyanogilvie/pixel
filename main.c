@@ -5,22 +5,7 @@
 #define DBG(format , args...)
 #endif
 
-//#include <types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <string.h>
-#include <math.h>
-#include <signal.h>
-#include <tcl.h>
-#include <tclstuff.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <wchar.h>
-#include "2d.h"
-#include "ttf.h"
-#include "tcl_pmap.h"
-#include "primitives.h"
+#include "all.h"
 
 #define SQUARE		0
 #define	SINE		1
@@ -353,6 +338,27 @@ static int glue_center(ClientData foo, Tcl_Interp *interp,
 }
 
 
+static int glue_put_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t		*dest;
+	_pel				col;
+	int					x, y, flags;
+	
+	CHECK_ARGS(5, "dest x y colour flags");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &y));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], (int *)&col));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &flags));
+
+	put_pixel(dest, x, y, col, flags);
+
+	return TCL_OK;
+}
+
+
 // render_ttf colour fft_face px_size text ?width? {{{1
 static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
@@ -672,6 +678,7 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::dup", glue_dup);
 	NEW_CMD("pixel::blend", glue_blend);
 	NEW_CMD("pixel::center", glue_center);
+	NEW_CMD("pixel::put_pixel", glue_put_pixel);
 
 	// Primitives
 	NEW_CMD("pixel::box", glue_box);

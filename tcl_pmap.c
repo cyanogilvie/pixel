@@ -1,7 +1,4 @@
-#include <tclInt.h>
-#include <tclstuff.h>
-#include "tcl_pmap.h"
-#include "2d.h"
+#include "all.h"
 
 static void free_internal_rep(Tcl_Obj *obj);
 static void dup_internal_rep(Tcl_Obj *src, Tcl_Obj *dest);

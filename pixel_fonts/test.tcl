@@ -26,7 +26,7 @@ class Main {
 			"Font"		[list face mycombobox -choices [fontreg list_basenames] -cb [code $this update_attribs]] \
 			"Attribs"	[list attribs mycombobox -choices {}] \
 			"Size"		[list size] \
-			"Text"		[list text entry -width 50] \
+			"Text"		[list text vartextbox -width 50 -height 2] \
 		]
 		$w.details set_data {
 			face		"arial"
@@ -34,8 +34,8 @@ class Main {
 			text		"Hello World!"
 		}
 
-		set pmap	[pixel::pmap_new 400 60 0xffffffff]
-		pixel::box $pmap 0 0 400 60 0xffffffff 0
+		set pmap	[pixel::pmap_new $samplewidth 60 0xffffffff]
+		pixel::box $pmap 0 0 $samplewidth 60 0xffffffff 0
 
 		set image	[image create pmap -pmap $pmap]
 
@@ -56,6 +56,7 @@ class Main {
 	private {
 		variable pmap
 		variable image
+		variable samplewidth	400
 		
 		method update_attribs {basename} {
 			$w.details itemconfig "Attribs" -choices [fontreg list_attribs $basename]
@@ -63,9 +64,25 @@ class Main {
 
 		method rerender {} {
 			array set formdat	[$w.details get_data]
-			pixel::box $pmap 0 0 400 60 0xffffffff 0
-			set tmp		[pixel::render_ttf 0xff000000 [fontreg get_face [list $formdat(face) $formdat(attribs)]] $formdat(size) $formdat(text)]
-			pixel::pmap_paste $pmap $tmp 3 3 $::MD_ALPHA
+			pixel::box $pmap 0 0 $samplewidth 60 0xffffffff 0
+			#set tmp		[pixel::render_ttf 0xff000000 [fontreg get_face [list $formdat(face) $formdat(attribs)]] $formdat(size) $formdat(text)]
+			set meta(base_col)	0xff000000
+			set meta(face)		[fontreg get_face [list $formdat(face) $formdat(attribs)]]
+			set meta(px_size)	$formdat(size)
+			set meta(width)		$samplewidth
+			set pmaps		[pixel::render_ttf_adv meta $formdat(text)]
+			set fromy		3
+			foreach tmp $pmaps {charstart xofs} $meta(feedback) {
+				set toy		$fromy
+				incr toy	$formdat(size)
+				foreach x $xofs {
+					incr x	3
+					pixel::line $x $fromy $x $toy 0xffe0e0e0 $pmap
+				}
+				pixel::pmap_paste $pmap $tmp 3 $fromy $::MD_ALPHA
+				incr toy	2
+				set fromy	$toy
+			}
 			$image do_frame
 		}
 	}

@@ -1,6 +1,10 @@
 package require Pixel
 
-load [file join $::pixel::tkimage::library pixel_tkimage.so]
+if {$tcl_platform(platform) == "windows"} {
+	load [file join $::pixel::tkimage::library pixel_tkimage.dll]
+} else {
+	load [file join $::pixel::tkimage::library pixel_tkimage.so]
+}
 
 namespace eval ::pixel::tkimage {
 	namespace export *

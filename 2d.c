@@ -714,37 +714,35 @@ gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) //{{{1
 }
 
 
+void put_pixel(gimp_image_t *dest, int x, int y, _pel col, int flags) //{{{1
+{
+	_pel		*d;
+	_pel		*s = &col;
+
+	d = dest->pixel_data + dest->width * y + x;
+//	fprintf(stderr, "len: (%d)\n", len);
+	
+	if (flags == 0) {
+		d->c = col.c;
+	} else if (flags & MD_BLEND) {
+		P_BLEND(d, s);
+	} else if (flags & MD_ALPHA) {
+		P_ALPHA(d, s);
+	} else if (flags & MD_ALPHA_UNDER) {
+		P_ALPHA_UNDER(d, s);
+	} else if (flags & MD_ADDITIVE) {
+		P_ADDITIVE(d, s);
+	} else if (flags & MD_BLIT) {
+	} else {
+		d->c = col.c;
+	}
+}
+
+
 void do_dirty_tricks() // {{{1
 {
 	double		foo;
 	uint32		a,b,bar;
-
-	/*
-	uint32		i;
-
-	printf( "Building 32-16 buffer munging values: " );
-	fflush( stdout );
-	
-	r_mask = visualinfo.red_mask;
-	g_mask = visualinfo.green_mask;
-	b_mask = visualinfo.blue_mask;
-	for( i = 0; i < bpp; i++ ) {
-		r_size += (r_mask >> i) & 0x1;
-		g_size += (g_mask >> i) & 0x1;
-		b_size += (b_mask >> i) & 0x1;
-	}
-	r_shift = ffs( visualinfo.red_mask   ) - 1 - (8-r_size); 
-	g_shift = ffs( visualinfo.green_mask ) - 1 - (8-g_size); 
-	b_shift = ffs( visualinfo.blue_mask  ) - 1 - (8-b_size); 
-
-	abs_r_sh = abs(r_shift);
-	abs_g_sh = abs(g_shift);
-	abs_b_sh = abs(b_shift);
-	printf( "done\n" );
-	*/
-
-	printf( "Generating lookups: " );
-	fflush( stdout );
 
 	for( a=0; a<=255; a++ )
 		for( b=0; b<=255; b++ ) {
@@ -753,8 +751,6 @@ void do_dirty_tricks() // {{{1
 			if( foo - (uint8)(foo) > 0.5 ) bar++;
 			fact[a][b] = bar;
 		}
-	printf( "fact " );
-	fflush( stdout );
 
 	for( a=0; a<=255; a++ )
 		for( b=0; b<=255; b++ ) {
@@ -773,15 +769,11 @@ void do_dirty_tricks() // {{{1
 			if( foo - scale_lookup_square[a][b] > 0.5 ) scale_lookup_square[a][b]++;
 			inv_scale_lookup_square[a][b] = b - scale_lookup_square[a][b];
 		}
-	printf( "scale" );
-
-	printf( "\n" );
 }
 
 
 void init_2d () // {{{1
 {
-	fprintf(stderr, "experimental version\n");
 	do_dirty_tricks();
 }
 

@@ -1,7 +1,4 @@
-#include <math.h>
-#include "2d.h"
-#include "shaders.h"
-#include <stdio.h>
+#include "all.h"
 
 void box(dest, x, y, w, h, colour, flags)
 	gimp_image_t	*dest;

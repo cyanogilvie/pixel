@@ -275,6 +275,8 @@ EXTERN_C gimp_image_t *pmap_dropshadow (gimp_image_t *src, int blur);
 
 EXTERN_C gimp_image_t *pmap_rotate(gimp_image_t *src, int quads);
 
+EXTERN_C void put_pixel(gimp_image_t *dest, int x, int y, _pel col, int flags);
+
 EXTERN_C void do_dirty_tricks		();
  
 EXTERN_C void init_2d				();

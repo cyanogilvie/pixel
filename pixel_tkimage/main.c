@@ -340,9 +340,15 @@ static void redraw(pmap_instance *instancePtr) //{{{1
 			pmap->pixel_data, 0, 0, pmap->width, pmap->height, pmap->width * 4,
 			imagePtr->data, 0, 0, imagePtr->width, imagePtr->height, imagePtr->bytes_per_line);
 
+#ifdef _WIN32
+	TkPutImage(NULL, 0, instancePtr->display, instancePtr->pixels,
+			instancePtr->gc, imagePtr, 0, 0, 0, 0,
+			(unsigned)imagePtr->width, (unsigned)imagePtr->height);
+#else
 	XPutImage(instancePtr->display, instancePtr->pixels,
 			instancePtr->gc, imagePtr, 0, 0, 0, 0,
 			(unsigned)imagePtr->width, (unsigned)imagePtr->height);
+#endif
 
 	ckfree(imagePtr->data);
 	imagePtr->data = NULL;
