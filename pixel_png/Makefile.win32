@@ -1,0 +1,49 @@
+DESTDIR =
+TARGETDIR = $(DESTDIR)/win32/lib/pixel_png
+
+CC = i586-mingw32msvc-gcc
+SOEXT = dll
+TARGET = pixel_png.$(SOEXT)
+
+OBJS = \
+	   main.o \
+	   pngstuff.o
+
+DEBUG=-g -DDEBUG
+#DEBUG=
+OFLAGS0= -O0
+OFLAGS1= -O3 -march=pentium3 -mtune=pentium3
+OFLAGS2= -O3
+
+OFLAGS=$(OFLAGS2)
+DEFS = 
+INCLUDES = -I. -I.. \
+		   -I/win32/include
+CFLAGS = $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
+
+
+STATIC =
+LLIBS = -L/win32/lib -L/win32/lib/pixel
+LIBS = -lpixel -ltcl84 -lpng -lz
+LDFLAGS = -Wall $(STATIC) $(LLIBS) $(LIBS)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) --shared -o $(TARGET) $(OBJS) $(LDFLAGS)
+
+%.o: %.c
+	$(CC) -c $< $(CFLAGS)
+
+install: all
+	install -d $(TARGETDIR)
+	install $(TARGET) $(TARGETDIR)
+	install pkgIndex.tcl $(TARGETDIR)
+	install pixel_png.tcl $(TARGETDIR)
+
+clean:
+	-rm -f $(TARGET)
+	-rm -f out.png
+	-rm -f *.o
+	-rm -f core
+        

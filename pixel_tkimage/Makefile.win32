@@ -1,0 +1,62 @@
+DESTDIR=
+TARGETDIR=$(DESTDIR)/win32/lib/pixel_tkimage
+
+CC=i586-mingw32msvc-gcc
+SOEXT=dll
+
+LIBNAME=pixel_tkimage
+TARGET=$(LIBNAME).$(SOEXT)
+
+OBJS = main.o
+
+OFLAGS0= -O0
+OFLAGS1= -O9 -march=pentiumpro -mcpu=pentiumpro
+OFLAGS2= -O9 -fforce-mem -fforce-addr -finline-functions \
+-fkeep-inline-functions \
+-ffast-math -fstrength-reduce -fthread-jumps -fcse-follow-jumps \
+-fcse-skip-blocks -frerun-cse-after-loop -frerun-loop-opt \
+-fexpensive-optimizations -fschedule-insns2 -fcaller-saves \
+-funroll-loops -fmove-all-movables -fomit-frame-pointer \
+-mcpu=i686 -march=i686 -malign-loops=4 -malign-jumps=4 \
+-malign-functions=4
+
+#OFLAGS=$(OFLAGS0)
+OFLAGS=$(OFLAGS2)
+
+
+DEFS = -D_WIN32
+DEBUG=-g
+#DEBUG=-g -DDEBUG
+INCLUDE = -I.. \
+		  -I/win32/include \
+		   -I/win32/include/tcl84 \
+		   -I/win32/include/tcl84/tcl-private/generic \
+		   -I/win32/include/tcl84/tk-private/generic \
+		   -I/win32/include/Hermes
+CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE)
+
+
+STATIC = 
+LLIBS = -L/win32/lib -L/win32/lib/pixel
+LIBS = -lpixel -ltcl84 -ltk84 -lm -lHermes
+LDFLAGS = $(STATIC) $(LLIBS) $(LIBS)
+
+all:    $(TARGET)
+
+$(TARGET):	$(OBJS)
+	$(CC) --shared -o $(TARGET) $(OBJS) $(LDFLAGS)
+
+main.o:	main.c
+	$(CC) -c main.c $(CFLAGS) $(INCLUDES)
+
+install: all
+	install -d $(TARGETDIR)
+	install $(TARGET) $(TARGETDIR)
+	install pkgIndex.tcl $(TARGETDIR)
+	install pixel_tkimage.tcl $(TARGETDIR)
+
+clean:
+	-rm -f $(TARGET)
+	-rm -f *.o
+	-rm -f core
+        
