@@ -112,6 +112,30 @@ static int glue_pmap_paste(ClientData *foo, Tcl_Interp *interp,
 }
 
 
+// pmap_paste_ref dest src ref x y flags {{{1
+static int glue_pmap_paste_ref(ClientData *foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t		*dest;
+	gimp_image_t		*src;
+	gimp_image_t		*ref;
+	int					x, y, flags;
+	
+	CHECK_ARGS(6, "dest src ref x y flags");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &src));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[3], &ref));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &x));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &y));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[6], &flags));
+
+	pmap_paste_ref(dest, src, ref, x, y, flags);
+
+	return TCL_OK;
+}
+
+
 // pmap_patch dest src sx sy sw sh dx dy flags {{{1
 static int glue_pmap_patch(ClientData *foo, Tcl_Interp *interp, 
 		int objc, Tcl_Obj *CONST objv[])
@@ -463,6 +487,7 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::pmap_clr", glue_pmap_clr);
 	NEW_CMD("pixel::pmap_cut", glue_pmap_cut);
 	NEW_CMD("pixel::pmap_paste", glue_pmap_paste);
+	NEW_CMD("pixel::pmap_paste_ref", glue_pmap_paste_ref);
 	NEW_CMD("pixel::pmap_patch", glue_pmap_patch);
 	NEW_CMD("pixel::pmap_compose", glue_pmap_compose);
 	NEW_CMD("pixel::pmap_filter", glue_pmap_filter);

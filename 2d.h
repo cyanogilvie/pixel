@@ -35,68 +35,6 @@
 #define P_CPY(d,s) \
 	*d = *s;
 
-/*
-#define P_BLEND(d,s) \
-	{ \
-		uint32	na; \
-		if (s->ch.a > 0) { \
-			if (s->ch.a < 255) { \
-				d->ch.b = fact[s->ch.b][s->ch.a] + fact[d->ch.b][255-s->ch.a]; \
-				d->ch.g = fact[s->ch.g][s->ch.a] + fact[d->ch.g][255-s->ch.a]; \
-				d->ch.r = fact[s->ch.r][s->ch.a] + fact[d->ch.r][255-s->ch.a]; \
-				na = (uint32)(d->ch.a + s->ch.a); \
-				if (na>255) { \
-					d->ch.a = 255; \
-				} else { \
-					d->ch.a = (uint8)na; \
-				} \
-			} else { \
-				*d = *s; \
-			} \
-		} \
-	}
-*/
-
-/*
-#define P_BLEND(d,s) \
-	{ \
-		uint8   *sa  = (uint8 *)(fact + s->ch.a); \
-		uint8   *sia = (uint8 *)(fact + (255 - s->ch.a)); \
-		uint8   *da  = (uint8 *)(fact + d->ch.a); \
-		if (s->ch.a > 0) { \
-			if (s->ch.a < 255) { \
-				d->ch.b = sia[d->ch.b] + sa[s->ch.b]; \
-				d->ch.g = sia[d->ch.g] + sa[s->ch.g]; \
-				d->ch.r = sia[d->ch.r] + sa[s->ch.r]; \
-				d->ch.a = da[255 - d->ch.a] + s->ch.a; \
-			} else { \
-				*d = *s; \
-			} \
-		} \
-	}
-*/
-
-/*
-#define P_ALPHA(d,s) \
-	{ \
-		uint8   *sa; \
-		uint8   *sia; \
-		uint8   *da; \
-		sa = (uint8 *)(fact + s->ch.a); \
-		sia = (uint8 *)(fact + (255 - s->ch.a)); \
-		da = (uint8 *)(fact + d->ch.a); \
-		if (s->ch.a > 0) { \
-			if (s->ch.a < 255) { \
-				d->ch.b = sia[da[d->ch.b]] + sa[s->ch.b]; \
-				d->ch.g = sia[da[d->ch.g]] + sa[s->ch.g]; \
-				d->ch.r = sia[da[d->ch.r]] + sa[s->ch.r]; \
-				d->ch.a = da[255 - s->ch.a] + s->ch.a; \
-			} else { \
-				*d = *s; \
-			} \
-		} \
-	}
-*/
 #define P_ALPHA(d,s) \
 	{ \
 		uint8   *sa; \
@@ -115,31 +53,31 @@
 	}
 
 
+#define P_ALPHA_REF(d,s,r) \
+	{ \
+		uint8   *sa; \
+		uint8   *sia; \
+		if (s->ch.a == 0) { \
+			*d = *r; \
+		} else if (r->ch.a == 0 || s->ch.a == 255) { \
+			*d = *s; \
+		} else { \
+			sa = (uint8 *)(fact + s->ch.a); \
+			sia = (uint8 *)(fact + 255 - s->ch.a); \
+			d->ch.b = sa[s->ch.b] + sia[r->ch.b]; \
+			d->ch.g = sa[s->ch.g] + sia[r->ch.g]; \
+			d->ch.r = sa[s->ch.r] + sia[r->ch.r]; \
+			d->ch.a = s->ch.a + sia[r->ch.a]; \
+		} \
+	}
+
+
 // P_BLEND is deprecated, use P_ALPHA instead
 #define P_BLEND(d,s) \
 	P_ALPHA(d,s);
+#define P_BLEND_REF(d,s,r) \
+	P_ALPHA(d,s,r);
 
-/*
-#define P_ALPHA_UNDER(d,s) \
-	{ \
-		uint8   *sa; \
-		uint8   *dia; \
-		uint8   *da; \
-		sa = (uint8 *)(fact + s->ch.a); \
-		dia = (uint8 *)(fact + (255 - d->ch.a)); \
-		da = (uint8 *)(fact + d->ch.a); \
-		if (d->ch.a < 255) { \
-			if (d->ch.a > 0) { \
-				d->ch.b = dia[sa[s->ch.b]] + da[d->ch.b]; \
-				d->ch.g = dia[sa[s->ch.g]] + da[d->ch.g]; \
-				d->ch.r = dia[sa[s->ch.r]] + da[d->ch.r]; \
-				d->ch.a = sa[255 - d->ch.a] + d->ch.a; \
-			} else { \
-				*d = *s; \
-			} \
-		} \
-	}
-*/
 #define P_ALPHA_UNDER(d,s) \
 	{ \
 		uint8   *da; \
@@ -154,6 +92,24 @@
 			d->ch.g = da[d->ch.g] + dia[s->ch.g]; \
 			d->ch.r = da[d->ch.r] + dia[s->ch.r]; \
 			d->ch.a = d->ch.a + dia[s->ch.a]; \
+		} \
+	}
+
+#define P_ALPHA_UNDER_REF(d,s,r) \
+	{ \
+		uint8   *da; \
+		uint8   *dia; \
+		if (r->ch.a == 0) { \
+			*d = *s; \
+		} else if (s->ch.a == 0 || r->ch.a == 255) { \
+			*d = *r; \
+		} else { \
+			da = (uint8 *)(fact + r->ch.a); \
+			dia = (uint8 *)(fact + 255 - r->ch.a); \
+			d->ch.b = da[r->ch.b] + dia[s->ch.b]; \
+			d->ch.g = da[r->ch.g] + dia[s->ch.g]; \
+			d->ch.r = da[r->ch.r] + dia[s->ch.r]; \
+			d->ch.a = r->ch.a + dia[s->ch.a]; \
 		} \
 	}
 
@@ -176,6 +132,30 @@
 			} else { \
 				d->ch.a = (uint8)na; \
 			} \
+		} \
+	}
+
+#define P_ADDITIVE_REF(d,s,r) \
+	{ \
+		uint32	t; \
+		uint32	na; \
+		if (s->ch.a > 0) { \
+			t = fact[s->ch.b][s->ch.a] + fact[r->ch.b][r->ch.a]; \
+			d->ch.b = t<256 ? t : 255; \
+			t = fact[s->ch.g][s->ch.a] + fact[r->ch.g][r->ch.a]; \
+			d->ch.g = t<256 ? t : 255; \
+			t = fact[s->ch.r][s->ch.a] + fact[r->ch.r][r->ch.a]; \
+			d->ch.r = t<256 ? t : 255; \
+			\
+			na = (uint32)(r->ch.a + s->ch.a); \
+			/*na = (uint32)((signed char)d->ch.a + ((signed char)(s->ch.a - d->ch.a) >> 1));*/ \
+			if (na>255) { \
+				d->ch.a = 255; \
+			} else { \
+				d->ch.a = (uint8)na; \
+			} \
+		} else { \
+			*d = *r; \
 		} \
 	}
 
@@ -277,6 +257,9 @@ EXTERN_C gimp_image_t *pmap_cut(gimp_image_t *src,
 
 EXTERN_C void pmap_paste(gimp_image_t *dest, gimp_image_t *src, 
 		int xofs, int yofs, int flags);
+
+EXTERN_C void pmap_paste_ref(gimp_image_t *dest, gimp_image_t *src, 
+		gimp_image_t *ref, int xofs, int yofs, int flags);
 
 EXTERN_C void pmap_patch(gimp_image_t *dest, gimp_image_t *src,
 		int sx, int sy, int sw, int sh, int dx, int dy, int flags);

@@ -98,6 +98,34 @@ void row_blend(_pel *d, _pel *s, int len, int flags) //{{{1
 }
 
 
+void row_blend_ref(_pel *d, _pel *s, _pel *r, int len, int flags) //{{{1
+{
+	_pel		*last;
+
+	last = d + len;
+//	fprintf(stderr, "len: (%d)\n", len);
+	
+	if (flags == 0) {
+		memcpy(d, s, len*4);
+	} else if (flags & MD_BLEND) {
+		for (; d<last; d++, s++, r++)
+			P_ALPHA_REF(d, s, r);
+	} else if (flags & MD_ALPHA) {
+		for (; d<last; d++, s++, r++)
+			P_ALPHA_REF(d, s, r);
+	} else if (flags & MD_ALPHA_UNDER) {
+		for (; d<last; d++, s++, r++)
+			P_ALPHA_REF(d, s, r);
+	} else if (flags & MD_ADDITIVE) {
+		for (; d<last; d++, s++, r++)
+			P_ADDITIVE_REF(d, s, r);
+	} else if (flags & MD_BLIT) {
+	} else {
+		memcpy(d, s, len*4);
+	}
+}
+
+
 void row_set(_pel *dest, _pel colour, int len, int flags) //{{{1
 {
 	_pel			*last;
@@ -211,6 +239,55 @@ void pmap_paste(gimp_image_t *dest, gimp_image_t *src, int xofs, int yofs, int f
 		row_blend(dr, sr, cols, flags);
 		sr += src->width;
 		dr += dest->width;
+	}
+}
+
+
+void pmap_paste_ref(gimp_image_t *dest, gimp_image_t *src, gimp_image_t *ref, int xofs, int yofs, int flags) //{{{1
+{
+	int			start_row, start_col, rows, cols, r;
+	_pel		*sr;
+	_pel		*dr;
+	_pel		*rr;
+
+
+	start_row = 0;
+	start_col = 0;
+	rows = src->height;
+	cols = src->width;
+
+	// Case: off top or left
+	if (xofs < 0) {
+		cols -= abs(xofs);
+		start_col += abs(xofs);
+		xofs = 0;
+	}
+	if (yofs < 0) {
+		rows -= abs(yofs);
+		start_row += abs(yofs);
+		yofs = 0;
+	}
+
+	// Case: off bottom or right
+	if ((int)(xofs + cols) > (int)(dest->width)) {
+		cols -= (xofs + cols) - dest->width;
+	}
+	if ((int)(yofs + rows) > (int)(dest->height)) {
+		rows -= (yofs + rows) - dest->height;
+	}
+
+	if (cols <= 0) return;
+	if (rows <= 0) return;
+
+	sr = src->pixel_data + start_row*src->width + start_col;
+	dr = dest->pixel_data + yofs*dest->width + xofs;
+	rr = ref->pixel_data + yofs*ref->width + xofs;
+
+	for (r=0; r<rows; r++) {
+		row_blend_ref(dr, sr, rr, cols, flags);
+		sr += src->width;
+		dr += dest->width;
+		rr += ref->width;
 	}
 }
 
