@@ -1,0 +1,28 @@
+#!/usr/bin/itkwish3.1
+
+# vim: ft=tcl
+
+
+# Simple example demonstrating loading an image and displaying it on a label
+
+
+# The base library for pixel data (would be loaded by the others anyway)
+package require Pixel
+
+# Imlib2 wrapper, loads / saves many formats, nice fast scaling
+package require Pixel_imlib2
+
+# Wraps pmaps in tk images, so we can display them on labels, etc
+package require Pixel_tkimage
+
+
+# Load an image and return it as a pmap
+set img		[pixel::imlib2::load_image "kenshin2.png"]
+
+# Wrap it in a tkimage (Pixel_tkimage adds the "pmap" handler for image)
+image create pmap tkimg -pmap $img
+
+label .img_l -text "Image:"
+label .img -image tkimg
+
+pack .img_l .img -side top -anchor w
