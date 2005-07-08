@@ -1,0 +1,787 @@
+# vim: ft=tcl foldmarker=<<<,>>>
+
+class pixel::utils::Graph {
+	constructor {args} {}
+
+	public {
+		variable label			""
+		variable width			500
+		variable height			300
+		variable labelfont
+		variable tickfont
+		variable labelcolour	0xff000000
+		variable labelsize		12
+		variable ticksize		10
+		variable bg_colour		0xffe0e0e0
+		variable bg_mode		"stretch"			;# or "tile"
+		variable data_bg		0xb0ffffff
+		variable outerpad		2
+		variable labelpad		4
+		variable innerpad		2
+		variable linestyle		"aa_osa"
+		variable prec_y			2
+		variable prec_x			2
+		variable auto_ticks_x	0
+		variable auto_ticks_y	0
+		variable min_tick_pad_x	4
+		variable min_tick_pad_y	4
+		variable slow_win_image	0
+
+		method x_label {labeltext}
+		method y_label {labeltext}
+		method x_axis {ticks}
+		method y_axis {ticks}
+		method data {series_label linecolour points}
+		method plot {}
+		method bg_pmap {new_bg_pmap}
+
+		method get_image {}
+		method get_pmap {}
+		method write_image {filename}
+		method enter {x y}
+		method leave {x y}
+		method motion {x y}
+	}
+
+	private {
+		variable pmap
+		variable x_label
+		variable y_label
+		variable x_ticks
+		variable y_ticks
+		variable x_ticks_height
+		variable y_ticks_width
+		variable datapoints
+		variable linecolours
+		variable series_labels
+		variable bg_pmap
+		variable data_x
+		variable data_y
+		variable data_w
+		variable data_h
+		variable min_dx
+		variable min_dy
+		variable range
+		variable domain
+		variable tkimage
+		variable data_pad_top
+		variable data_pad_bottom
+		variable data_pad_left
+		variable data_pad_right
+		variable t
+		variable l
+		variable r
+		variable b
+		common fontreg
+
+		method render_label {text {size ""} {colour ""}}
+		method render_tick {text {size ""} {colour ""}}
+		method data_ix {point}
+		method data_iy {point}
+		method data_x {point}
+		method data_y {point}
+		method max {args}
+		method min {args}
+		method center_x {pmap x}
+		method center_y {pmap y}
+		method extend_bbox {bboxvar x y pmap}
+		method plotline {x1 y1 x2 y2 colour}
+		method render_data_area {bw bh {grid_xs {}} {grid_ys {}}}
+		method format_label {point prec}
+		method label_width {txt}
+		method label_height {txt}
+	}
+}
+
+
+body pixel::utils::Graph::constructor {args} { #<<<1
+	package require Pixel_tkimage
+
+	namespace import -force ::pixel::*
+	namespace import -force ::pixel::tkimage::*
+
+	array set datapoints	{}
+	array set linecolours	{}
+	array set series_labels	{}
+	array set x_ticks		{}
+	array set y_ticks		{}
+
+	eval configure $args
+
+	if {![info exists labelfont]} {
+		package require Pixel_fonts
+
+		if {![info exists fontreg]} {
+			set fontreg		[pixel::fonts::Font ::#auto]
+		}
+
+		set labelfont		[$fontreg get_face {arial {bold}}]
+	}
+	if {![info exists tickfont]} {
+		package require Pixel_fonts
+
+		if {![info exists fontreg]} {
+			set fontreg		[pixel::fonts::Font ::#auto]
+		}
+
+		set tickfont		[$fontreg get_face {arial {}}]
+	}
+	set pmap	[pmap_new $width $height 0x00000000]
+}
+
+
+body pixel::utils::Graph::x_label {labeltext} { #<<<1
+	set x_label		[render_label $labeltext]
+}
+
+
+body pixel::utils::Graph::y_label {labeltext} { #<<<1
+	set y_label		[pmap_rotate [render_label $labeltext] -1]
+}
+
+
+body pixel::utils::Graph::x_axis {ticks} { #<<<1
+	catch {unset x_ticks}
+	array set x_ticks {}
+	set x_ticks_height		0
+	foreach {point tlabel} $ticks {
+		if {$tlabel == ""} {
+			set tlabel	[format_label $point $prec_y]
+		}
+		set x_ticks($point)	[render_tick $tlabel $ticksize]
+		foreach {x y} [pmap_info $x_ticks($point)] break
+		if {$y > $x_ticks_height} {
+			set x_ticks_height	$y
+		}
+	}
+}
+
+
+body pixel::utils::Graph::y_axis {ticks} { #<<<1
+	catch {unset y_ticks}
+	array set y_ticks {}
+	set y_ticks_width		0
+	foreach {point tlabel} $ticks {
+		if {$tlabel == ""} {
+			set tlabel	[format_label $point $prec_x]
+		}
+		set y_ticks($point)	[render_tick $tlabel $ticksize]
+		foreach {x y} [pmap_info $y_ticks($point)] break
+		if {$x > $y_ticks_width} {
+			set y_ticks_width	$x
+		}
+	}
+}
+
+
+body pixel::utils::Graph::data {series_label linecolour points} { #<<<1
+	set datapoints($series_label)		{}
+	set linecolours($series_label)		$linecolour
+	set series_labels($series_label)	[render_label $series_label $labelsize $linecolours($series_label)]
+	if {[llength $points] == 0} {
+		unset datapoints($series_label)
+		unset linecolours($series_label)
+		unset series_labels($series_label)
+	}
+	array set tmp	$points
+	foreach x [lsort -real [array names tmp]] {
+		lappend datapoints($series_label)	$x $tmp($x)
+	}
+}
+
+
+body pixel::utils::Graph::plot {} { #<<<1
+	# Find range and domain <<<
+	set all_x		{}
+	set all_y		{}
+	foreach {series_label points} [array get datapoints] {
+		foreach {x y} $points {
+			lappend all_x	$x
+			lappend all_y	$y
+		}
+	}
+	if {[llength [array names x_ticks]] > 0} {
+		set min_dx	[min \
+				[lindex [lsort -real [array names x_ticks]] 0] \
+				[eval min $all_x]]
+		set max_dx	[max \
+				[lindex [lsort -real [array names x_ticks]] end] \
+				[eval max $all_x]]
+	} else {
+		set min_dx	[eval min $all_x]
+		set max_dx	[eval max $all_x]
+	}
+	if {[llength [array names y_ticks]] > 0} {
+		set min_dy	[min \
+				[lindex [lsort -real [array names y_ticks]] 0] \
+				[eval min $all_y]]
+		set max_dy	[max \
+				[lindex [lsort -real [array names y_ticks]] end] \
+				[eval max $all_y]]
+	} else {
+		set min_dy	[eval min $all_y]
+		set max_dy	[eval max $all_y]
+	}
+
+	puts "max_dx: ($max_dx) min_dx: ($min_dx)"
+	puts "max_dy: ($max_dy) min_dy: ($min_dy)"
+	set domain	[expr {$max_dx - $min_dx}]
+	set range	[expr {$max_dy - $min_dy}]
+	# Find range and domain >>>
+
+	# Find data area and pos <<<
+	set data_x		0
+	set data_y		0
+
+	set series_labels_widths	{}
+	set series_labels_ipad		2
+	set series_labels_opad		4
+	set legend_h				[expr {$series_labels_ipad * 2}]
+	foreach {series_label series_pmap} [array get series_labels] {
+		lappend series_labels_widths	[lindex [pmap_info $series_pmap] 0]
+		incr legend_h	[lindex [pmap_info $series_pmap] 1]
+		incr legend_h	2
+	}
+	set series_labels_width [eval max $series_labels_widths]
+
+	# Don't try this at home kids
+	set first_y_height	[lindex [pmap_info $y_ticks([lindex [lsort -real -increasing [array names y_ticks]] 0])] 1]
+	set last_y_height	[lindex [pmap_info $y_ticks([lindex [lsort -real -decreasing [array names y_ticks]] 0])] 1]
+	set first_x_width	[lindex [pmap_info $x_ticks([lindex [lsort -real -increasing [array names x_ticks]] 0])] 0]
+	set last_x_width	[lindex [pmap_info $x_ticks([lindex [lsort -real -decreasing [array names x_ticks]] 0])] 0]
+	set data_pad_top	[expr {$last_y_height / 2 + 3}]
+	set data_pad_bottom	[expr {$first_y_height / 2 + 3}]
+	set data_pad_left	[expr {$first_x_width / 2 + 3}]
+	set data_pad_right	[expr {$last_x_width / 2 + 3}]
+
+	# x_axis_area:
+	#  outerpad + x_axis width + labelpad + y_ticks_width + innerpad + 1
+	incr data_x		$outerpad
+	incr data_x		[lindex [pmap_info $y_label] 0]
+	incr data_x		$labelpad
+	incr data_x		$y_ticks_width
+	set y_tick_pos	$data_x
+	incr data_x		$innerpad
+	incr data_x		1
+
+	# y_axis_area:
+	#  outerpad + y_axis width + labelpad + x_ticks_height + innerpad + 1
+	incr data_y		$outerpad
+	incr data_y		[lindex [pmap_info $x_label] 1]
+	incr data_y		$labelpad
+	incr data_y		$x_ticks_height
+	set x_tick_pos	[expr {$height - $data_y}]
+	incr data_y		$innerpad
+	incr data_y		1
+
+	set graph_label	[render_label $label]
+	set graph_label_height	[lindex [pmap_info $graph_label] 1]
+
+	set legend_w	[expr {$series_labels_width + $series_labels_ipad * 2}]
+	set data_w		[expr {$width - $data_x - 1 - $legend_w - $series_labels_opad * 2}]
+	set data_h		[expr {$height - $data_y - $graph_label_height - 4 - 1}]
+
+	set t	[expr {$graph_label_height + 4}]
+	set l	[expr {$data_x - 1}]
+	set b	[expr {$t + $data_h + 1}]
+	set r	[expr {$data_x + $data_w}]
+	# Find data area and pos >>>
+
+	# Autogenerate axis ticks and labels if appropriate <<<
+	if {$auto_ticks_x} {
+		array unset x_ticks
+		foreach {series_label points} [array get datapoints] {
+			foreach {x y} [lrange $points 2 end] {
+				if {![info exists first_label_x]} {
+					set first_label_x	$x
+				}
+				set last_label_x		$x
+				if {![info exists max_label_len_x] || [string length $max_label_len_x] < [string length $x]} {
+					set max_label_len_x	$x
+				}
+			}
+		}
+		#set w0	[label_width [format_label $first_label_x $prec_x]]
+		set w1	[label_width [format_label $max_label_len_x $prec_x]]
+		#set w2	[label_width [format_label $last_label_x $prec_x]]
+
+		#set avail_w	[expr {$data_w - $w0 - $w2 - $min_tick_pad_x * 2}
+		#set finest	[expr {$avail_w / $w1}]
+		set densest	[expr {$data_w / ($w1 + $min_tick_pad_x * 2)}]
+		set finest	[expr {$domain / $densest}]
+		puts "finest chunksize: ($finest)"
+
+		set tmp		$finest
+		set pwr		0
+		while {$tmp > 10} {
+			set tmp	[expr {$tmp / 10}]
+			incr pwr
+		}
+		while {$tmp < 1} {
+			set tmp	[expr {$tmp * 10}]
+			incr pwr -1
+		}
+		foreach rpnt {2 2.5 5 10} {
+			if {$tmp < $rpnt} {
+				set b	$rpnt
+				break
+			}
+		}
+		set step	[expr {$b * pow(10,$pwr)}]
+		puts "step: ($step)"
+		set first	[expr {int($min_dx / $step) * $step}]
+		while {$first < ($min_dx + $finest)} {
+			set first	[expr {$first + $step}]
+		}
+		set pen_x	$first
+		set ticks	{}
+		lappend ticks $min_dx
+		while {($max_dx - $pen_x) > $finest} {
+			lappend ticks $pen_x
+			set pen_x	[expr {$pen_x + $step}]
+		}
+		lappend ticks $max_dx
+		
+		foreach tick $ticks {
+			set x_ticks($tick) [render_tick [format_label $tick $prec_x] $ticksize]
+		}
+	}
+
+	if {$auto_ticks_y} {
+		array unset y_ticks
+		foreach {series_label points} [array get datapoints] {
+			foreach {x y} [lrange $points 2 end] {
+				if {![info exists first_label_y]} {
+					set first_label_y	$y
+				}
+				set last_label_y		$y
+				if {![info exists max_label_len_y] || [string length $max_label_len_y] < [string length $y]} {
+					set max_label_len_y	$y
+				}
+			}
+		}
+		#set h0	[label_height [format_label $first_label_y $prec_y]]
+		set h1	[label_height [format_label $max_label_len_y $prec_y]]
+		#set h2	[label_height [format_label $last_label_y $prec_y]]
+
+		#set avail_h	[expr {$data_h - $h0 - $h2 - $min_tick_pad_y * 2}
+		#set finest	[expr {$avail_h / $h1}]
+		set densest	[expr {$data_h / ($h1 + $min_tick_pad_y * 2)}]
+		set finest	[expr {$range / $densest}]
+		puts "finest chunksize: ($finest)"
+
+		set tmp		$finest
+		set pwr		0
+		while {$tmp > 10} {
+			set tmp	[expr {$tmp / 10}]
+			incr pwr
+		}
+		while {$tmp < 1} {
+			set tmp	[expr {$tmp * 10}]
+			incr pwr -1
+		}
+		foreach rpnt {2 2.5 5 10} {
+			if {$tmp < $rpnt} {
+				set b	$rpnt
+				break
+			}
+		}
+		set step	[expr {$b * pow(10,$pwr)}]
+		puts "step: ($step)"
+		set first	[expr {int($min_dy / $step) * $step}]
+		while {$first < ($min_dy + $finest)} {
+			set first	[expr {$first + $step}]
+		}
+		set pen_y	$first
+		set ticks	{}
+		lappend ticks $min_dy
+		while {($max_dy - $pen_y) > $finest} {
+			lappend ticks $pen_y
+			set pen_y	[expr {$pen_y + $step}]
+		}
+		lappend ticks $max_dy
+		
+		foreach tick $ticks {
+			set y_ticks($tick) [render_tick [format_label $tick $prec_y] $ticksize]
+		}
+	}
+	# Autogenerate axis ticks and labels if appropriate >>>
+
+	# Prepare background <<<
+	box $pmap 0 0 $width $height $bg_colour 0
+	if {[info exists bg_pmap]} {
+		foreach {bg_x bg_y} [pmap_info $bg_pmap] break
+		switch -- [lindex $bg_mode 0] {
+			"stretch" {
+				if {$bg_x != $width || $bg_h != $height} {
+					set bg	[scale_pmap $width $height]
+				} else {
+					set bg	$bg_pmap
+				}
+				pmap_paste $pmap $bg 0 0 $::MD_ALPHA
+			}
+
+			"tile" {
+				set y_now	0
+				set bg		[pmap_new $width $height 0x00000000]
+				while {$y_now < $height} {
+					set x_now	0
+					while {$x_now < $width} {
+						pmap_paste $bg $bg_pmap $x_now $y_now 0
+						incr x_now	$bg_x
+					}
+					incr y_now	$bg_y
+				}
+				pmap_paste $pmap $bg 0 0 $::MD_ALPHA
+			}
+
+			"place" {
+				set xofs	[lindex $bg_mode 1]
+				set yofs	[lindex $bg_mode 2]
+				if {$xofs < 0} {
+					set xofs	[expr {$r - $bg_x + $xofs}]
+				} else {
+					set xofs	[expr {$t + $xofs}]
+				}
+				if {$yofs < 0} {
+					set yofs	[expr {$b - $bg_y + $yofs}]
+				} else {
+					set yofs	[expr {$t + $yofs}]
+				}
+				pmap_paste $pmap $bg_pmap $xofs $yofs $::MD_ALPHA
+			}
+
+			default {
+				error "Unrecognised -bg_mode: ($bg_mode)"
+			}
+		}
+	}
+	# Prepare background >>>
+
+	# Paste axis labels and ticks <<<
+	set this_x	[center_x $x_label [expr {$data_x + $data_w / 2}]]
+	set this_y	[expr {$height - $outerpad - [lindex [pmap_info $x_label] 1]}]
+	extend_bbox x_axis_pmaps $this_x $this_y $x_label
+	pmap_paste $pmap $x_label $this_x $this_y $::MD_ALPHA
+
+	set this_x	$outerpad
+	set this_y	[center_y $y_label [expr {$data_h / 2}]]
+	extend_bbox y_axis_pmaps $this_x $this_y $y_label
+	pmap_paste $pmap $y_label $this_x $this_y $::MD_ALPHA
+
+	foreach {point} [lsort -real [array names x_ticks]] {
+		set this_x	[center_x $x_ticks($point) [data_ix $point]]
+		set this_y	$x_tick_pos
+		extend_bbox x_axis_pmaps $this_x $this_y $x_ticks($point)
+		pmap_paste $pmap $x_ticks($point) $this_x $this_y $::MD_ALPHA
+	}
+	foreach {point} [lsort -real [array names y_ticks]] {
+		set mid_y		[data_iy $point]
+		set this_y		[center_y $y_ticks($point) $mid_y]
+		set this_x		[expr {$y_tick_pos - [lindex [pmap_info $y_ticks($point)] 0]}]
+		extend_bbox y_axis_pmaps $this_x $this_y $y_ticks($point)
+		pmap_paste $pmap $y_ticks($point) $this_x $this_y $::MD_ALPHA
+	}
+	# Paste axis labels and ticks >>>
+
+	# Draw data area outline and grid <<<
+	pmap_paste $pmap [render_data_area $data_w $data_h [array names x_ticks] [array names y_ticks]] $l $t $::MD_ALPHA
+	# Draw data area outline and grid >>>
+
+	# Draw graph label <<<
+	set shadow		[pmap_dropshadow $graph_label 2]
+	pmap_filter $shadow $::MD_FILTER_ALPHA 0.75
+#	pmap_paste $pmap $shadow [center_x $graph_label [expr {$data_x + $data_w / 2}]] 1 $::MD_ALPHA
+	pmap_paste $pmap $graph_label [center_x $graph_label [expr {$data_x + $data_w / 2}]] 1 $::MD_ALPHA
+	# Draw graph label >>>
+
+	# Plot line <<<
+	foreach {series_label points} [array get datapoints] {
+		set last_x	[lindex $points 0]
+		set last_y	[lindex $points 1]
+		foreach {x y} [lrange $points 2 end] {
+			plotline $last_x $last_y $x $y $linecolours($series_label)
+			set last_x	$x
+			set last_y	$y
+		}
+	}
+	# Plot line >>>
+
+	# Draw legend <<<
+	set lx	[expr {$r + $series_labels_opad}]
+	set ly	$t
+	set legend			[render_data_area $legend_w $legend_h]
+	set legend_shadow	[pmap_dropshadow $legend 4]
+	set pen_y			$series_labels_ipad
+	set pen_x			[expr {$series_labels_ipad + 1}]
+	foreach {series_label series_label_pmap} [array get series_labels] {
+		pmap_paste $legend $series_label_pmap $pen_x $pen_y $::MD_ALPHA
+		incr pen_y		[lindex [pmap_info $series_label_pmap] 1]
+		incr pen_y		$series_labels_ipad
+	}
+	pmap_filter $legend_shadow $::MD_FILTER_ALPHA 0.3
+	pmap_paste $pmap $legend_shadow $lx $ly $::MD_ALPHA
+	pmap_paste $pmap $legend $lx $ly $::MD_ALPHA
+	# Draw legend >>>
+	puts "generated graph"
+}
+
+
+body pixel::utils::Graph::get_image {} { #<<<1
+	if {[info exists tkimage]} {return $tkimage}
+	if {$::tcl_platform(platform) != "windows"} {
+		set tkimage	[image create pmap -pmap $pmap]
+	} else {
+		if {$slow_win_image} {
+			foreach {w h depth data} $pmap break
+			set tkimage	[image create photo -width $w -height $h]
+			binary scan $data c* pixels
+
+			puts "string length pixels: ([string length $pixels])"
+			puts "llength pixels: ([llength $pixels])"
+			#puts "pixels: ($pixels)"
+			#puts "data: ($data)"
+
+			set idat	{}
+			set i		-1
+			for {set y 0} {$y < $h} {incr y} {
+				puts "processing scanline ($y) of ($h)"
+				set row	{}
+				for {set x 0} {$x < $w} {incr x} {
+					set b		[expr {[lindex $pixels [incr i]] & 0xFF}]
+					set g		[expr {[lindex $pixels [incr i]] & 0xFF}]
+					set r		[expr {[lindex $pixels [incr i]] & 0xFF}]
+					set a		[expr {[lindex $pixels [incr i]] & 0xFF}]
+					#set pixels	[lrange $pixels 4 end]
+					#set a		[string index $pixels 0]
+					#set r		[string index $pixels 1]
+					#set g		[string index $pixels 2]
+					#set b		[string index $pixels 3]
+					#set pixels	[string range $pixels 4 end]
+					lappend row	[format "#%02x%02x%02x" $r $g $b]
+				}
+				lappend idat	$row
+			}
+			$tkimage put $idat -to 0 0 
+		} else {
+			set tkimage	[image create photo -data [pixel::pmap2bmp $pmap]]
+		}
+	}
+	return $tkimage
+}
+
+
+body pixel::utils::Graph::get_pmap {} { #<<<1
+	return $pmap
+}
+
+
+body pixel::utils::Graph::write_image {filename} { #<<<1
+	package require Pixel_imlib2
+	pixel::imlib2::save_image $pmap $filename
+}
+
+
+body pixel::utils::Graph::render_label {text {size ""} {colour ""}} { #<<<1
+	if {$size == ""} {
+		set size	$labelsize
+	}
+	if {$colour == ""} {
+		set colour	$labelcolour
+	}
+	return [render_ttf $colour $labelfont $size [string trim $text]]
+}
+
+
+body pixel::utils::Graph::render_tick {text {size ""} {colour ""}} { #<<<1
+	if {$size == ""} {
+		set size	$labelsize
+	}
+	if {$colour == ""} {
+		set colour	$labelcolour
+	}
+	return [render_ttf $colour $tickfont $size [string trim $text]]
+}
+
+
+body pixel::utils::Graph::bg_pmap {new_bg_pmap} { #<<<1
+	if {$new_bg_pmap == ""} {
+		catch {unset bg_pmap}
+	}
+	set bg_pmap	$new_bg_pmap
+}
+
+
+body pixel::utils::Graph::data_ix {point} { #<<<1
+	return [expr {int([data_x $point])}]
+}
+
+
+body pixel::utils::Graph::data_iy {point} { #<<<1
+	return [expr {int([data_y $point])}]
+}
+
+
+body pixel::utils::Graph::data_x {point} { #<<<1
+	return [expr {($point - $min_dx) * (($data_w - $data_pad_left - $data_pad_right) / double($domain)) + $data_x + $data_pad_left + 0.49}]
+}
+
+
+body pixel::utils::Graph::data_y {point} { #<<<1
+	return [expr {$height - ($point - $min_dy) * (($data_h - $data_pad_top - $data_pad_bottom) / double($range)) - $data_y - $data_pad_top + 0.49}]
+}
+
+
+body pixel::utils::Graph::max {args} { #<<<1
+	if {[llength $args] == 0} {
+		error "No candidates"
+	}
+	set max	[lindex $args 0]
+	foreach e $args {
+		if {$e > $max} {
+			set max	$e
+		}
+	}
+
+	return $max
+}
+
+
+body pixel::utils::Graph::min {args} { #<<<1
+	if {[llength $args] == 0} {
+		error "No candidates"
+	}
+	set min	[lindex $args 0]
+	foreach e $args {
+		if {$e < $min} {
+			set min	$e
+		}
+	}
+
+	return $min
+}
+
+
+body pixel::utils::Graph::center_x {pmap x} { #<<<1
+	return [expr {$x - [lindex [pmap_info $pmap] 0] / 2}]
+}
+
+
+body pixel::utils::Graph::center_y {pmap y} { #<<<1
+	return [expr {$y - [lindex [pmap_info $pmap] 1] / 2}]
+}
+
+
+body pixel::utils::Graph::extend_bbox {bboxvar x y pmap} { #<<<1
+	upvar $bboxvar bbox
+
+	if {![info exists bbox(x1)]} {set bbox(x1)	$x}
+	if {![info exists bbox(y1)]} {set bbox(y1)	$y}
+
+	if {$x < $bbox(x1)} {set bbox(x1)	$x}
+	if {$y < $bbox(y1)} {set bbox(y1)	$y}
+	foreach {pw ph} [pmap_info $pmap] break
+	incr x $pw
+	incr y $ph
+	if {![info exists bbox(x2)]} {set bbox(x2)	$x}
+	if {![info exists bbox(y2)]} {set bbox(y2)	$y}
+	if {$x > $bbox(x2)} {set bbox(x2)	$x}
+	if {$y > $bbox(y2)} {set bbox(y2)	$y}
+}
+
+
+body pixel::utils::Graph::plotline {x1 y1 x2 y2 colour} { #<<<1
+	switch -- $linestyle {
+		"aa_osa" {
+			line_aa_osa \
+					[data_x $x1] [data_y $y1] [data_x $x2] [data_y $y2] \
+					$colour 3 $pmap
+		}
+		
+		"aa" {
+			line_aa \
+					[data_ix $x1] [data_iy $y1] [data_ix $x2] [data_iy $y2] \
+					$colour $pmap
+		}
+
+		"simple" {
+			puts stderr "$x1, $y1, $x2, $y2"
+			puts stderr "[data_ix $x1], [data_ix $y1], [data_ix $x2], [data_ix $y2]"
+			puts stderr "($colour)"
+			line \
+					[data_ix $x1] [data_iy $y1] [data_ix $x2] [data_iy $y2] \
+					$colour $pmap
+		}
+
+		default {
+			error "Invalid line style: ($linestyle)"
+		}
+	}
+}
+
+
+body pixel::utils::Graph::render_data_area {bw bh {grid_xs {}} {grid_ys {}}} { #<<<1
+	set tmp		[pmap_new [expr {$bw+1}] [expr {$bh+1}] 0x00000000]
+	box $tmp 0 0 $bw $bh $data_bg 0
+
+	foreach {point} $grid_xs {
+		set this_x	[expr {[data_ix $point] - $l}]
+		line $this_x 0 $this_x $bh 0xffd6d6d6 $tmp
+	}
+	foreach {point} $grid_ys {
+		set this_y	[expr {[data_iy $point] - $t}]
+		line 0 $this_y $bw $this_y 0xffd6d6d6 $tmp
+	}
+
+	line 0 0 0 $bh 0xff000000 $tmp
+	line 0 $bh $bw $bh 0xff000000 $tmp
+	line 0 0 $bw 0 0xff000000 $tmp
+	line $bw 0 $bw $bh 0xff000000 $tmp
+
+	return $tmp
+}
+
+
+body pixel::utils::Graph::format_label {point prec} { #<<<1
+	set tpoint	[format "%.${prec}f" $point]
+	set foo		[split $tpoint .]
+	set tmp		[expr {abs([lindex $foo 0])}]
+	if {[lindex $foo 1] != ""} {
+		set tail	".[lindex $foo 1]"
+	} else {
+		set tail	""
+	}
+	set tgr		{}
+	while {$tmp > 0} {
+		set nextg	[format "%03d" [expr {$tmp % 1000}]]
+		set tgr		[linsert $tgr 0 $nextg]
+		set tmp		[expr {int($tmp / 1000)}]
+	}
+	set tlabel		[join $tgr ,]
+	append tlabel	$tail
+	set tlabel		[string trimleft $tlabel 0]
+	if {$point < 0} {
+		set tlabel	"-$tlabel"
+	}
+	if {$point == 0} {
+		set tlabel	0
+	}
+
+	return $tlabel
+}
+
+
+body pixel::utils::Graph::label_width {txt} { #<<<1
+	set test_pmap	[render_tick $txt $ticksize]
+	foreach {test_pmap_w test_pmap_h} [pmap_info $test_pmap] break
+	return $test_pmap_w
+}
+
+
+body pixel::utils::Graph::label_height {txt} { #<<<1
+	set test_pmap	[render_tick $txt $ticksize]
+	foreach {test_pmap_w test_pmap_h} [pmap_info $test_pmap] break
+	return $test_pmap_h
+}
+
+
