@@ -10,10 +10,27 @@
 #include "2d.h"
 #include "tcl_pmap.h"
 #include <tclstuff.h>
+#include <setjmp.h>
 
 
 #define JPEG_ENCODE_BUFSIZE		65520
 
+
+struct custom_error_mgr {
+	struct jpeg_error_mgr pub;
+
+	jmp_buf setjmp_buffer;
+};
+
+typedef struct custom_error_mgr	*custom_error_ptr;
+
+
+void custom_error_exit(j_common_ptr cinfo)
+{
+	custom_error_ptr jerr = (custom_error_ptr)cinfo->err;
+	(*cinfo->err->output_message)(cinfo);
+	longjmp(jerr->setjmp_buffer, 1);
+}
 
 
 gimp_image_t *loadjpeg(char *filename) // {{{1
@@ -282,7 +299,7 @@ static void term_source(j_decompress_ptr cinfo) // {{{1
 gimp_image_t *decodejpeg(unsigned char *jpeg_data, int *length) // {{{1
 {
 	struct jpeg_decompress_struct	cinfo;
-	struct jpeg_error_mgr			jerr;
+	struct custom_error_mgr			jerr;
 	struct jpeg_source_mgr			jsrc;
 	gimp_image_t	*dest = (gimp_image_t *)malloc(sizeof(gimp_image_t));
 	FILE			*fp;
@@ -291,7 +308,6 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int *length) // {{{1
 	_pel			*r;
 	JSAMPLE			*j;
 
-	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_decompress(&cinfo);
 
 	g_src_buf = jpeg_data;
@@ -302,6 +318,13 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int *length) // {{{1
 	jsrc.skip_input_data = skip_input_data;
 	jsrc.resync_to_restart = jpeg_resync_to_restart;
 	jsrc.term_source = term_source;
+	
+	cinfo.err = jpeg_std_error(&jerr.pub);
+	jerr.pub.error_exit = custom_error_exit;
+	if (setjmp(jerr.setjmp_buffer)) {
+		jpeg_destroy_decompress(&cinfo);
+		return NULL;
+	}
 	
 	cinfo.src = &jsrc;
 	(void)jpeg_read_header(&cinfo, TRUE);
@@ -412,6 +435,8 @@ static int glue_decodejpeg(ClientData *foo, Tcl_Interp *interp,
 	jpeg_data = Tcl_GetByteArrayFromObj(objv[1], &length);
 
 	new = decodejpeg(jpeg_data, &length);
+	if (new == NULL)
+		THROW_ERROR("Error loading jpeg");
 
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(new));
 
