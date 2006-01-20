@@ -1,0 +1,5 @@
+#
+# Tcl package index file
+#
+package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@ \
+		[list eval [list namespace eval ::pixel::devil [list variable library $dir]]\n[list source [file join $dir pixel_devil.tcl]]]
