@@ -16,24 +16,25 @@ OFLAGS2= -O9 -fforce-mem -fforce-addr -finline-functions \
 -funroll-loops -fmove-all-movables -fomit-frame-pointer \
 -mcpu=i686 -march=i686 -malign-loops=4 -malign-jumps=4 \
 -malign-functions=4
+OFLAGS3= -O3
 
 #OFLAGS=$(OFLAGS0)
-OFLAGS=$(OFLAGS2)
+OFLAGS=$(OFLAGS3)
 
 
 DEFS =
 DEBUG=-g
 #DEBUG=-g -DDEBUG
 INCLUDE = -I.. \
-		   -I/usr/include/tcl8.3 \
-		   -I/usr/include/tcl8.3/tcl-private/generic 
+		   -I/usr/include/tcl8.4 \
+		   -I/usr/include/tcl8.4/tcl-private/generic 
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE) `sdl-config --cflags`
 
 
 STATIC = 
 LLIBS = 
 LIBS =
-LDFLAGS = -ltcl8.3 -ltk8.3 `sdl-config --libs` -lm
+LDFLAGS = `sdl-config --libs` -lm
 
 all:    libpixel_sdl.so
 

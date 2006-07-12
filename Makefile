@@ -1,7 +1,7 @@
 DESTDIR =
 #BASE = tcl8.4
 BASE = usr
-TCLVER = 8.3
+TCLVER = 8.4
 
 MAJ = 1
 MIN = 0
@@ -33,14 +33,17 @@ HDRS = \
 
 MODULES = \
 	pixel_jpeg \
+	pixel_fonts \
+	pixel_png \
+	pixel_tkutils \
 	pixel_sdl \
 	pixel_tiff \
 	pixel_imlib2 \
+	pixel_rsvg
+
+DISABLED_MODULES = \
 	pixel_hermes \
-	pixel_fonts \
 	pixel_xcf \
-	pixel_png \
-	pixel_tkutils \
 	pixel_ptc
 
 DEBUG=-g -DDEBUG
@@ -70,7 +73,7 @@ DEFS := $(DEFS) -DASM_BUF_DRAW_BOX
 		   -I/$(BASE)/include/tcl$(TCLVER)/tcl-private/generic 
 INCLUDES = `freetype-config --cflags` \
 		   -I/$(BASE)/include \
-		   -I/usr/include/tcl8.3
+		   -I/usr/include/tcl8.4
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
 
 
@@ -81,7 +84,7 @@ LDFLAGS = $(STATIC) $(LIBS)
 
 
 GCC = gcc
-GXX = g++-3.3
+GXX = g++
 AR = ar -rs
 
 

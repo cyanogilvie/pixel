@@ -1,7 +1,8 @@
-#!/usr/bin/itclsh3.1
+#!/usr/bin/env tclsh8.4
 
 package require Itcl
 namespace import -force itcl::*
+auto_mkindex_parser::slavehook { _%@namespace import -force ::itcl::* }
 
 cd scripts
 

@@ -12,10 +12,12 @@ OFLAGS2= -O9 -fforce-mem -fforce-addr -finline-functions \
 -funroll-loops -fmove-all-movables -fomit-frame-pointer \
 -mcpu=i686 -march=i686 -malign-loops=4 -malign-jumps=4 \
 -malign-functions=4
+OFLAGS= -O3
+
 CC=gcc
 
 #OFLAGS=$(OFLAGS0)
-OFLAGS=$(OFLAGS2)
+OFLAGS=$(OFLAGS3)
 
 DEFS = \
 	   -DHAVE_X11_DGA=1 \
@@ -25,9 +27,9 @@ DEFS := $(DEFS) -DASM_BUF_DRAW_BOX
 
 CFLAGS = $(DEBUG) $(OFLAGS) $(DEFS)
 INCLUDES = -I. -I.. \
-		   -I/usr/include/tcl8.3 \
-		   -I/usr/include/tcl8.3/tcl-private/generic 
-LDFLAGS = -lm -ltcl8.3 -ltiff
+		   -I/usr/include/tcl8.4 \
+		   -I/usr/include/tcl8.4/tcl-private/generic 
+LDFLAGS = -lm -ltiff
 
 all:    libpixel_tiff.so
 

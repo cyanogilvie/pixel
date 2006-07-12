@@ -19,14 +19,14 @@ OFLAGS2= -O3
 OFLAGS=$(OFLAGS0)
 DEFS = 
 INCLUDES = -I. -I.. \
-		   -I/usr/include/tcl8.3 \
-		   -I/usr/include/tcl8.3/tcl-private/generic 
+		   -I/usr/include/tcl8.4 \
+		   -I/usr/include/tcl8.4/tcl-private/generic 
 CFLAGS = $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDES)
 
 
 STATIC =
 LLIBS = 
-LIBS = -ltcl8.3 -lpng
+LIBS = -lpng
 LDFLAGS = -Wall $(STATIC) $(LLIBS) $(LIBS)
 
 all: $(TARGET)

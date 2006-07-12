@@ -1,4 +1,6 @@
 #include "all.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 //extern int g_total_pmaps;
 
@@ -141,7 +143,7 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 			pen_y = 0;
 			previous = 0;
 
-			(int)(curr_pmap->clientdata) = glyphno-1;	// Last glyph
+			curr_pmap->clientdata = glyphno-1;	// Last glyph
 			curr_pmap->next = (pmap_list *)malloc(sizeof(pmap_list) * 1);
 			curr_pmap = curr_pmap->next;
 			curr_pmap->pmap = NULL;
@@ -195,7 +197,7 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 			glyphno -= since_break;
 			for (n = glyphno; n < glyphno + since_break; n++)
 				FT_Done_Glyph(glyphs[n].image);
-			(int)(curr_pmap->clientdata) = glyphno-1;	// Last glyph
+			curr_pmap->clientdata = glyphno-1;	// Last glyph
 #ifdef VDEBUG
 			fprintf(stderr, "falling back to glyphno %d, mbptr %p\n",
 					glyphno, mbptr);
@@ -207,7 +209,7 @@ pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text,
 			curr_pmap->clientdata = NULL;
 		}
 	}
-	(int)(curr_pmap->clientdata) = glyphno-1;
+	curr_pmap->clientdata = glyphno-1;
 
 	curr_pmap = reslist;
 	from_glyph = 0;

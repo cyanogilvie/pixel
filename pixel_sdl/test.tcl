@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh8.3
+#!/usr/bin/env tclsh
 
 set auto_path [concat . $auto_path]
 

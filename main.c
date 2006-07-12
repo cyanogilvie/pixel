@@ -1268,6 +1268,9 @@ static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
 
 	CHECK_ARGS(1, "pmap");
 
+#ifndef BMP_CRUFT
+	THROW_ERROR("Need to rewrite bmp code");
+#else
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 
 	pixels = pmap->width * pmap->height;
@@ -1308,6 +1311,7 @@ static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
 	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(bmp, size));
 
 	free(bmp);
+#endif
 
 	return TCL_OK;
 }

@@ -18,7 +18,7 @@ LDFLAGS = -Wall $(STATIC) $(LLIBS) $(LIBS)
 DEFINES =
 OFLAGS = -O3
 DEBUG = -g
-INCLUDES = -I/usr/include/tcl8.3
+INCLUDES = -I/usr/include/tcl8.4
 CFLAGS = $(DEFINES) $(OFLAGS) $(DEBUG) $(INCLUDES)
 
 all: $(TARGET)
