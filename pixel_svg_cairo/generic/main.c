@@ -32,14 +32,14 @@ static int glue_load_svg(cdata, interp, objc, objv)
 	svg_cairo_create(&svg_cairo);
 	svg_cairo_parse(svg_cairo, Tcl_GetString(objv[1]));
 
+	svg_cairo_get_size(svg_cairo, &sw, &sh);
 	if (objc == 2) {
-		svg_cairo_get_size(svg_cairo, &sw, &sh);
-
 		w = sw;
 		h = sh;
-		fprintf(stderr, "got w: %d, h: %d\n", sw, sh);
 	}
-	init.c = 0;
+	//fprintf(stderr, "got w: %d, h: %d, sw: %d, sh: %d\n", w, h, sw, sh);
+
+	init.c = 0xff0000ff;
 	new = pmap_new(w, h, init);
 	box(new, 0, 0, w, h, init, 0);
 

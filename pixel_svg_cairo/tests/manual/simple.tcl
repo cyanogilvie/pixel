@@ -8,6 +8,9 @@ set fn		[lindex $argv 0]
 
 #set pmap	[pixel::svg_cairo::load_svg $fn 300 300]
 set pmap	[pixel::svg_cairo::load_svg $fn]
+#puts [time {
+#	set pmap	[pixel::svg_cairo::load_svg $fn]
+#} 50]
 
 foreach {w h} [pixel::pmap_info $pmap] break
 

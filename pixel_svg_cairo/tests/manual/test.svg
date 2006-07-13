@@ -14,7 +14,7 @@
    width="64pt"
    height="64pt"
    xml:space="preserve"
-   sodipodi:docbase="/home/cyan/git/pixel/pixel_rsvg/tests/manual"
+   sodipodi:docbase="/home/cyan/git/pixel/pixel_svg_cairo/tests/manual"
    sodipodi:docname="test.svg"
    inkscape:version="0.43"
    inkscape:export-filename="/home/cyan/ntdirect.png"
@@ -53,28 +53,34 @@
     <radialGradient
    xlink:href="#linearGradient647"
    id="radialGradient650"
-   cx="0.75187969"
-   cy="0.7734375"
-   r="1.09892082"
-   fx="0.75187969"
-   fy="0.7734375" />
+   cx="54.635921"
+   cy="56.004378"
+   r="77.926721"
+   fx="54.635921"
+   fy="56.004378"
+   gradientTransform="matrix(1.013785,0,0,0.986402,1,2.5)"
+   gradientUnits="userSpaceOnUse" />
 
     <linearGradient
    xlink:href="#linearGradient647"
    id="linearGradient651"
-   x1="9.20246094e-2"
-   y1="4.43037972e-2"
-   x2="0.93865031"
-   y2="0.93670887" />
+   x1="7.8442488"
+   y1="4.3000168"
+   x2="67.880208"
+   y2="67.582284"
+   gradientTransform="matrix(1.013785,0,0,0.986402,1,2.5)"
+   gradientUnits="userSpaceOnUse" />
 
     <linearGradient
    inkscape:collect="always"
    xlink:href="#linearGradient5273"
    id="linearGradient5272"
-   x1="-0.030075189"
-   y1="-0.28125000"
-   x2="0.72180450"
-   y2="0.35156250" />
+   x1="3.5088095"
+   y1="-11.473309"
+   x2="49.852474"
+   y2="27.531402"
+   gradientTransform="matrix(1.015206,0,0,0.985022,1,2.5)"
+   gradientUnits="userSpaceOnUse" />
 
   </defs>
 
@@ -103,12 +109,12 @@
   </sodipodi:namedview>
 
   <rect
-   style="font-size:12.000000;opacity:0.25806452;fill:#000000;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#000000;stroke-width:2.3750000;stroke-dashoffset:0.0000000;stroke-opacity:1.0000000;"
+   style="font-size:12px;opacity:0.25806448;fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:2.375;stroke-dashoffset:0;stroke-opacity:1"
    id="rect5267"
    width="69.514565"
    height="67.572815"
-   x="6.5330400"
-   y="6.0292611"
+   x="7.53304"
+   y="8.5292606"
    ry="7.4350142"
    rx="7.4350142"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
@@ -116,16 +122,17 @@
    inkscape:export-ydpi="56.919998" />
 
   <rect
-   style="font-size:12;fill:url(#radialGradient650);fill-rule:evenodd;stroke:url(#linearGradient651);stroke-opacity:1;stroke-width:2.375;stroke-dasharray:none;stroke-dashoffset:0;"
+   style="font-size:12px;fill:url(#radialGradient650);fill-rule:evenodd;stroke:url(#linearGradient651);stroke-width:2.375;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
    id="rect646"
-   width="69.5145645"
-   height="67.5728149"
-   x="2.52427244"
-   y="2.33009338"
-   ry="4.85436916"
+   width="69.514565"
+   height="67.572815"
+   x="3.5242724"
+   y="4.8300934"
+   ry="4.8543692"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
    inkscape:export-xdpi="56.919998"
-   inkscape:export-ydpi="56.919998" />
+   inkscape:export-ydpi="56.919998"
+   rx="4.8543692" />
 
   <metadata
    id="metadata4630">
@@ -144,58 +151,58 @@
   </metadata>
 
   <rect
-   style="fill:#df6c00;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
+   style="fill:#df6c00;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
    id="rect5257"
    width="23.778801"
    height="8.6635942"
-   x="42.580643"
-   y="12.718894"
-   ry="0.0000000"
+   x="43.580643"
+   y="15.218894"
+   ry="0"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
    inkscape:export-xdpi="56.919998"
    inkscape:export-ydpi="56.919998" />
 
   <rect
-   style="fill:#df6c00;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
+   style="fill:#df6c00;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
    id="rect5259"
    width="23.778801"
    height="8.6635942"
-   x="42.580643"
-   y="27.465439"
-   ry="0.0000000"
+   x="43.580643"
+   y="29.965439"
+   ry="0"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
    inkscape:export-xdpi="56.919998"
    inkscape:export-ydpi="56.919998" />
 
   <rect
-   style="fill:#df6c00;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
+   style="fill:#df6c00;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
    id="rect5265"
    width="23.778801"
    height="8.6635942"
-   x="12.718894"
-   y="-32.442398"
-   ry="0.0000000"
-   transform="matrix(-2.361392e-16,1.000000,-1.000000,-2.361392e-16,0.000000,0.000000)"
+   x="15.218894"
+   y="-33.442398"
+   ry="0"
+   transform="matrix(-2.361392e-16,1,-1,-2.361392e-16,0,0)"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
    inkscape:export-xdpi="56.919998"
    inkscape:export-ydpi="56.919998" />
 
   <rect
-   style="fill:#df6c00;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
+   style="fill:#df6c00;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
    id="rect5266"
    width="23.778801"
    height="8.6635942"
-   x="12.718894"
-   y="-17.695852"
-   ry="0.0000000"
-   transform="matrix(-2.361392e-16,1.000000,-1.000000,-2.361392e-16,0.000000,0.000000)"
+   x="15.218894"
+   y="-18.695852"
+   ry="0"
+   transform="matrix(-2.361392e-16,1,-1,-2.361392e-16,0,0)"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
    inkscape:export-xdpi="56.919998"
    inkscape:export-ydpi="56.919998" />
 
   <path
-   style="fill:url(#linearGradient5272);fill-opacity:0.75000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;opacity:0.65437788;"
-   d="M 17.327189,65.990783 C 15.299539,65.775730 5.7142857,68.571429 6.0829493,62.857143 C 6.2672811,57.511520 5.1300516,27.353362 5.5299539,16.589862 C 5.9298562,5.6420308 6.0829493,6.5130569 16.958525,6.2672811 C 27.649770,6.0215053 59.127789,5.1136261 65.806452,6.6359447 C 68.725039,7.8955454 67.838120,11.854014 68.018434,18.248848 C 58.155345,13.561769 34.316436,11.674347 22.857143,21.751152 C 11.696880,31.565002 14.562212,59.569892 17.327189,65.990783 z "
+   style="opacity:0.6543779;fill:url(#linearGradient5272);fill-opacity:0.75;fill-rule:evenodd;stroke:none;stroke-width:1pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+   d="M 18.327189,68.490783 C 16.299539,68.27573 6.7142857,71.071429 7.0829493,65.357143 C 7.2672811,60.01152 6.1300516,29.853362 6.5299539,19.089862 C 6.9298562,8.1420308 7.0829493,9.0130569 17.958525,8.7672811 C 28.64977,8.5215053 60.127789,7.6136261 66.806452,9.1359447 C 69.725039,10.395545 68.83812,14.354014 69.018434,20.748848 C 59.155345,16.061769 35.316436,14.174347 23.857143,24.251152 C 12.69688,34.065002 15.562212,62.069892 18.327189,68.490783 z "
    id="path5270"
    sodipodi:nodetypes="cczzcczc"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
@@ -204,24 +211,25 @@
 
   <g
    id="g5282"
-   style="fill:#df6c00;fill-opacity:1.0000000;stroke:none;stroke-opacity:1.0000000;stroke-width:0.75000000;stroke-miterlimit:4.0000000;stroke-dasharray:none;"
+   style="fill:#df6c00;fill-opacity:1;stroke:none;stroke-width:0.75;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
    inkscape:export-filename="/home/cyan/git/nett_v4/blotter/images/ntdirect.png"
    inkscape:export-xdpi="56.919998"
-   inkscape:export-ydpi="56.919998">
+   inkscape:export-ydpi="56.919998"
+   transform="translate(1,2.5)">
     <path
-   style="fill:#df6c00;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:0.75000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;stroke-miterlimit:4.0000000;stroke-dasharray:none;"
-   d="M 27.557603,43.870967 L 66.912442,43.870968 L 34.654378,61.935484 L 40.000000,50.691244 L 23.778802,50.599078 L 27.557603,43.870967 z "
+   style="fill:#df6c00;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+   d="M 27.557603,43.870967 L 66.912442,43.870968 L 34.654378,61.935484 L 40,50.691244 L 23.778802,50.599078 L 27.557603,43.870967 z "
    id="path5277"
    sodipodi:nodetypes="cccccc" />
 
     <path
-   style="fill:#df6c00;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:0.75000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;stroke-miterlimit:4.0000000;stroke-dasharray:none;"
-   d="M 23.594470,43.686636 L 19.907834,50.506912 L 15.023041,50.506912 L 18.617511,43.686636 L 23.594470,43.686636 z "
+   style="fill:#df6c00;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+   d="M 23.59447,43.686636 L 19.907834,50.506912 L 15.023041,50.506912 L 18.617511,43.686636 L 23.59447,43.686636 z "
    id="path5280"
    sodipodi:nodetypes="ccccc" />
 
     <path
-   style="fill:#df6c00;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:0.75000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;stroke-miterlimit:4.0000000;stroke-dasharray:none;"
+   style="fill:#df6c00;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
    d="M 15.668202,43.686636 L 11.981566,50.506912 L 9.9539174,50.506912 L 13.732718,43.686636 L 15.668202,43.686636 z "
    id="path5281"
    sodipodi:nodetypes="ccccc" />
