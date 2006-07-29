@@ -144,7 +144,7 @@ static void img_pmap_cmd_deleted(ClientData clientData) //{{{1
 }
 
 
-static int img_pmap_master_set_size(pmap_master *masterPtr, int width, int height)
+static int img_pmap_master_set_size(pmap_master *masterPtr, int width, int height) //{{{1
 {
 	pmap_instance		*instancePtr;
 

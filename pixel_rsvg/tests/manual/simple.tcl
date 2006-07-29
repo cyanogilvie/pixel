@@ -5,7 +5,12 @@ package require Pixel_rsvg
 #package require Pixel_jpeg
 package require Pixel_sdl
 
-set pmap	[pixel::rsvg::load_svg "test.svg"]
+set fn		[lindex $argv 0]
+
+set pmap	[pixel::rsvg::load_svg $fn 300 300]
+#set pmap	[pixel::rsvg::load_svg $fn]
+#set pmap	[pixel::rsvg::load_svg2 $fn 300 300]
+#set pmap	[pixel::rsvg::load_svg2 $fn]
 
 foreach {w h} [pixel::pmap_info $pmap] break
 
@@ -15,6 +20,7 @@ puts "loaded svg, w: ($w) h: ($h)"
 
 set scr	[pixel::sdl::setup_screen $w $h 32 {SDL_ANYFORMAT SDL_RESIZABLE}]
 
+pixel::box $scr 0 0 $w $h 0xff0000ff 0
 pixel::pmap_paste $scr $pmap 0 0 0
 pixel::sdl::do_frame $::scr
 

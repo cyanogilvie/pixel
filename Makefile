@@ -39,11 +39,12 @@ MODULES = \
 	pixel_sdl \
 	pixel_tiff \
 	pixel_imlib2 \
-	pixel_rsvg
+	pixel_svg_cairo
 
 DISABLED_MODULES = \
 	pixel_hermes \
 	pixel_xcf \
+	pixel_rsvg \
 	pixel_ptc
 
 DEBUG=-g -DDEBUG

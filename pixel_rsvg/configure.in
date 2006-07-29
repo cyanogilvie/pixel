@@ -74,7 +74,7 @@ TEA_SETUP_COMPILER
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
 TEA_ADD_INCLUDES([-I.. -I/usr/lib/glib-2.0/include -I/usr/include/glib-2.0 -I/usr/include/gtk-2.0 -I/usr/include/librsvg-2/librsvg -I/usr/include/cairo])
-TEA_ADD_LIBS([-lrsvg-2 -lcairo])
+TEA_ADD_LIBS([-lrsvg-2 -lsvg-cairo -lcairo])
 TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([])
 #TEA_ADD_TCL_SOURCES([pixel_rsvg.tcl])
@@ -96,11 +96,13 @@ TEA_ADD_TCL_SOURCES([])
 
 if test "${TEA_PLATFORM}" = "windows" ; then
     AC_DEFINE(BUILD_Pixel_rsvg, 1, [Build windows export dll])
-    CLEANFILES="pkgIndex.tcl pixel_rsvg.tcl *.lib *.dll *.exp *.ilk *.pdb vc*.pch"
+    #CLEANFILES="pkgIndex.tcl pixel_rsvg.tcl *.lib *.dll *.exp *.ilk *.pdb vc*.pch"
+    CLEANFILES="*.lib *.dll *.exp *.ilk *.pdb vc*.pch"
     #TEA_ADD_SOURCES([win/winFile.c])
     #TEA_ADD_INCLUDES([-I\"$(${CYGPATH} ${srcdir}/win)\"])
 else
-    CLEANFILES="pkgIndex.tcl pixel_rsvg.tcl"
+    #CLEANFILES="pkgIndex.tcl pixel_rsvg.tcl"
+    CLEANFILES=""
     #TEA_ADD_SOURCES([unix/unixFile.c])
     #TEA_ADD_LIBS([-lsuperfly])
 fi
