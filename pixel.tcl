@@ -10,7 +10,7 @@ if {$tcl_platform(platform) == "windows"} {
 namespace eval ::pixel {
 	namespace export *
 
-	variable version 2.6
+	variable version 2.7
 
 	namespace eval :: {
 		# effects flags
