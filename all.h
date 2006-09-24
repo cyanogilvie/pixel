@@ -4,6 +4,7 @@
 #include "primitives.h"
 #include "shaders.h"
 #include "tcl_pmap.h"
+#include "tcl_utils.h"
 #include "ttf.h"
 #include "rle.h"
 

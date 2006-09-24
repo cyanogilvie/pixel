@@ -80,6 +80,9 @@ static int set_ttf_face_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	Tcl_Obj **		objv;
 	char *			filename;
 	int				face_index, error;
+	const char		*fontdata;
+	int				fontdata_len;
+	FT_Open_Args	open_args;
 	
 	fprintf(stderr, "tcl_ttf_face: Called set_ttf_face_from_any\n");
 
@@ -95,14 +98,21 @@ static int set_ttf_face_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	if (objc < 1 || objc > 2)
 		THROW_ERROR("TTFFace expects a list of: filename ?face_index?");
 
-	filename = strdup(Tcl_GetString(objv[0]));
 	if (objc == 2) {
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &face_index));
 	} else {
 		face_index = 0;
 	}
 
-	error = FT_New_Face(ft_library, filename, face_index, &face);
+	filename = Tcl_GetString(objv[0]);
+	TEST_OK(read_vfs_file2(interp, filename, &fontdata, &fontdata_len, 1));
+
+	open_args.flags = FT_OPEN_MEMORY;
+	open_args.memory_base = (FT_Byte *)fontdata;
+	open_args.memory_size = fontdata_len;
+
+	error = FT_Open_Face(ft_library, &open_args, face_index, &face);
+	//error = FT_New_Face(ft_library, filename, face_index, &face);
 
 	if (error == FT_Err_Unknown_File_Format) {
 		THROW_ERROR("Unknown file format opening ttf file ", filename);

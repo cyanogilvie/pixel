@@ -23,13 +23,15 @@ OBJS = \
 	   ttf.o \
 	   shaders.o \
 	   bezierstuff.o \
-	   rle.o
+	   rle.o \
+	   tcl_utils.o
 
 HDRS = \
 	   2d.h \
 	   tcl_pmap.h \
 	   primitives.h \
-	   misc.h
+	   misc.h \
+	   tcl_utils.h
 
 MODULES = \
 	pixel_jpeg \
