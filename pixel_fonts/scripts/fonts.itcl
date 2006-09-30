@@ -104,20 +104,20 @@ body pixel::fonts::Font::add_font_spec {specfile} { #<<<1
 
 
 body pixel::fonts::Font::add_font {basename attribs filename} { #<<<1
-	puts "add_font: ($basename) ($attribs) ($filename)"
+	#puts "add_font: ($basename) ($attribs) ($filename)"
 	set name		[compile_fontname $basename $attribs]
 	set hold		[pwd]
 	cd [file dirname $basename]
 	set reg($name)	[list [file join [pwd] $filename]]
 	cd $hold
-	puts "\t$name - $reg($name)"
+	#puts "\t$name - $reg($name)"
 }
 
 
 body pixel::fonts::Font::list_basenames {} { #<<<1
 	set build	{}
 	foreach name [array names reg] {
-		puts "list_basenames: processing ($name)"
+		#puts "list_basenames: processing ($name)"
 		lappend build	[lindex [split $name ,] 0]
 	}
 
