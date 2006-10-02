@@ -1,0 +1,7 @@
+config.log
+config.status
+configure
+pkgIndex.tcl
+pixel_svg_cairo.tcl
+autom4te.cache
+Makefile

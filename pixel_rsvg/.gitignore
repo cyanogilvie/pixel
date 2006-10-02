@@ -1,0 +1,7 @@
+config.log
+config.status
+configure
+pkgIndex.tcl
+pixel_rsvg.tcl
+autom4te.cache
+Makefile
