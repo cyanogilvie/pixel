@@ -1,7 +1,7 @@
 DESTDIR =
 BASE = usr
 TARGETDIR = $(DESTDIR)/$(BASE)/lib/pixel_tkimage
-TCLVER = 8.3
+TCLVER = 8.4
 
 CC=gcc
 
@@ -31,12 +31,18 @@ DEBUG=-g
 		   -I/usr/include/tcl8.3/tcl-private/generic \
 		   -I/usr/include/tcl8.3/tk-private/generic \
 		   -I/usr/include/Hermes
-INCLUDE = -I.. \
+#INCLUDE = -I.. \
 		   -I/$(BASE)/include \
 		   -I/src/cvs/tcl/tk/generic \
 		   -I/src/cvs/tcl/tk/unix \
 		   -I/src/cvs/tcl/tcl/generic \
 		   -I/src/cvs/tcl/tcl/unix \
+		   -I/usr/include/Hermes
+INCLUDE = -I.. \
+		   -I/$(BASE)/include \
+		   -I/usr/include/tcl8.4 \
+		   -I/usr/include/tcl8.4/tcl-private/generic \
+		   -I/usr/include/tcl8.4/tk-private/generic \
 		   -I/usr/include/Hermes
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE)
 
@@ -64,4 +70,4 @@ clean:
 	-rm -f pixel_tkimage.so
 	-rm -f *.o
 	-rm -f core
-        
+

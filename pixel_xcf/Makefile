@@ -25,9 +25,9 @@ DEFS := $(DEFS) -DASM_BUF_DRAW_BOX
 
 CFLAGS = $(DEBUG) $(OFLAGS) $(DEFS) `gtk-config --cflags`
 INCLUDES = -I. -I.. \
-		   -I/usr/include/tcl8.3 \
-		   -I/usr/include/tcl8.3/tcl-private/generic 
-LDFLAGS = -lm -ltcl8.3 -lxcf
+		   -I/usr/include/tcl8.4 \
+		   -I/usr/include/tcl8.4/tcl-private/generic 
+LDFLAGS = -lm -ltcl8.4 -lxcf
 
 all:    libpixel_xcf.so
 
