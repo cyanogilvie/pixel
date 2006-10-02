@@ -1,0 +1,7 @@
+*.o
+*.so
+*.a
+core
+scripts-stamp
+tclIndex
+
