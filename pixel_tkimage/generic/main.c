@@ -28,7 +28,7 @@
 #include "2d.h"
 #include "tcl_pmap.h"
 
-#include "main.h"
+//#include "main.h"
 
 #define ADD_SUBLIST_LABEL(name, list) \
 	TEST_OK(Tcl_ListObjAppendElement(interp, list, \
