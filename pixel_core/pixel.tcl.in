@@ -1,16 +1,12 @@
 package require Itcl 3.1
 namespace import -force ::itcl::*
 
-if {$tcl_platform(platform) == "windows"} {
-	load [file join $::pixel::library libpixel.dll]
-} else {
-	load [file join $::pixel::library libpixel.so]
-}
+load [file join $::pixel::library @PKG_LIB_FILE@]
 
 namespace eval ::pixel {
 	namespace export *
 
-	variable version 2.7
+	variable version @PACKAGE_VERSION@
 
 	namespace eval :: {
 		# effects flags
@@ -44,5 +40,5 @@ namespace eval ::pixel {
 
 lappend auto_path [file join $::pixel::library scripts]
 
-package provide Pixel $::pixel::version
+package provide @PACKAGE_NAME@ $::pixel::version
 
