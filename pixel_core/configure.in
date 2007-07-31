@@ -72,12 +72,12 @@ TEA_SETUP_COMPILER
 #-----------------------------------------------------------------------
 
 TEA_ADD_SOURCES([2d.c bezierstuff.c main.c misc.c primitives.c rle.c shaders.c tcl_pmap.c tcl_utils.c misc.asm])
-TEA_ADD_HEADERS([2d.h bezierstuff.h misc.h primitives.h rle.h shaders.h tcl_pmap.h tcl_utils.h])
-TEA_ADD_INCLUDES([])
+TEA_ADD_HEADERS([generic/2d.h generic/bezierstuff.h generic/misc.h generic/primitives.h generic/rle.h generic/shaders.h generic/tcl_pmap.h generic/tcl_utils.h])
+TEA_ADD_INCLUDES([-Igeneric])
 TEA_ADD_LIBS([])
 TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([])
-TEA_ADD_TCL_SOURCES([regions.itcl tclIndex])
+TEA_ADD_TCL_SOURCES([generic/scripts/regions.itcl generic/scripts/tclIndex])
 
 #--------------------------------------------------------------------
 # __CHANGE__
@@ -177,4 +177,4 @@ TEA_PROG_TCLSH
 # which require substituting th AC variables in.  Include these here.
 #--------------------------------------------------------------------
 
-AC_OUTPUT([Makefile pkgIndex.tcl pixel.tcl.in])
+AC_OUTPUT([Makefile pkgIndex.tcl pixel.tcl])
