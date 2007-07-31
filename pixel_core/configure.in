@@ -61,6 +61,8 @@ TEA_PREFIX
 
 TEA_SETUP_COMPILER
 
+SETUP_ASSEMBLER
+
 #-----------------------------------------------------------------------
 # __CHANGE__
 # Specify the C source files to compile in TEA_ADD_SOURCES,
@@ -71,13 +73,14 @@ TEA_SETUP_COMPILER
 # and PKG_TCL_SOURCES.
 #-----------------------------------------------------------------------
 
-TEA_ADD_SOURCES([2d.c bezierstuff.c main.c misc.c primitives.c rle.c shaders.c tcl_pmap.c tcl_utils.c misc.asm])
+TEA_ADD_SOURCES([2d.c bezierstuff.c main.c primitives.c rle.c shaders.c tcl_pmap.c tcl_utils.c misc.asm])
+# misc.c
 TEA_ADD_HEADERS([generic/2d.h generic/bezierstuff.h generic/misc.h generic/primitives.h generic/rle.h generic/shaders.h generic/tcl_pmap.h generic/tcl_utils.h])
 TEA_ADD_INCLUDES([-Igeneric])
-TEA_ADD_LIBS([])
+TEA_ADD_LIBS([-lm])
 TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([])
-TEA_ADD_TCL_SOURCES([generic/scripts/regions.itcl generic/scripts/tclIndex])
+TEA_ADD_TCL_SOURCES([pixel.tcl generic/scripts/regions.itcl generic/scripts/tclIndex])
 
 #--------------------------------------------------------------------
 # __CHANGE__
@@ -151,6 +154,10 @@ TEA_ENABLE_SYMBOLS
 
 AC_DEFINE(USE_TCL_STUBS, 1, [Use Tcl stubs])
 #AC_DEFINE(USE_TK_STUBS, 1, [Use Tk stubs])
+
+
+AC_DEFINE(ASM, [nasm], [Assembler to use])
+AC_DEFINE(USE_ASM, 1, [Use optimized x86 assembler code])
 
 #--------------------------------------------------------------------
 # This macro generates a line to use when building a library.  It

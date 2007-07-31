@@ -20,6 +20,7 @@
 #========================================================================
 
 #SAMPLE_NEW_VAR	= @SAMPLE_NEW_VAR@
+USE_ASM = @USE_ASM@
 
 #========================================================================
 # Nothing of the variables below this line should need to be changed.
@@ -95,6 +96,7 @@ INSTALL_SCRIPT	= @INSTALL_SCRIPT@
 PACKAGE_NAME	= @PACKAGE_NAME@
 PACKAGE_VERSION	= @PACKAGE_VERSION@
 CC		= @CC@
+ASM		= @ASM@
 CFLAGS_DEFAULT	= @CFLAGS_DEFAULT@
 CFLAGS_WARNING	= @CFLAGS_WARNING@
 EXEEXT		= @EXEEXT@
@@ -166,6 +168,7 @@ LIBS		= @PKG_LIBS@ @LIBS@
 AR		= @AR@
 CFLAGS		= @CFLAGS@
 COMPILE		= $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+ASSEMBLE	= $(ASM) -f elf -g
 
 #========================================================================
 # Start of user-definable TARGETS section
@@ -214,11 +217,11 @@ install-binaries: binaries install-lib-binaries install-bin-binaries
 #========================================================================
 
 install-libraries: libraries
-	@mkdir -p $(DESTDIR)$(includedir)
-	@echo "Installing header files in $(DESTDIR)$(includedir)"
+	@mkdir -p $(DESTDIR)$(pkgincludedir)
+	@echo "Installing header files in $(DESTDIR)$(pkgincludedir)"
 	@list='$(PKG_HEADERS)'; for i in $$list; do \
 	    echo "Installing $(srcdir)/$$i" ; \
-	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir) ; \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(pkgincludedir) ; \
 	done;
 
 #========================================================================
@@ -285,6 +288,9 @@ VPATH = $(srcdir):$(srcdir)/generic:$(srcdir)/unix:$(srcdir)/win
 
 .c.@OBJEXT@:
 	$(COMPILE) -c `@CYGPATH@ $<` -o $@
+
+.asm.@OBJEXT@:
+	$(ASM) $<
 
 #========================================================================
 # Distribution creation

@@ -1,0 +1,67 @@
+.TH pixel n 3.0 "Tcl-Extensions"
+.HS pixel tcl
+.BS
+.SH NAME
+Pixel \- Raster graphics extension for Tcl
+.SH SYNOPSIS
+\fBpixel::pmap_new\fI width height colour\fR
+.br
+\fBpixel::pmap_clr\fI dest-pmap colour\fR
+.br
+\fBpixel::pmap_cut\fI src-pmap x1 y1 x2 y2\fR (returns pmap)
+.br
+\fBpixel::pmap_paste\fI dest-pmap src-pmap x y flags\fR
+.br
+\fBpixel::pmap_paste_ref\fI dest-pmap src-pmap ref_pmap x y flags\fR
+.br
+\fBpixel::pmap_compose\fI dest-pmap src-pmap x y flags\fR
+.br
+\fBpixel::pmap_filter\fI dest-pmap flags factor\fR
+.br
+\fBpixel::pmap_dropshadow\fI src-pmap\fR
+.br
+\fBpixel::pmap_rotate\fI src-pmap quads\fR
+.br
+\fBpixel::pmap_info\fI pmap\fR
+.br
+\fBpixel::dup\fI pmap\fR
+.br
+\fBpixel::blend\fI from-pel to-pel degree\fR
+.br
+\fBpixel::center\fI x y width height pmap\fR
+.br
+\fBpixel::box\fI dest-pmap x y width height colour flags\fR
+.br
+\fBpixel::line\fI x1 y1 x2 y2 colour dest-pmap\fR
+.br
+\fBpixel::line_aa\fI x1 y1 x2 y2 colour dest-pmap\fR
+.br
+\fBpixel::line_aa_osa\fI x1 y1 x2 y2 colour osa dest-pmap\fR
+.br
+\fBpixel::bezier\fI line_aa_osa x1 y1 cpx1 cpy1 cpx2 cpy2 x2 y2 colour osa dest-pmap\fR
+.br
+\fBpixel::rle_encode\fI src-pmap\fR
+.br
+\fBpixel::rle_decode\fI rle-data\fR
+.br
+\fBpixel::pmap2bmp\fI pmap\fR
+.SH DESCRIPTION
+The Pixel extension for Tcl provides a framework for working with low level
+raster graphics.  Through the use of additional modules, packaged as seperate
+extensions, functionality can be added to load and save various image file
+formats, output to various screen display formats and tk image files, and
+more advanced pixel manipulations.
+.PP
+The fundamental datatype used by the library is the \fBpmap\fR. \fBpmap\fRs 
+are specialized tcl variables, whose internal representation is an efficient
+pixel buffer in 32 bit RGBA format, with minimal metadata like width and height.
+All routines act on the pixel data contained in \fBpmap\fRs in this format, 
+transforming (if necessary) as the final step in saving or displaying the data.
+.PP
+\fBpmap\fRs are referance counted and automatically memory managed.  If a 
+variable containing a pmap is unset (or goes out of scope), it is cleaned
+up and its memory is freed.  Thus it is generally not necessary to explicitly
+free a \fBpmap\fR.
+.PP
+See the individual man pages for each of the commands in the core Pixel package
+.PP
