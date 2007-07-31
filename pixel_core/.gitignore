@@ -1,0 +1,9 @@
+core
+*.swp
+Makefile
+pkgIndex.tcl
+pixel.tcl
+autom4te.cache
+config.log
+config.status
+configure
