@@ -38,7 +38,5 @@ namespace eval ::pixel {
 	}
 }
 
-lappend auto_path [file join $::pixel::library scripts]
-
 package provide @PACKAGE_NAME@ $::pixel::version
 
