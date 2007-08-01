@@ -1,0 +1,167 @@
+.TH ttf_info n 3.0 "Pixel-modules"
+.HS ttf_info tcl
+.BS
+.SH NAME
+pixel::ttf::ttf_info \- Extract meta data from a TrueType font face
+.SH SYNOPSIS
+\fBpixel::ttf::ttf_info\fI ttf_face\fR
+.BE
+
+'\" # CS - begin code excerpt
+.de CS
+.RS
+.nf
+.ta .25i .5i .75i 1i
+..
+'\" # CE - end code excerpt
+.de CE
+.fi
+.RE
+..
+.SH DESCRIPTION
+This command extracts the meta data associated with a TrueType font face.
+It returns a list of all the chunks of info known about the font, each of
+which is a serialized array such as \fB[array get]\fR returns, containing the
+keys: encoding, platform, type, string.
+
+.SH EXAMPLE
+Dumping all info on a font to stdout:
+.PP
+.CS
+% \fBpackage require Pixel_ttf\fR
+3.0.0
+% \fBset face "/usr/share/fonts/truetype/freefont/FreeSans.ttf"\fR
+/usr/share/fonts/truetype/freefont/FreeSans.ttf
+% \fBforeach chunk [pixel::ttf::ttf_info $face] {
+    array unset inf
+    array set inf $chunk
+    puts "----------------------------"
+    parray inf
+}\fR
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = Copyleft 2002, 2003, 2005 Free Software Foundation.
+inf(type)     = TT_NAME_ID_COPYRIGHT
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = FreeSans
+inf(type)     = TT_NAME_ID_FONT_FAMILY
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = Medium
+inf(type)     = TT_NAME_ID_FONT_SUBFAMILY
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = FontForge 1.0 : Free Sans : 28-11-2006
+inf(type)     = TT_NAME_ID_UNIQUE_ID
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = Free Sans
+inf(type)     = TT_NAME_ID_FULL_NAME
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = Version $Revision: 1.79 $ 
+inf(type)     = TT_NAME_ID_VERSION_STRING
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = FreeSans
+inf(type)     = TT_NAME_ID_PS_NAME
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = The use of this font is granted subject to GNU General Public License.
+inf(type)     = TT_NAME_ID_LICENSE
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = http://www.gnu.org/copyleft/gpl.html
+inf(type)     = TT_NAME_ID_LICENSE_URL
+----------------------------
+inf(encoding) = TT_MAC_ID_ROMAN
+inf(platform) = TT_PLATFORM_MACINTOSH
+inf(string)   = The quick brown fox jumps over the lazy dog.
+inf(type)     = TT_NAME_ID_SAMPLE_TEXT
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_COPYRIGHT
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_FONT_FAMILY
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_FONT_SUBFAMILY
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_UNIQUE_ID
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_FULL_NAME
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_VERSION_STRING
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_PS_NAME
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_LICENSE
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_LICENSE_URL
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_SAMPLE_TEXT
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_FONT_SUBFAMILY
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_LICENSE
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = 
+inf(type)     = TT_NAME_ID_LICENSE_URL
+----------------------------
+inf(encoding) = TT_MS_ID_UNICODE_CS
+inf(platform) = TT_PLATFORM_MICROSOFT
+inf(string)   = V`
+inf(type)     = TT_NAME_ID_SAMPLE_TEXT
+.CE
+
+.SH "SEE ALSO"
+Pixel(n), Pixel_ttf(n), render_ttf(n), render_ttf_adv(n), compile_face(n)
+
+.SH KEYWORDS
+pixel, ttf, truetype, font

@@ -1,0 +1,62 @@
+.TH Pixel_ttf n 3.0 "Pixel-modules"
+.HS Pixel_ttf tcl
+.BS
+.SH NAME
+Pixel_ttf \- TrueType font rendering for the Pixel framework
+.SH SYNOPSIS
+\fBpixel::ttf::render_ttf\fI colour ttf_face px_size text ?width?\fR
+.br
+\fBpixel::ttf::render_ttf_adv\fI meta text\fR
+.br
+\fBpixel::ttf::compile_face\fI ttf_face\fR
+.br
+\fBpixel::ttf::ttf_info\fI ttf_face\fR
+.BE
+
+'\" # CS - begin code excerpt
+.de CS
+.RS
+.nf
+.ta .25i .5i .75i 1i
+..
+'\" # CE - end code excerpt
+.de CE
+.fi
+.RE
+..
+.SH DESCRIPTION
+The Pixel_ttf extension for Tcl provides a functions for rendering strings
+to pmaps using TrueType fonts.  A filename can be provided whereever a ttf_face
+is required, but it is more efficient to first set the filename in a variable
+and supply that, because then the library will compile the font face and cache
+the result as the internal value of that variable.  This speeds up subsequent
+uses of that font face significantly.
+.PP
+See the individual man pages for details on each command.
+
+.SH EXAMPLE
+Generating a pmap from a string:
+.PP
+.CS
+% package require Pixel_ttf
+3.0.0
+% set face "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
+/usr/share/fonts/truetype/freefont/FreeSans.ttf
+% set heading_pmap [pixel::ttf::render_ttf 0xff000000 $face 18 "hello, world"]
+92 18 4
+.CE
+.PP
+This pmap can then be pasted, etc just like any other:
+.PP
+.CS
+% set bg [pixel::pmap_new 400 100 0xffffffff]
+400 100 ....
+% pixel::box $bg 0 0 400 100 0xffffffff 0 
+% pixel::pmap_paste $bg $heading_pmap 10 10 $::MD_ALPHA
+.CE
+
+.SH "SEE ALSO"
+Pixel(n), render_ttf(n), render_ttf_adv(n), compile_face(n), ttf_info(n)
+
+.SH KEYWORDS
+pixel, ttf, truetype, font
