@@ -5,3 +5,7 @@ core
 scripts-stamp
 tclIndex
 
+*.deb
+*.dsc
+*.changes
+*.tar.gz
