@@ -1,5 +1,5 @@
-.TH pixel n 3.0 "Tcl-Extensions"
-.HS pixel tcl
+.TH Pixel n 3.0 "Tcl-Extensions"
+.HS Pixel tcl
 .BS
 .SH NAME
 Pixel \- Raster graphics extension for Tcl
