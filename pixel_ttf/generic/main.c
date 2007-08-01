@@ -5,7 +5,8 @@
 #define DBG(format , args...)
 #endif
 
-#include "all.h"
+#include <Pixel/pixel.h>
+#include "ttf.h"
 
 typedef struct ttf_feedback_data {
 	Tcl_Interp	*interp;
@@ -718,10 +719,10 @@ int Pixel_ttf_Init(Tcl_Interp *interp)
 	init_ttf();
 
 	// TrueType font rendering
-	NEW_CMD("pixel::render_ttf", glue_render_ttf);
-	NEW_CMD("pixel::render_ttf_adv", glue_render_ttf_adv);
-	NEW_CMD("pixel::compile_face", glue_compile_face);
-	NEW_CMD("pixel::ttf_info", glue_ttf_info);
+	NEW_CMD("pixel::ttf::render_ttf", glue_render_ttf);
+	NEW_CMD("pixel::ttf::render_ttf_adv", glue_render_ttf_adv);
+	NEW_CMD("pixel::ttf::compile_face", glue_compile_face);
+	NEW_CMD("pixel::ttf::ttf_info", glue_ttf_info);
 
 	return TCL_OK;
 }

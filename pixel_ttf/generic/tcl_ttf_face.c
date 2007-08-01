@@ -1,4 +1,5 @@
-#include "all.h"
+#include <Pixel/pixel.h>
+#include "ttf.h"
 
 static void free_internal_rep(Tcl_Obj *obj);
 static void update_string_rep(Tcl_Obj *obj);

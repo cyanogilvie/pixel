@@ -1,7 +1,7 @@
 #ifndef _TTF_H
 #define _TTF_H
 
-#include "2d.h"
+#include <Pixel/2d.h>
 #include <tcl.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
