@@ -1,11 +1,11 @@
-#include <Pixel3/2d.h>
-#include <Pixel3/bezierstuff.h>
-#include <Pixel3/misc.h>
-#include <Pixel3/primitives.h>
-#include <Pixel3/shaders.h>
-#include <Pixel3/tcl_pmap.h>
-#include <Pixel3/tcl_utils.h>
-#include <Pixel3/rle.h>
+#include <Pixel/2d.h>
+#include <Pixel/bezierstuff.h>
+#include <Pixel/misc.h>
+#include <Pixel/primitives.h>
+#include <Pixel/shaders.h>
+#include <Pixel/tcl_pmap.h>
+#include <Pixel/tcl_utils.h>
+#include <Pixel/rle.h>
 
 #include <stdio.h>
 #include <stdlib.h>
