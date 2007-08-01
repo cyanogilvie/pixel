@@ -5,7 +5,7 @@ Maintainer: Cyan Ogilvie <cyan.ogilvie@gmail.com>
 Build-Depends: debhelper (>= 5), autotools-dev, tcl8.4-dev, fakeroot, liblocale-gettext-perl, libfreetype6-dev, pixel-core
 Standards-Version: 3.7.2
 
-Package: pixel-core
+Package: pixel-ttf
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, tcl8.4, pixel-core, libfreetype6
 Description: TrueType font handling functions for the Pixel framework
