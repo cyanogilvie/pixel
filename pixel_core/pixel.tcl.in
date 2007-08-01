@@ -6,7 +6,7 @@ load [file join $::pixel::library @PKG_LIB_FILE@]
 namespace eval ::pixel {
 	namespace export *
 
-	variable version @PACKAGE_VERSION@
+	variable version @PACKAGE_VERSION@.@EXTRA_VERSION@
 
 	namespace eval :: {
 		# effects flags
