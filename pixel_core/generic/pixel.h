@@ -1,0 +1,21 @@
+#include <Pixel3/2d.h>
+#include <Pixel3/bezierstuff.h>
+#include <Pixel3/misc.h>
+#include <Pixel3/primitives.h>
+#include <Pixel3/shaders.h>
+#include <Pixel3/tcl_pmap.h>
+#include <Pixel3/tcl_utils.h>
+#include <Pixel3/rle.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <string.h>
+#include <math.h>
+#include <signal.h>
+#include <tcl.h>
+#include <tclstuff.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <wchar.h>
+#include <locale.h>
