@@ -20,7 +20,7 @@ dnl	to configure the system for the local environment.
 #-----------------------------------------------------------------------
 
 AC_INIT([Pixel], [3])
-EXTRA_VERSION="0.0"
+EXTRA_VERSION="0.1"
 AC_SUBST(EXTRA_VERSION)
 
 #--------------------------------------------------------------------
@@ -82,6 +82,7 @@ TEA_ADD_INCLUDES([-Igeneric])
 TEA_ADD_LIBS([-lm])
 TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([])
+AC_OUTPUT([pixel.tcl])
 TEA_ADD_TCL_SOURCES([pixel.tcl generic/scripts/regions.itcl])
 
 #--------------------------------------------------------------------
@@ -100,8 +101,7 @@ TEA_ADD_TCL_SOURCES([pixel.tcl generic/scripts/regions.itcl])
 
 # Add pkgIndex.tcl if it is generated in the Makefile instead of ./configure
 # and change Makefile.in to move it from CONFIG_CLEAN_FILES to BINARIES var.
-#CLEANFILES="pkgIndex.tcl"
-CLEANFILES="generic/scripts/tclIndex scripts-stamp"
+CLEANFILES="pixel.tcl generic/scripts/tclIndex scripts-stamp"
 AC_SUBST(CLEANFILES)
 
 #--------------------------------------------------------------------
@@ -187,4 +187,4 @@ TEA_PROG_TCLSH
 # which require substituting th AC variables in.  Include these here.
 #--------------------------------------------------------------------
 
-AC_OUTPUT([Makefile pkgIndex.tcl pixel.tcl])
+AC_OUTPUT([Makefile pkgIndex.tcl])
