@@ -2,12 +2,12 @@ Source: pixel-ttf
 Section: unknown
 Priority: extra
 Maintainer: Cyan Ogilvie <cyan.ogilvie@gmail.com>
-Build-Depends: debhelper (>= 5), autotools-dev, tcl8.4-dev, fakeroot, liblocale-gettext-perl, libfreetype6-dev, pixel-core
+Build-Depends: debhelper (>= 5), autotools-dev, tcl8.4-dev, fakeroot, liblocale-gettext-perl, libfreetype6-dev, pixel-core (>= 3.0.1)
 Standards-Version: 3.7.2
 
 Package: pixel-ttf
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, tcl8.4, pixel-core, libfreetype6
+Depends: ${shlibs:Depends}, ${misc:Depends}, tcl8.4, pixel-core (>= 3.0.1), libfreetype6
 Description: TrueType font handling functions for the Pixel framework
  Pixel is a Tcl extension that provides low level raster graphics functions,
  and through the use of helper modules allows loading and saving a large
