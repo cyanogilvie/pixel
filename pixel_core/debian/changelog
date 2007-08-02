@@ -1,3 +1,9 @@
+pixel-core (3.1.0-1) feisty; urgency=low
+
+  * Added pixel::pmap_sub and pixel::channel_histogram
+
+ -- Cyan Ogilvie <cyan.ogilvie@gmail.com>  Thu,  2 Aug 2007 23:18:00 +0200
+
 pixel-core (3.0.1-1) feisty; urgency=low
 
   * Added link to libPixel3.so from the $(libdir)

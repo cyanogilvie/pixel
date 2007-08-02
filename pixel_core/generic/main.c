@@ -615,6 +615,108 @@ static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_pmap_sub(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t	*pmap1, *pmap2;
+	_pel			*s1, *s2, *d;
+	_pel			colour;
+	int				i, total;
+	gimp_image_t	*new;
+
+	CHECK_ARGS(2, "pmap1 pmap2");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap1));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &pmap2));
+
+	if (pmap1->width != pmap2->width || pmap1->height != pmap2->height)
+		THROW_ERROR("Both pmaps must have the same dimensions");
+
+	new = pmap_new(pmap1->width, pmap1->height, colour);
+
+	total = pmap1->width * pmap1->height;
+	for (
+			i = 0,
+			s1 = pmap1->pixel_data,
+			s2 = pmap2->pixel_data,
+			d = new->pixel_data
+		;
+			i < total
+		;
+			i++,
+			s1++,
+			s2++,
+			d++
+	) {
+		d->ch.a = abs(s1->ch.a - s2->ch.a);
+		d->ch.b = abs(s1->ch.b - s2->ch.b);
+		d->ch.g = abs(s1->ch.g - s2->ch.g);
+		d->ch.r = abs(s1->ch.r - s2->ch.r);
+	}
+
+	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(new));
+	return TCL_OK;
+}
+
+
+static int glue_channel_histogram(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t	*pmap;
+	_pel			*s;
+	int				i, total;
+	Tcl_Obj			*res, *ch_a, *ch_b, *ch_g, *ch_r;
+	int				count_r[256];
+	int				count_g[256];
+	int				count_b[256];
+	int				count_a[256];
+
+	CHECK_ARGS(1, "pmap");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+
+	for (i=0; i<256; i++) {
+		count_r[i] = 0;
+		count_g[i] = 0;
+		count_b[i] = 0;
+		count_a[i] = 0;
+	}
+
+	total = pmap->width * pmap->height;
+	for (i=0, s=pmap->pixel_data; i<total; i++, s++) {
+		count_r[s->ch.r]++;
+		count_g[s->ch.g]++;
+		count_b[s->ch.b]++;
+		count_a[s->ch.a]++;
+	}
+
+	ch_r = Tcl_NewListObj(0, NULL);
+	ch_g = Tcl_NewListObj(0, NULL);
+	ch_b = Tcl_NewListObj(0, NULL);
+	ch_a = Tcl_NewListObj(0, NULL);
+
+	for (i=0; i<256; i++) {
+		TEST_OK(Tcl_ListObjAppendElement(interp, ch_r, Tcl_NewIntObj(count_r[i])));
+		TEST_OK(Tcl_ListObjAppendElement(interp, ch_g, Tcl_NewIntObj(count_g[i])));
+		TEST_OK(Tcl_ListObjAppendElement(interp, ch_b, Tcl_NewIntObj(count_b[i])));
+		TEST_OK(Tcl_ListObjAppendElement(interp, ch_a, Tcl_NewIntObj(count_a[i])));
+	}
+
+	res = Tcl_NewListObj(0, NULL);
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewStringObj("red", -1)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, ch_r));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewStringObj("green", -1)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, ch_g));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewStringObj("blue", -1)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, ch_b));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewStringObj("alpha", -1)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, ch_a));
+
+	Tcl_SetObjResult(interp, res);
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_Init(Tcl_Interp *interp)
 {
@@ -650,6 +752,8 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::rle_encode", glue_rle_encode);
 	NEW_CMD("pixel::rle_decode", glue_rle_decode);
 	NEW_CMD("pixel::pmap2bmp", glue_pmap2bmp);
+	NEW_CMD("pixel::pmap_sub", glue_pmap_sub);
+	NEW_CMD("pixel::channel_histogram", glue_channel_histogram);
 
 	return TCL_OK;
 }
