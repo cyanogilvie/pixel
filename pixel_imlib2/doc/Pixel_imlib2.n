@@ -4,11 +4,11 @@
 .SH NAME
 Pixel_imlib2 \- Load and save many image formats, and rescale pmaps with Imlib2
 .SH SYNOPSIS
-\fBpixel::imlib2::load_image\fI filename ?progress_callback?\fR
+\fBpixel::imlib2::load_image\fI filename ?progress-callback?\fR
 .br
-\fBpixel::imlib2::save_image\fI pmap filename ?type? ?progress_callback?\fR
+\fBpixel::imlib2::save_image\fI pmap filename ?type? ?progress-callback?\fR
 .br
-\fBpixel::imlib2::scale_pmap\fI src_pmap w h ?smooth? ?border_l border_r border_t border_b? ?progress_callback?\fR
+\fBpixel::imlib2::scale_pmap\fI src-pmap w h ?smooth? ?border-l border-r border-t border-b? ?progress-callback?\fR
 .BE
 
 '\" # CS - begin code excerpt
