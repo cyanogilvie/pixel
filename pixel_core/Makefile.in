@@ -406,6 +406,10 @@ install-lib-binaries: binaries
 	    echo " Install pkgIndex.tcl $(DESTDIR)$(pkglibdir)"; \
 	    $(INSTALL_DATA) pkgIndex.tcl $(DESTDIR)$(pkglibdir); \
 	fi
+	( \
+	cd $(DESTDIR)$(libdir); \
+	test -e libPixel3.so || ln -s $(PKG_DIR)/libPixel3.so .; \
+	)
 
 #========================================================================
 # Install binary executables (e.g. .exe files and dependent .dll files)
@@ -424,6 +428,7 @@ install-bin-binaries: binaries
 	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	  fi; \
 	done
+
 
 .SUFFIXES: .c .$(OBJEXT)
 
