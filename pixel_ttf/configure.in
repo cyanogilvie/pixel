@@ -79,7 +79,6 @@ TEA_ADD_INCLUDES([`freetype-config --cflags`])
 TEA_ADD_LIBS([`freetype-config --libs` -L/usr/lib/Pixel -lPixel3])
 TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([])
-TEA_ADD_TCL_SOURCES([pixel_ttf.tcl])
 
 #--------------------------------------------------------------------
 # __CHANGE__
@@ -180,3 +179,4 @@ TEA_PROG_TCLSH
 #--------------------------------------------------------------------
 
 AC_OUTPUT([Makefile pkgIndex.tcl pixel_ttf.tcl])
+TEA_ADD_TCL_SOURCES([pixel_ttf.tcl])
