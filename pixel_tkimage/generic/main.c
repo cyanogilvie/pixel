@@ -25,8 +25,7 @@
 #include <tclstuff.h>
 #include <Hermes.h>
 
-#include "2d.h"
-#include "tcl_pmap.h"
+#include <Pixel/pixel.h>
 
 //#include "main.h"
 

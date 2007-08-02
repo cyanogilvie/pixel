@@ -7,7 +7,7 @@
 # Copyright (c) 1998-2000 by Scriptics Corporation.
 # All rights reserved.
 # 
-# RCS: @(#) $Id: all.tcl,v 1.1 2006-01-20 09:05:48 cvs Exp $
+# RCS: @(#) $Id: all.tcl,v 1.4 2004/07/04 22:04:20 patthoyts Exp $
 
 if {[lsearch [namespace children] ::tcltest] == -1} {
     package require tcltest

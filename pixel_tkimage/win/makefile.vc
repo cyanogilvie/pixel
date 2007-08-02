@@ -15,16 +15,20 @@
 # Copyright (c) 1998-2000 Ajuba Solutions.
 # Copyright (c) 2001 ActiveState Corporation.
 # Copyright (c) 2001-2002 David Gravereaux.
-# Copyright (c) 2003 Pat Thoyts
+# Copyright (c) 2003-2006 Pat Thoyts
 #
 #-------------------------------------------------------------------------
-# RCS: @(#)$Id: makefile.vc,v 1.1 2006-01-20 09:05:48 cvs Exp $
+# RCS: @(#)$Id: makefile.vc,v 1.8 2007/05/11 09:47:56 patthoyts Exp $
 #-------------------------------------------------------------------------
 
-!if !defined(MSDEVDIR) && !defined(MSVCDIR) && !defined(VCToolkitInstallDir)
+# Check to see we are configured to build with MSVC (MSDEVDIR or MSVCDIR)
+# or with the MS Platform SDK (MSSDK). Visual Studio .NET 2003 and 2005 define
+# VCINSTALLDIR instead. The MSVC Toolkit release defines yet another.
+!if !defined(MSDEVDIR) && !defined(MSVCDIR) && !defined(MSSDK) && !defined(VCINSTALLDIR) && !defined(VCToolkitInstallDir)
 MSG = ^
-You will need to run vcvars32.bat from Developer Studio, first, to setup^
-the environment.  Jump to this line to read the new instructions.
+You need to run vcvars32.bat from Developer Studio or setenv.bat from the^
+Platform SDK first to setup the environment.  Jump to this line to read^
+the build instructions.
 !error $(MSG)
 !endif
 
@@ -72,7 +76,7 @@ the environment.  Jump to this line to read the new instructions.
 #		staticpkg = Effects the static option only to switch
 #			   tclshXX.exe to have the dde and reg extension linked
 #			   inside it.
-#		threads =  Turns on full multithreading support.
+#		nothreads = Turns off multithreading support (not recommended)
 #		thrdalloc = Use the thread allocator (shared global free pool).
 #		symbols =  Adds symbols for step debugging.
 #		profile =  Adds profiling hooks.  Map file is assumed.
@@ -88,11 +92,12 @@ the environment.  Jump to this line to read the new instructions.
 #		memdbg   = Enables the debugging memory allocator.
 #		compdbg  = Enables byte compilation logging.
 #
-#	MACHINE=(IX86|IA64|ALPHA)
+#	MACHINE=(IX86|IA64|ALPHA|AMD64)
 #		Set the machine type used for the compiler, linker, and
 #		resource compiler.  This hook is needed to tell the tools
 #		when alternate platforms are requested.  IX86 is the default
-#		when not specified.
+#		when not specified. If the CPU environment variable has been
+#		set (ie: recent Platform SDK) then MACHINE is set from CPU.
 #
 #	TMP_DIR=<path>
 #	OUT_DIR=<path>
@@ -154,6 +159,7 @@ Please `cd` to its location first.
 #-------------------------------------------------------------------------
 
 PROJECT = sample
+
 !include "rules.vc"
 
 DOTVERSION      = 0.5
@@ -162,7 +168,10 @@ STUBPREFIX      = $(PROJECT)stub
 
 DLLOBJS = \
 	$(TMP_DIR)\tclsample.obj \
-	$(TMP_DIR)\sample.obj
+	$(TMP_DIR)\sample.obj \
+!if !$(STATIC_BUILD)
+	$(TMP_DIR)\sample.res
+!endif
 
 #-------------------------------------------------------------------------
 # Target names and paths ( shouldn't need changing )
@@ -201,47 +210,56 @@ COMPATDIR	= $(ROOT)\compat
 !if !$(DEBUG)
 !if $(OPTIMIZING)
 ### This cranks the optimization level to maximize speed
-cdebug	= -O2 -Op -Gs
+cdebug	= $(OPTIMIZATIONS)
 !else
 cdebug	=
 !endif
 !else if "$(MACHINE)" == "IA64"
 ### Warnings are too many, can't support warnings into errors.
-cdebug	= -Z7 -Od -GZ
+cdebug	= -Zi -Od $(DEBUGFLAGS)
 !else
-cdebug	= -Z7 -WX -Od -GZ
+cdebug	= -Zi -WX $(DEBUGFLAGS)
 !endif
 
 ### Declarations common to all compiler options
-cflags = -nologo -c -W3 -YX -Fp$(TMP_DIR)^\
+cwarn = -D _CRT_SECURE_NO_DEPRECATE -D _CRT_NONSTDC_NO_DEPRECATE
+cflags = -nologo -c $(COMPILERFLAGS) $(cwarn) -Fp$(TMP_DIR)^\
 
-!if $(PENT_0F_ERRATA)
-cflags = $(cflags) -QI0f
-!endif
-
-!if $(ITAN_B_ERRATA)
-cflags = $(cflags) -QIA64_Bx
+# Warning level
+!if $(FULLWARNINGS)
+cflags = $(cflags) -W4
+!else
+cflags = $(cflags) -W3
 !endif
 
 !if $(MSVCRT)
-!if $(DEBUG)
+!if $(DEBUG) && !$(UNCHECKED)
 crt = -MDd
 !else
 crt = -MD
 !endif
 !else
-!if $(DEBUG)
+!if $(DEBUG) && !$(UNCHECKED)
 crt = -MTd
 !else
 crt = -MT
 !endif
 !endif
 
+!if !$(STATIC_BUILD)
+cflags = $(cflags) -DUSE_TCL_STUBS
+!if defined(TKSTUBLIB)
+cflags = $(cflags) -DUSE_TK_STUBS
+!endif
+!endif
+
 INCLUDES	= $(TCL_INCLUDES) -I"$(WINDIR)" -I"$(GENERICDIR)"
-BASE_CLFAGS	= $(cflags) $(cdebug) $(crt) $(INCLUDES)
+BASE_CFLAGS	= $(cflags) $(cdebug) $(crt) $(INCLUDES)
 CON_CFLAGS	= $(cflags) $(cdebug) $(crt) -DCONSOLE
-TCL_CFLAGS	= -DUSE_TCL_STUBS -DPACKAGE_VERSION="\"$(DOTVERSION)\"" \
-                  $(BASE_CLFAGS) $(OPTDEFINES)
+TCL_CFLAGS	= -DPACKAGE_NAME="\"$(PROJECT)\"" \
+                  -DPACKAGE_VERSION="\"$(DOTVERSION)\"" \
+		  -DBUILD_$(PROJECT) \
+                  $(BASE_CFLAGS) $(OPTDEFINES)
 
 #---------------------------------------------------------------------
 # Link flags
@@ -249,12 +267,19 @@ TCL_CFLAGS	= -DUSE_TCL_STUBS -DPACKAGE_VERSION="\"$(DOTVERSION)\"" \
 
 !if $(DEBUG)
 ldebug	= -debug:full -debugtype:cv
+!if $(MSVCRT)
+ldebug = $(ldebug) -nodefaultlib:msvcrt
+!endif
 !else
 ldebug	= -release -opt:ref -opt:icf,3
 !endif
 
 ### Declarations common to all linker options
-lflags	= -nologo -machine:$(MACHINE) $(ldebug)
+lflags	= -nologo -machine:$(MACHINE) $(LINKERFLAGS) $(ldebug)
+
+!if $(FULLWARNINGS)
+lflags = $(lflags) -warn:3
+!endif
 
 !if $(PROFILE)
 lflags	= $(lflags) -profile
@@ -275,7 +300,18 @@ lflags	= $(lflags) -ws:aggressive
 dlllflags = $(lflags) -dll
 conlflags = $(lflags) -subsystem:console
 guilflags = $(lflags) -subsystem:windows
-baselibs   = $(TCLSTUBLIB)
+!if !$(STATIC_BUILD)
+baselibs  = $(TCLSTUBLIB)
+!if defined(TKSTUBLIB)
+baselibs  = $(baselibs) $(TKSTUBLIB)
+!endif
+!endif
+
+# Avoid 'unresolved external symbol __security_cookie' errors.
+# c.f. http://support.microsoft.com/?id=894573
+!if "$(MACHINE)" == "IA64" || "$(MACHINE)" == "AMD64"
+baselibs   = $(baselibs) bufferoverflowU.lib
+!endif
 
 #---------------------------------------------------------------------
 # TclTest flags
@@ -323,10 +359,17 @@ setup:
 	@if not exist $(TMP_DIR)\nul mkdir $(TMP_DIR)
 
 $(PRJLIB): $(DLLOBJS)
+!if $(STATIC_BUILD)
+	$(lib32) -nologo -out:$@ @<<
+$**
+<<
+!else
 	$(link32) $(dlllflags) -out:$@ $(baselibs) @<<
 $**
 <<
+	$(_VC_MANIFEST_EMBED_DLL)
 	-@del $*.exp
+!endif
 
 $(PRJSTUBLIB): $(PRJSTUBOBJS)
 	$(lib32) -nologo -out:$@ $(PRJSTUBOBJS)
@@ -352,6 +395,9 @@ $<
 
 {$(WINDIR)}.rc{$(TMP_DIR)}.res:
 	$(rc32) -fo $@ -r -i "$(GENERICDIR)" -D__WIN32__ \
+		-DCOMMAVERSION=$(DOTVERSION:.=,),0 \
+		-DDOTVERSION=\"$(DOTVERSION)\" \
+		-DVERSION=\"$(VERSION)$(SUFX)\" \
 !if $(DEBUG)
 	-d DEBUG \
 !endif
@@ -365,6 +411,18 @@ $<
 
 .SUFFIXES:
 .SUFFIXES:.c .rc
+
+#-------------------------------------------------------------------------
+# Explicit dependency rules
+#
+#-------------------------------------------------------------------------
+
+$(OUT_DIR)\pkgIndex.tcl: $(ROOT)\pkgIndex.tcl.in
+	nmakehlp -s << $** > $@
+@PACKAGE_VERSION@    $(DOTVERSION)
+@PACKAGE_NAME@       $(PROJECT)
+@PKG_LIB_FILE@       $(PRJLIBNAME)
+<<
 
 #---------------------------------------------------------------------
 # Installation. (EDIT)
@@ -385,21 +443,11 @@ install-binaries:
 #	@if exist $(LIBDIR) $(CPY) $(LIBDIR)\*.tcl "$(SCRIPT_INSTALL_DIR)"
 #	@echo cd "$(SCRIPT_INSTALL_DIR:\=/)" ; pkg_mkIndex . | $(TCLSH)
 
-### Manual creation of pkgIndex
-### Normally the ifneeded command would be:
-###   package ifneeded $(PROJECT) $(DOTVERSION) \
-###      [list load [file join $$dir $(PROJECT)$(VERSION).$(EXT)]]
-### but this project has been named oddly. It has Sample_Init but provides
-### the Tclsha1 package.
-install-libraries:
+install-libraries: $(OUT_DIR)\pkgIndex.tcl
         @echo Installing libraries to '$(SCRIPT_INSTALL_DIR)'
         @if exist $(LIBDIR) $(CPY) $(LIBDIR)\*.tcl "$(SCRIPT_INSTALL_DIR)"
         @echo Installing package index in '$(SCRIPT_INSTALL_DIR)'
-        @type << >"$(SCRIPT_INSTALL_DIR)\pkgIndex.tcl"
-        @type << >"$(SCRIPT_INSTALL_DIR)\pixel_devil.tcl"
-# Hand-crafted pkgIndex.tcl
-package ifneeded Tclsha1 $(DOTVERSION) [list load [file join $$dir $(PROJECT)$(VERSION).$(EXT)] Sample]
-<<
+	@$(CPY) $(OUT_DIR)\pkgIndex.tcl $(SCRIPT_INSTALL_DIR)
 
 install-docs:
 	@echo Installing documentation files to '$(DOC_INSTALL_DIR)'
@@ -412,6 +460,9 @@ install-docs:
 clean:
 	@if exist $(TMP_DIR)\nul $(RMDIR) $(TMP_DIR)
 	@if exist $(WINDIR)\version.vc del $(WINDIR)\version.vc
+	@if exist $(WINDIR)\vercl.i del $(WINDIR)\vercl.i
+	@if exist $(WINDIR)\vercl.x del $(WINDIR)\vercl.x
+	@if exist $(WINDIR)\_junk.pch del $(WINDIR)\_junk.pch
 
 realclean: clean
 	@if exist $(OUT_DIR)\nul $(RMDIR) $(OUT_DIR)

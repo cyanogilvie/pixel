@@ -1,0 +1,17 @@
+Source: pixel-tkimage
+Section: unknown
+Priority: extra
+Maintainer: Cyan Ogilvie <cyan.ogilvie@gmail.com>
+Build-Depends: debhelper (>= 5), autotools-dev, tcl8.4-dev, fakeroot, liblocale-gettext-perl, pixel-core (>= 3.0.1), hermes1-dev, xutils-dev, tk8.4-dev
+Standards-Version: 3.7.2
+
+Package: pixel-tkimage
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, tcl8.4, pixel-core (>= 3.0.1)
+Description: TrueType font handling functions for the Pixel framework
+ Pixel is a Tcl extension that provides low level raster graphics functions,
+ and through the use of helper modules allows loading and saving a large
+ number of image formats, rendering True Type fonts, applying graphics filters
+ and displaying to various targets, like SDL, Tk images, and so forth
+ .
+ This package contains the TrueType font handling functions
