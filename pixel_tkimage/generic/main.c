@@ -242,7 +242,7 @@ static int img_pmap_cmd(ClientData clientData, Tcl_Interp *interp, //{{{1
 
 	if (Tcl_GetIndexFromObj(interp, objv[1], pmap_options, "command", 0, 
 				&index) != TCL_OK)
-		THROW_ERROR("Syntax error: should be ", Tcl_GetString(objv[0]), " option");
+		return TCL_ERROR;
 
 	switch ((enum options) index) {
 		case PMAP_PMAP:
