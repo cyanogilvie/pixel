@@ -77,9 +77,10 @@ TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
 TEA_ADD_INCLUDES([-I.. -I/usr/include/Hermes])
 TEA_ADD_LIBS([-ltk8.4 -lHermes -L/usr/lib/Pixel -lPixel3])
+#TEA_ADD_LIBS([-ltk8.4 -lHermes -L/usr/lib/Pixel -lPixel3 -lgcov])
 TEA_ADD_CFLAGS([])
+#TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])
 TEA_ADD_STUB_SOURCES([])
-#TEA_ADD_TCL_SOURCES([])
 
 #--------------------------------------------------------------------
 # __CHANGE__

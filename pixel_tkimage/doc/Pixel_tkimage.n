@@ -105,6 +105,14 @@ example
 % \fBexample do_frame\fR
 .CE
 
+.SH BUGS
+.PP
+The \fBpixel::tkimage::do_frame\fR does not in fact work.
+.PP
+If no \fB-pmap\fR option is given when the image is created, bad things happen.
+.PP
+The \fBconfigure\fR method of the image instance command is not implemented.
+
 .SH "SEE ALSO"
 Pixel(n), image(n), pmap(n)
 
