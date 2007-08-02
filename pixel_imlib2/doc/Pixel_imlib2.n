@@ -1,0 +1,37 @@
+.TH Pixel_imlib2 n 3.0 "Pixel-modules"
+.HS Pixel_imlib2 tcl
+.BS
+.SH NAME
+Pixel_imlib2 \- Load and save many image formats, and rescale pmaps with Imlib2
+.SH SYNOPSIS
+\fBpixel::imlib2::load_image\fI filename ?progress_callback?\fR
+.br
+\fBpixel::imlib2::save_image\fI pmap filename ?type? ?progress_callback?\fR
+.br
+\fBpixel::imlib2::scale_pmap\fI src_pmap w h ?smooth? ?border_l border_r border_t border_b? ?progress_callback?\fR
+.BE
+
+'\" # CS - begin code excerpt
+.de CS
+.RS
+.nf
+.ta .25i .5i .75i 1i
+..
+'\" # CE - end code excerpt
+.de CE
+.fi
+.RE
+..
+.SH DESCRIPTION
+The Pixel_imlib2 extension for Tcl provides a functions for loading and saving
+almost all common image formats, and high quality rescaling of pmaps very
+quickly, using the Imlib2 graphics library.
+.PP
+See the individual man pages for details on each command.
+
+.SH "SEE ALSO"
+Pixel(n), pmap(n), pixel::imlib2::load_image(n), pixel::imlib2::save_image(n),
+pixel::imlib2::scale_pmap(n)
+
+.SH KEYWORDS
+pixel, imlib2, scale, load, save, format
