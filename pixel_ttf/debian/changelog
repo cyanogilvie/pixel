@@ -1,3 +1,9 @@
+pixel-ttf (3.0.0-2) feisty; urgency=low
+
+  * Added tcldev build dependancy 
+
+ -- Cyan Ogilvie <cyan.ogilvie@gmail.com>  Sun,  5 Aug 2007 11:50:40 +0200
+
 pixel-ttf (3.0.0-1) feisty; urgency=low
 
   * Initial release

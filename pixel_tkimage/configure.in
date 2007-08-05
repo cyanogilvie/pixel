@@ -155,7 +155,7 @@ TEA_ENABLE_SYMBOLS
 #--------------------------------------------------------------------
 
 AC_DEFINE(USE_TCL_STUBS, 1, [Use Tcl stubs])
-#AC_DEFINE(USE_TK_STUBS, 1, [Use Tk stubs])
+AC_DEFINE(USE_TK_STUBS, 1, [Use Tk stubs])
 
 #--------------------------------------------------------------------
 # This macro generates a line to use when building a library.  It

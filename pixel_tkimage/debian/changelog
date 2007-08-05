@@ -1,3 +1,9 @@
+pixel-tkimage (1.1.0-2) feisty; urgency=low
+
+  * Added tcldev build dependancy
+
+ -- Cyan Ogilvie <cyan.ogilvie@gmail.com>  Sun,  5 Aug 2007 11:52:18 +0200
+
 pixel-tkimage (1.1.0-1) feisty; urgency=low
 
   * Initial release

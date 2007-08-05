@@ -351,6 +351,9 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 
 int Pixel_imlib_Init(Tcl_Interp *interp) //{{{1
 {
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
+		return TCL_ERROR;
+
 	imlib_set_color_usage(128);
 	imlib_set_cache_size(0);
 	imlib_set_font_cache_size(0);

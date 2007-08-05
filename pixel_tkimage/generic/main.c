@@ -656,6 +656,12 @@ static Tk_ImageType g_tkimage_pmap_type = {
 
 int Pixel_tkimage_Init(Tcl_Interp *interp)
 {
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
+		return TCL_ERROR;
+
+	if (Tk_InitStubs(interp, "8.1", 0) == NULL)
+		return TCL_ERROR;
+
 	if (Hermes_Init() == 0)
 		THROW_ERROR("Failed to initialize Hermes");
 	g_hermes_handle = Hermes_ConverterInstance(HERMES_CONVERT_DITHER);

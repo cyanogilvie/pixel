@@ -2,7 +2,7 @@ Source: pixel-imlib2
 Section: unknown
 Priority: extra
 Maintainer: Cyan Ogilvie <cyan.ogilvie@gmail.com>
-Build-Depends: debhelper (>= 5), autoconf, pixel-core (>= 3.1.0), autotools-dev, tcl8.4-dev, fakeroot, liblocale-gettext-perl, libimlib2-dev
+Build-Depends: debhelper (>= 5), autoconf, pixel-core (>= 3.1.0), autotools-dev, tcl8.4-dev, fakeroot, liblocale-gettext-perl, libimlib2-dev, tcldev
 Standards-Version: 3.7.2
 
 Package: pixel-imlib2

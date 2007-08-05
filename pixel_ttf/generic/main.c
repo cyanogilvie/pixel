@@ -714,6 +714,9 @@ static int glue_ttf_info(cdata, interp, objc, objv)
 // Init {{{1
 int Pixel_ttf_Init(Tcl_Interp *interp)
 {
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
+		return TCL_ERROR;
+
 	Tcl_RegisterObjType(&tcl_ttf_face);
 
 	init_ttf();

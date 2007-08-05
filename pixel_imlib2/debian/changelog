@@ -1,3 +1,9 @@
+pixel-imlib2 (1.0.0-2) feisty; urgency=low
+
+  * Added tcldev build dependancy 
+
+ -- Cyan Ogilvie <cyan.ogilvie@gmail.com>  Sun,  5 Aug 2007 11:55:31 +0200
+
 pixel-imlib2 (1.0.0-1) feisty; urgency=low
 
   * Initial release 

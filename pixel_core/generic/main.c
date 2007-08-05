@@ -720,6 +720,9 @@ static int glue_channel_histogram(ClientData foo, Tcl_Interp *interp, //{{{1
 // Init {{{1
 int Pixel_Init(Tcl_Interp *interp)
 {
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
+		return TCL_ERROR;
+
 	Tcl_RegisterObjType(&tcl_pmap);
 
 	init_2d();
