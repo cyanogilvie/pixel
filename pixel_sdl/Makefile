@@ -25,7 +25,7 @@ OFLAGS=$(OFLAGS3)
 DEFS =
 DEBUG=-g
 #DEBUG=-g -DDEBUG
-INCLUDE = -I.. \
+INCLUDE = -I/usr/include/Pixel \
 		   -I/usr/include/tcl8.4 \
 		   -I/usr/include/tcl8.4/tcl-private/generic 
 CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE) `sdl-config --cflags`
@@ -34,7 +34,7 @@ CFLAGS = -Wall $(DEBUG) $(OFLAGS) $(DEFS) $(INCLUDE) `sdl-config --cflags`
 STATIC = 
 LLIBS = 
 LIBS =
-LDFLAGS = `sdl-config --libs` -lm
+LDFLAGS = `sdl-config --libs` -lGL -lGLU -lm
 
 all:    libpixel_sdl.so
 
