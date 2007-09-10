@@ -279,6 +279,10 @@ EXTERN_C void digest_region(gimp_image_t *src, int x, int y, int w, int h,
 		unsigned int *r, unsigned int *g, unsigned int *b, unsigned int *a);
 
 EXTERN_C void put_pixel(gimp_image_t *dest, int x, int y, _pel col, int flags);
+EXTERN_C _pel get_pixel(gimp_image_t *src, int x, int y);
+
+EXTERN_C void rgb2hsv(unsigned char r, unsigned char g, unsigned char b, double *h,  double *s,  double *v); 
+EXTERN_C void hsv2rgb(double h,  double s,  double v, unsigned char *r, unsigned char *g, unsigned char *b); 
 
 EXTERN_C void do_dirty_tricks		();
  

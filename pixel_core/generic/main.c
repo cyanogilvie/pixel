@@ -354,6 +354,34 @@ static int glue_put_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_get_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t		*src;
+	_pel				col;
+	int					x, y;
+	Tcl_Obj				*res;
+	
+	CHECK_ARGS(3, "src x y");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &y));
+
+	col = get_pixel(src, x, y);
+
+	res = Tcl_NewListObj(0, NULL);
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(col.ch.r)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(col.ch.g)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(col.ch.b)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(col.ch.a)));
+
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
 static int glue_digest_region(cdata, interp, objc, objv) //{{{1
 	ClientData		cdata;
 	Tcl_Interp		*interp;
@@ -717,6 +745,167 @@ static int glue_channel_histogram(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_flatten_sv(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t	*pmap;
+	_pel			*s;
+	int				i, total;
+	double			h, xs, xv, new_s, new_v;
+
+	CHECK_ARGS(3, "pmap s v");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &new_s));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &new_v));
+
+	total = pmap->width * pmap->height;
+	for (i=0, s=pmap->pixel_data; i<total; i++, s++) {
+		rgb2hsv(s->ch.r, s->ch.g, s->ch.b, &h, &xs, &xv);
+		if (h >= 18 && h <= 23) continue;
+		if (h > 12 && h < 18 && xs < 90 && xs > 60 && xv < 30 && xv > 10) continue;
+		if (h < 27 && h > 23 && xs > 30 && xs < 69 && xv > 59 && xv < 90) continue;
+		s->ch.r = 0;
+		s->ch.g = 0;
+		s->ch.b = 0;
+		s->ch.a = 0;
+		//hsv2rgb(h, new_s, new_v, &(s->ch.r), &(s->ch.g), &(s->ch.b));
+		//hsv2rgb(h, xs, xv, &(s->ch.r), &(s->ch.g), &(s->ch.b));
+		//hsv2rgb(h, xs*0.1+new_s, xv*0.1+new_v, &(s->ch.r), &(s->ch.g), &(s->ch.b));
+		//hsv2rgb(h, xs*0.05+new_s, xv*0.05+new_v, &(s->ch.r), &(s->ch.g), &(s->ch.b));
+		//hsv2rgb(h, xs, new_v, &(s->ch.r), &(s->ch.g), &(s->ch.b));
+		//hsv2rgb(h, new_s, xv, &(s->ch.r), &(s->ch.g), &(s->ch.b));
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_rgb2hsv(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	int			r, g, b;
+	double		h, s, v;
+	Tcl_Obj		*res;
+
+	CHECK_ARGS(3, "r g b");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &r));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &g));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &b));
+
+	rgb2hsv(r, g, b, &h, &s, &v);
+
+	res = Tcl_NewListObj(0, NULL);
+
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewDoubleObj(h)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewDoubleObj(s)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewDoubleObj(v)));
+
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+static int glue_hsv2rgb(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	unsigned char	r, g, b;
+	double			h, s, v;
+	Tcl_Obj			*res;
+
+	CHECK_ARGS(3, "h s v");
+
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &h));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &s));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &v));
+
+	hsv2rgb(h, s, v, &r, &g, &b);
+
+	res = Tcl_NewListObj(0, NULL);
+
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(r)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(g)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(b)));
+
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+static int glue_process_image_hsv(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t	*pmap;
+	_pel			*s;
+	int				i, j, total, res;
+	double			h, xs, xv;
+	Tcl_Obj			*cb;
+	Tcl_Obj			*o[5];
+	Tcl_Obj			**newvals;
+	int				new_c;
+	double			nh, ns, nv;
+	int				na;
+
+	CHECK_ARGS(2, "pmap cb");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+	cb = objv[2];
+
+	total = pmap->width * pmap->height;
+	for (i=0, s=pmap->pixel_data; i<total; i++, s++) {
+		rgb2hsv(s->ch.r, s->ch.g, s->ch.b, &h, &xs, &xv);
+
+		o[0] = cb;
+		o[1] = Tcl_NewDoubleObj(h);
+		o[2] = Tcl_NewDoubleObj(xs);
+		o[3] = Tcl_NewDoubleObj(xv);
+		o[4] = Tcl_NewIntObj(s->ch.a);
+
+		Tcl_IncrRefCount(cb);
+		for (j=0; j<5; j++) Tcl_IncrRefCount(o[j]);
+		res = Tcl_EvalObjv(interp, 5, o, TCL_EVAL_GLOBAL);
+		for (j=0; j<5; j++) Tcl_DecrRefCount(o[j]);
+		Tcl_DecrRefCount(cb);
+		switch (res) {
+			case TCL_OK:
+				break;
+
+			case TCL_RETURN:
+			case TCL_BREAK:
+				return TCL_OK;
+
+			case TCL_CONTINUE:
+				continue;
+
+			case TCL_ERROR:
+				return TCL_ERROR;
+
+			default:
+				THROW_ERROR("Unexpected return code");
+		}
+
+		TEST_OK(Tcl_ListObjGetElements(interp, Tcl_GetObjResult(interp),
+					&new_c, &newvals));
+
+		if (new_c != 4)
+			THROW_ERROR("New values must be a list of 4 elements (h, s, v, a), got ", Tcl_GetString(Tcl_NewIntObj(new_c))," elements: (", Tcl_GetString(Tcl_GetObjResult(interp)), ")");
+
+		TEST_OK(Tcl_GetDoubleFromObj(interp, newvals[0], &nh));
+		TEST_OK(Tcl_GetDoubleFromObj(interp, newvals[1], &ns));
+		TEST_OK(Tcl_GetDoubleFromObj(interp, newvals[2], &nv));
+		TEST_OK(Tcl_GetIntFromObj(interp, newvals[3], &na));
+
+		hsv2rgb(nh, ns, nv, &(s->ch.r), &(s->ch.g), &(s->ch.b));
+		s->ch.a = (uint8)na;
+	}
+
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_Init(Tcl_Interp *interp)
 {
@@ -742,6 +931,7 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::blend", glue_blend);
 	NEW_CMD("pixel::center", glue_center);
 	NEW_CMD("pixel::put_pixel", glue_put_pixel);
+	NEW_CMD("pixel::get_pixel", glue_get_pixel);
 	NEW_CMD("pixel::digest_region", glue_digest_region);
 
 	// Primitives
@@ -757,6 +947,10 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::pmap2bmp", glue_pmap2bmp);
 	NEW_CMD("pixel::pmap_sub", glue_pmap_sub);
 	NEW_CMD("pixel::channel_histogram", glue_channel_histogram);
+	NEW_CMD("pixel::flatten_sv", glue_flatten_sv);
+	NEW_CMD("pixel::rgb2hsv", glue_rgb2hsv);
+	NEW_CMD("pixel::hsv2rgb", glue_hsv2rgb);
+	NEW_CMD("pixel::process_image_hsv", glue_process_image_hsv);
 
 	return TCL_OK;
 }

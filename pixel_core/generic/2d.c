@@ -811,6 +811,173 @@ void put_pixel(gimp_image_t *dest, int x, int y, _pel col, int flags) //{{{1
 }
 
 
+_pel get_pixel(gimp_image_t *src, int x, int y) //{{{1
+{
+	_pel		*s;
+	_pel		d;
+
+	s = src->pixel_data + src->width * y + x;
+//	fprintf(stderr, "len: (%d)\n", len);
+	
+	d.c = s->c;
+
+	return d;
+}
+
+
+void rgb2hsv(r, g, b, h, s, v) //{{{1
+	unsigned char	r, g, b;
+	double			*h, *s, *v;
+{
+#define MAX		256
+#define OLD_HSV
+#ifdef OLD_HSV
+	int		low = MAX;
+	int		mid;
+	int		high = -1;
+	int		base;
+	int		rising;
+
+	if (r < low) low = r;
+	if (g < low) low = g;
+	if (b < low) low = b;
+	if (r > high) high = r;
+	if (g > high) high = g;
+	if (b > high) high = b;
+
+	if (r == high && b == low) {
+		rising = 1;
+		base = 0;
+		mid = g;
+	} else if (g == high && b == low) {
+		rising = 0;
+		base = 60;
+		mid = r;
+	} else if (g == high && r == low) {
+		rising = 1;
+		base = 120;
+		mid = b;
+	} else if (b == high && r == low) {
+		rising = 0;
+		base = 180;
+		mid = g;
+	} else if (b == high && g == low) {
+		rising = 1;
+		base = 240;
+		mid = r;
+	} else {
+		rising = 0;
+		base = 300;
+		mid = b;
+	}
+
+	if (rising) {
+		*h = base + ((mid - low) * 60.0) / (high - low + 1);
+	} else {
+		*h = base + ((high - mid) * 60.0) / (high - low + 1);
+	}
+
+	*s = (high - low) * 100.0 / high;
+	*v = (high * 100.0) / MAX;
+#else
+	int		high = -1;
+	int		low = MAX;
+	double	nr, ng, nb;
+
+	nr = (double)r / MAX;
+	ng = (double)g / MAX;
+	nb = (double)b / MAX;
+
+	if (r < low) low = r;
+	if (g < low) low = g;
+	if (b < low) low = b;
+	if (r > high) high = r;
+	if (g > high) high = g;
+	if (b > high) high = b;
+
+	if (high == r) {
+		*h = 60.0 * (ng - nb);
+		if (*h < 0) *h += 360;
+	} else if (high = g) {
+		*h = 120 + 60 * (nb - nr);
+	} else {
+		*h = 240 + 60 * (nr - ng);
+	}
+
+	*s = (high - low) * 100.0 / high;
+	*v = (high * 100.0) / MAX;
+#endif
+}
+
+
+void hsv2rgb(h, s, v, r, g, b) //{{{1
+	double			h, s, v;
+	unsigned char	*r, *g, *b;
+{
+#define MAX		256
+	int		low = MAX;
+	int		high;
+	int		rising;
+	unsigned char		*d;
+	double	hh;
+
+	high = round(v * MAX / 100.0);
+	low = round(high - (s * high / 100.0));
+	//if (h < 0 || h > 360) h = h % 360;
+
+	if (h <= 60) {
+		//fprintf(stderr, "segment: 0\n");
+		*r = high;
+		*b = low;
+		d = g;
+		rising = 1;
+	} else if (h <= 120) {
+		//fprintf(stderr, "segment: 1\n");
+		d = r;
+		*g = high;
+		*b = low;
+		rising = 0;
+	} else if (h <= 180) {
+		//fprintf(stderr, "segment: 2\n");
+		*r = low;
+		*g = high;
+		d = b;
+		rising = 1;
+	} else if (h <= 240) {
+		//fprintf(stderr, "segment: 3\n");
+		*r = low;
+		d = g;
+		*b = high;
+		rising = 0;
+	} else if (h <= 300) {
+		//fprintf(stderr, "segment: 4\n");
+		d = r;
+		*g = low;
+		*b = high;
+		rising = 1;
+	} else {
+		//fprintf(stderr, "segment: 5\n");
+		*r = high;
+		*g = low;
+		d = b;
+		rising = 0;
+	}
+
+	hh = h;
+	//fprintf(stderr, "before: hh: %f\n", hh);
+	while (hh > 60.0) hh -= 60.0;
+	//fprintf(stderr, "after: hh: %f\n", hh);
+	hh /= 60.0;
+	//fprintf(stderr, "normalized: hh: %f\n", hh);
+
+	if (rising) {
+		*d = round(hh*(high - low) + low);
+	} else {
+		*d = round((1 - hh)*(high - low) + low);
+	}
+}
+
+
 void do_dirty_tricks() // {{{1
 {
 	double		foo;
