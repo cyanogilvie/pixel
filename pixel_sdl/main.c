@@ -1621,6 +1621,26 @@ static int glue_glVertex3f(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_glNormal3f(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	double	x, y, z;
+
+	CHECK_ARGS(3, "x y z");
+
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &x));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &y));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &z));
+
+	glNormal3f(x, y, z);
+
+	return TCL_OK;
+}
+
+
 static int glue_glClear(cdata, interp, objc, objv) //{{{1
 	ClientData		cdata;
 	Tcl_Interp		*interp;
@@ -2192,7 +2212,7 @@ static int glue_glTexImage2D(cdata, interp, objc, objv) //{{{1
 	GLuint			border;
 	gimp_image_t	*pmap;
 
-	CHECK_ARGS(3, "target level border pmap");
+	CHECK_ARGS(4, "target level border pmap");
 
 	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
 				&index));
@@ -2204,12 +2224,13 @@ static int glue_glTexImage2D(cdata, interp, objc, objv) //{{{1
 	glTexImage2D(
 			target_map[index],
 			level,
-			GL_RGBA,
+			GL_RGBA8,
 			pmap->width,
 			pmap->height,
 			border,
-			GL_RGBA,
-			GL_BYTE,
+			//GL_RGBA,
+			GL_BGRA,
+			GL_UNSIGNED_INT_8_8_8_8_REV,
 			pmap->pixel_data
 	);
 
@@ -2292,6 +2313,7 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::sdl::glColor4f", glue_glColor4f);
 	NEW_CMD("pixel::sdl::glPointSize", glue_glPointSize);
 	NEW_CMD("pixel::sdl::glVertex3f", glue_glVertex3f);
+	NEW_CMD("pixel::sdl::glNormal3f", glue_glNormal3f);
 	NEW_CMD("pixel::sdl::glClear", glue_glClear);
 	NEW_CMD("pixel::sdl::glMatrixMode", glue_glMatrixMode);
 	NEW_CMD("pixel::sdl::glLoadIdentity", glue_glLoadIdentity);
