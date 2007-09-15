@@ -1779,6 +1779,463 @@ static int glue_gluPerspective(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_glGenTextures(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	*names;
+	GLsizei	count;
+	Tcl_Obj	*res;
+	int		i;
+
+	CHECK_ARGS(1, "count");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &count));
+
+	names = (GLuint *)ckalloc(sizeof(GLuint) * count);
+
+	glGenTextures(count, names);
+
+	res = Tcl_NewListObj(0, NULL);
+	for (i=0; i<count; i++) {
+		if (Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(names[i])) != TCL_OK) {
+			ckfree((char *)names);
+			return TCL_ERROR;
+		}
+	}
+
+	ckfree((char *)names);
+
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+static int glue_glBindTexture(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	name;
+	int		index;
+	static CONST char *types[] = {
+		"GL_TEXTURE_1D",
+		"GL_TEXTURE_2D",
+		"GL_TEXTURE_3D",
+		(char *)NULL
+	};
+	GLenum map[] = {
+		GL_TEXTURE_1D,
+		GL_TEXTURE_2D,
+		GL_TEXTURE_3D
+	};
+
+	CHECK_ARGS(2, "target name");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], types, "target", TCL_EXACT,
+				&index));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], (int *)&name));
+
+	glBindTexture(map[index], name);
+
+	return TCL_OK;
+}
+
+
+static int glue_glTexParameter(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLenum	target;
+	GLenum	name;
+	GLuint	param;
+
+	int		index;
+	static CONST char *targets[] = {
+		"GL_TEXTURE_1D",
+		"GL_TEXTURE_2D",
+		"GL_TEXTURE_3D",
+		(char *)NULL
+	};
+	GLenum target_map[] = {
+		GL_TEXTURE_1D,
+		GL_TEXTURE_2D,
+		GL_TEXTURE_3D
+	};
+	static CONST char *names[] = {
+		"GL_TEXTURE_MAG_FILTER",
+		"GL_TEXTURE_MIN_FILTER",
+		"GL_TEXTURE_WRAP_S",
+		"GL_TEXTURE_WRAP_T",
+		"GL_TEXTURE_WRAP_R",
+		"GL_TEXTURE_BORDER_COLOR",
+		"GL_TEXTURE_PRIORITY",
+		"GL_TEXTURE_MIN_LOD",
+		"GL_TEXTURE_MAX_LOD",
+		"GL_TEXTURE_BASE_LEVEL",
+		"GL_TEXTURE_MAX_LEVEL",
+		(char *)NULL
+	};
+	GLenum name_map[] = {
+		GL_TEXTURE_MAG_FILTER,
+		GL_TEXTURE_MIN_FILTER,
+		GL_TEXTURE_WRAP_S,
+		GL_TEXTURE_WRAP_T,
+		GL_TEXTURE_WRAP_R,
+		GL_TEXTURE_BORDER_COLOR,
+		GL_TEXTURE_PRIORITY,
+		GL_TEXTURE_MIN_LOD,
+		GL_TEXTURE_MAX_LOD,
+		GL_TEXTURE_BASE_LEVEL,
+		GL_TEXTURE_MAX_LEVEL
+	};
+
+	CHECK_ARGS(3, "target param value");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
+				&index));
+	target = target_map[index];
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[2], names, "param name", TCL_EXACT,
+				&index));
+	name = name_map[index];
+
+	switch (name) {
+		case GL_TEXTURE_WRAP_S:
+		case GL_TEXTURE_WRAP_T:
+		case GL_TEXTURE_WRAP_R: //{{{
+			{
+				static CONST char *values[] = {
+					"GL_CLAMP",
+					"GL_CLAMP_TO_EDGE",
+					"GL_REPEAT",
+					(char *)NULL
+				};
+				GLenum value_map[] = {
+					GL_CLAMP,
+					GL_CLAMP_TO_EDGE,
+					GL_REPEAT
+				};
+
+				TEST_OK(Tcl_GetIndexFromObj(interp, objv[3], values, "value",
+							TCL_EXACT, &index));
+				param = value_map[index];
+
+				glTexParameteri(target, name, param);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		case GL_TEXTURE_MAG_FILTER: //{{{
+			{
+				static CONST char *values[] = {
+					"GL_NEAREST",
+					"GL_LINEAR",
+					(char *)NULL
+				};
+				GLenum value_map[] = {
+					GL_NEAREST,
+					GL_LINEAR
+				};
+
+				TEST_OK(Tcl_GetIndexFromObj(interp, objv[3], values, "value",
+							TCL_EXACT, &index));
+				param = value_map[index];
+
+				glTexParameteri(target, name, param);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		case GL_TEXTURE_MIN_FILTER: //{{{
+			{
+				static CONST char *values[] = {
+					"GL_NEAREST",
+					"GL_LINEAR",
+					"GL_NEAREST_MIPMAP_NEAREST",
+					"GL_NEAREST_MIPMAP_LINEAR",
+					"GL_LINEAR_MIPMAP_NEAREST",
+					"GL_LINEAR_MIPMAP_LINEAR",
+					(char *)NULL
+				};
+				GLenum value_map[] = {
+					GL_NEAREST,
+					GL_LINEAR,
+					GL_NEAREST_MIPMAP_NEAREST,
+					GL_NEAREST_MIPMAP_LINEAR,
+					GL_LINEAR_MIPMAP_NEAREST,
+					GL_LINEAR_MIPMAP_LINEAR
+				};
+
+				TEST_OK(Tcl_GetIndexFromObj(interp, objv[3], values, "value",
+							TCL_EXACT, &index));
+				param = value_map[index];
+
+				glTexParameteri(target, name, param);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		case GL_TEXTURE_BORDER_COLOR: //{{{
+			{
+				Tcl_Obj		**v;
+				int			count, i;
+				double		hold;
+				GLfloat	components[4];
+
+				TEST_OK(Tcl_ListObjGetElements(interp, objv[3], &count, &v));
+				if (count != 4)
+					THROW_ERROR("Expecting a list of 4 elements");
+
+				for (i=0; i<4; i++) {
+					TEST_OK(Tcl_GetDoubleFromObj(interp, v[0], &hold));
+					components[0] = hold;
+				}
+
+				glTexParameterfv(target, name, components);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		case GL_TEXTURE_PRIORITY: //{{{
+			{
+				GLfloat		priority;
+				double		value;
+
+				TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &value));
+				priority = value;
+
+				glTexParameterf(target, name, priority);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		case GL_TEXTURE_MIN_LOD:
+		case GL_TEXTURE_MAX_LOD: //{{{
+			{
+				GLfloat		level;
+				double		value;
+
+				TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &value));
+				level = value;
+
+				glTexParameterf(target, name, level);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		case GL_TEXTURE_BASE_LEVEL:
+		case GL_TEXTURE_MAX_LEVEL: //{{{
+			{
+				GLuint		level;
+				int			value;
+
+				TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &value));
+				if (level < 0)
+					THROW_ERROR("level must be a positive integer");
+
+				level = value;
+
+				glTexParameteri(target, name, level);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		default:
+			THROW_ERROR("Unexpected name");
+			break;
+	}
+
+	THROW_ERROR("Should not get here");
+}
+
+
+static int glue_glTexEnv(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLenum	target;
+	GLenum	name;
+	GLuint	param;
+
+	int		index;
+	static CONST char *targets[] = {
+		"GL_TEXTURE_ENV",
+		(char *)NULL
+	};
+	GLenum target_map[] = {
+		GL_TEXTURE_ENV
+	};
+	static CONST char *names[] = {
+		"GL_TEXTURE_ENV_MODE",
+
+		"GL_TEXTURE_MIN_FILTER",
+		"GL_TEXTURE_WRAP_S",
+		"GL_TEXTURE_WRAP_T",
+		"GL_TEXTURE_WRAP_R",
+		"GL_TEXTURE_BORDER_COLOR",
+		"GL_TEXTURE_PRIORITY",
+		"GL_TEXTURE_MIN_LOD",
+		"GL_TEXTURE_MAX_LOD",
+		"GL_TEXTURE_BASE_LEVEL",
+		"GL_TEXTURE_MAX_LEVEL",
+		(char *)NULL
+	};
+	GLenum name_map[] = {
+		GL_TEXTURE_ENV_MODE,
+
+		GL_TEXTURE_MIN_FILTER,
+		GL_TEXTURE_WRAP_S,
+		GL_TEXTURE_WRAP_T,
+		GL_TEXTURE_WRAP_R,
+		GL_TEXTURE_BORDER_COLOR,
+		GL_TEXTURE_PRIORITY,
+		GL_TEXTURE_MIN_LOD,
+		GL_TEXTURE_MAX_LOD,
+		GL_TEXTURE_BASE_LEVEL,
+		GL_TEXTURE_MAX_LEVEL
+	};
+
+	CHECK_ARGS(3, "target param value");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
+				&index));
+	target = target_map[index];
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[2], names, "param name", TCL_EXACT,
+				&index));
+	name = name_map[index];
+
+	switch (name) {
+		case GL_TEXTURE_ENV_MODE: //{{{
+			{
+				static CONST char *values[] = {
+					"GL_DECAL",
+					"GL_REPLACE",
+					"GL_MODULATE",
+					"GL_BLEND",
+					(char *)NULL
+				};
+				GLenum value_map[] = {
+					GL_DECAL,
+					GL_REPLACE,
+					GL_MODULATE,
+					GL_BLEND
+				};
+
+				TEST_OK(Tcl_GetIndexFromObj(interp, objv[3], values, "value",
+							TCL_EXACT, &index));
+				param = value_map[index];
+
+				glTexEnvi(target, name, param);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		case GL_TEXTURE_ENV_COLOR: //{{{
+			{
+				Tcl_Obj		**v;
+				int			count, i;
+				double		hold;
+				GLfloat	components[4];
+
+				TEST_OK(Tcl_ListObjGetElements(interp, objv[3], &count, &v));
+				if (count != 4)
+					THROW_ERROR("Expecting a list of 4 elements");
+
+				for (i=0; i<4; i++) {
+					TEST_OK(Tcl_GetDoubleFromObj(interp, v[0], &hold));
+					components[0] = hold;
+				}
+
+				glTexEnvfv(target, name, components);
+				return TCL_OK;
+			}
+			break; //}}}
+
+		default:
+			THROW_ERROR("Unexpected name");
+			break;
+	}
+
+	THROW_ERROR("Should not get here");
+}
+
+
+static int glue_glTexImage2D(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int		index;
+	static CONST char *targets[] = {
+		"GL_TEXTURE_1D",
+		"GL_TEXTURE_2D",
+		"GL_TEXTURE_3D",
+		(char *)NULL
+	};
+	GLenum target_map[] = {
+		GL_TEXTURE_1D,
+		GL_TEXTURE_2D,
+		GL_TEXTURE_3D
+	};
+	GLint			level;
+	GLuint			border;
+	gimp_image_t	*pmap;
+
+	CHECK_ARGS(3, "target level border pmap");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
+				&index));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &level));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], (int *)&border));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[4], &pmap));
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	glTexImage2D(
+			target_map[index],
+			level,
+			GL_RGBA,
+			pmap->width,
+			pmap->height,
+			border,
+			GL_RGBA,
+			GL_BYTE,
+			pmap->pixel_data
+	);
+
+	return TCL_OK;
+}
+
+
+static int glue_glTexCoord2f(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	double		s, t;
+
+	CHECK_ARGS(2, "s t");
+
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &s));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &t));
+
+	glTexCoord2f(s, t);
+
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_sdl_Init(Tcl_Interp *interp)
 {
@@ -1841,6 +2298,17 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::sdl::glTranslatef", glue_glTranslatef);
 	NEW_CMD("pixel::sdl::glRotatef", glue_glRotatef);
 	NEW_CMD("pixel::sdl::gl_swapbuffers", glue_gl_swapbuffers);
+	NEW_CMD("pixel::sdl::glGenTextures", glue_glGenTextures);
+	NEW_CMD("pixel::sdl::glBindTexture", glue_glBindTexture);
+	NEW_CMD("pixel::sdl::glTexParameter", glue_glTexParameter);
+	NEW_CMD("pixel::sdl::glTexParameteri", glue_glTexParameter);
+	NEW_CMD("pixel::sdl::glTexParameterf", glue_glTexParameter);
+	NEW_CMD("pixel::sdl::glTexParameterfv", glue_glTexParameter);
+	NEW_CMD("pixel::sdl::glTexEnv", glue_glTexEnv);
+	NEW_CMD("pixel::sdl::glTexEnvi", glue_glTexEnv);
+	NEW_CMD("pixel::sdl::glTexEnvfv", glue_glTexEnv);
+	NEW_CMD("pixel::sdl::glTexImage2D", glue_glTexImage2D);
+	NEW_CMD("pixel::sdl::glTexCoord2f", glue_glTexCoord2f);
 
 	// GLU
 	NEW_CMD("pixel::sdl::gluPerspective", glue_gluPerspective);
