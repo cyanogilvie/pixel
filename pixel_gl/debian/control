@@ -1,0 +1,19 @@
+Source: pixel-gl
+Section: unknown
+Priority: extra
+Maintainer: Cyan Ogilvie <cyan.ogilvie@gmail.com>
+Build-Depends: debhelper (>= 5), autoconf, pixel-core (>= 3.1.0), autotools-dev, tcl8.4-dev, fakeroot, liblocale-gettext-perl, tcldev, mesa-common-dev
+Standards-Version: 3.7.2
+
+Package: pixel-gl
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, tcl8.4, pixel-core (>= 3.1.0), libgl1-mesa-glx
+Description: OpenGL wrapper for the Pixel framework
+ Pixel is a Tcl extension that provides low level raster graphics functions,
+ and through the use of helper modules allows loading and saving a large
+ number of image formats, rendering True Type fonts, applying graphics filters
+ and displaying to various targets, like SDL, Tk images, and so forth
+ .
+ This package implements a thin wrapper on top of the OpenGL library.  You
+ probably will also need Pixel_sdl (which supports OpenGL rendering to its
+ surfaces) or Pixel_tkgl (which allows OpenGL rendering to a Tk widget)

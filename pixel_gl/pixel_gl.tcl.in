@@ -1,0 +1,15 @@
+package require Pixel 3
+
+package require Itcl 3.1
+namespace import -force ::itcl::*
+
+load [file join $::pixel::gl::library @PKG_LIB_FILE@]
+
+namespace eval ::pixel::gl {
+	namespace export *
+
+	variable version @PACKAGE_VERSION@.@EXTRA_VERSION@
+}
+
+package provide @PACKAGE_NAME@ $::pixel::gl::version
+

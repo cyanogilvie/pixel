@@ -1,0 +1,33 @@
+.TH Pixel_gl n 3.0 "Pixel-modules"
+.HS Pixel_gl tcl
+.BS
+.SH NAME
+Pixel_gl \- Call OpenGL commands from Tcl
+.SH SYNOPSIS
+\fBpixel::gl::foo\fI filename ?progress-callback?\fR
+.br
+\fBpixel::gl::bar\fI pmap filename ?type? ?progress-callback?\fR
+.BE
+
+'\" # CS - begin code excerpt
+.de CS
+.RS
+.nf
+.ta .25i .5i .75i 1i
+..
+'\" # CE - end code excerpt
+.de CE
+.fi
+.RE
+..
+.SH DESCRIPTION
+The Pixel_gl extension for Tcl provides a functions for calling functions
+from the OpenGL library.
+.PP
+See the individual man pages for details on each command.
+
+.SH "SEE ALSO"
+Pixel(n), pmap(n)
+
+.SH KEYWORDS
+pixel, OpenGL, 3D
