@@ -349,6 +349,66 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 	
 
+static int glue_blur_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t		*src_pmap;
+	int					radius;
+	Imlib_Border		border;
+	Imlib_Image			*src;
+	
+	CHECK_ARGS(2, "pmap radius");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &radius));
+
+	src = imlib_create_image_using_data(src_pmap->width, src_pmap->height,
+			(DATA32 *)src_pmap->pixel_data);
+	if (src == NULL)
+		THROW_ERROR("Failed to wrap src_pmap in an imlib2 image");
+
+	imlib_context_set_image(src);
+	imlib_image_blur(radius);
+	
+	memcpy(src_pmap->pixel_data,
+			imlib_image_get_data_for_reading_only(),
+			src_pmap->width * src_pmap->height * 4);
+	imlib_free_image();
+
+	return TCL_OK;
+}
+	
+
+static int glue_sharpen_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *CONST objv[])
+{
+	gimp_image_t		*src_pmap;
+	int					radius;
+	Imlib_Border		border;
+	Imlib_Image			*src;
+	
+	CHECK_ARGS(2, "pmap radius");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &radius));
+
+	src = imlib_create_image_using_data(src_pmap->width, src_pmap->height,
+			(DATA32 *)src_pmap->pixel_data);
+	if (src == NULL)
+		THROW_ERROR("Failed to wrap src_pmap in an imlib2 image");
+
+	imlib_context_set_image(src);
+	imlib_image_sharpen(radius);
+
+	memcpy(src_pmap->pixel_data,
+			imlib_image_get_data_for_reading_only(),
+			src_pmap->width * src_pmap->height * 4);
+	imlib_free_image();
+
+	return TCL_OK;
+}
+	
+
 int Pixel_imlib_Init(Tcl_Interp *interp) //{{{1
 {
 	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
@@ -367,6 +427,8 @@ int Pixel_imlib_Init(Tcl_Interp *interp) //{{{1
 	NEW_CMD("pixel::imlib2::load_image", glue_load_image);
 	NEW_CMD("pixel::imlib2::save_image", glue_save_image);
 	NEW_CMD("pixel::imlib2::scale_pmap", glue_scale_pmap);
+	NEW_CMD("pixel::imlib2::blur", glue_blur_pmap);
+	NEW_CMD("pixel::imlib2::sharpen", glue_sharpen_pmap);
 	
 	return TCL_OK;
 }

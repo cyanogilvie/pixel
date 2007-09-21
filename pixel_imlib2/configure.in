@@ -20,7 +20,7 @@ dnl	to configure the system for the local environment.
 #-----------------------------------------------------------------------
 
 AC_INIT([Pixel_imlib2], [1])
-EXTRA_VERSION="0.0"
+EXTRA_VERSION="1.0"
 AC_SUBST(EXTRA_VERSION)
 
 #--------------------------------------------------------------------
