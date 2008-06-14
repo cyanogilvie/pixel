@@ -1,0 +1,7 @@
+Package Pixel_devil 0.1
+Meta description 
+Meta entrysource pixel_devil.tcl
+Meta included    libPixel_devil0.1.so pixel_devil.tcl
+Meta platform    linux-glibc2.6-ix86
+Meta require     Pixel
+
