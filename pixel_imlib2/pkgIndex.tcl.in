@@ -2,4 +2,4 @@
 # Tcl package index file
 #
 package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@.@EXTRA_VERSION@ \
-		[list eval [list namespace eval ::pixel::imlib2 [list variable library $dir]]\n[list source [file join $dir pixel_imlib2.tcl]]]
+		[list source [file join $dir pixel_imlib2.tcl]]
