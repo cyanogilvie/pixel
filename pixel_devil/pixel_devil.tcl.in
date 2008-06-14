@@ -1,12 +1,15 @@
 package require Pixel
 
-load [file join $::pixel::devil::library @PKG_LIB_FILE@] @PACKAGE_NAME@
-
 namespace eval ::pixel::devil {
 	namespace export *
 
 	variable version @PACKAGE_VERSION@
+
+	variable library \
+			[file normalize [file join [pwd] [file dirname [info script]]]]
 }
+
+load [file join $::pixel::devil::library @PKG_LIB_FILE@] @PACKAGE_NAME@
 
 package provide @PACKAGE_NAME@ @PACKAGE_VERSION@
 
