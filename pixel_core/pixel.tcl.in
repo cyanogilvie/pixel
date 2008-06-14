@@ -1,8 +1,6 @@
 package require Itcl 3.1
 namespace import -force ::itcl::*
 
-load [file join $::pixel::library @PKG_LIB_FILE@]
-
 namespace eval ::pixel {
 	namespace export *
 
@@ -36,7 +34,12 @@ namespace eval ::pixel {
 		variable MD_MASK_GREEN		0x0000ff00
 		variable MD_MASK_BLUE		0x000000ff
 	}
+
+	variable library \
+			[file normalize [file join [pwd] [file dirname [info script]]]]
 }
+
+load [file join $::pixel::library @PKG_LIB_FILE@]
 
 lappend auto_path [file join $::pixel::library]
 

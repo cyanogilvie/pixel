@@ -1,6 +1,6 @@
 #include <tclstuff.h>
-#include "2d.h"
-#include "tcl_pmap.h"
+#include <Pixel/2d.h>
+#include <Pixel/tcl_pmap.h>
 
 #include <IL/il.h>
 #include <IL/ilu.h>
