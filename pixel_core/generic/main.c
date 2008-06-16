@@ -924,7 +924,6 @@ static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
 
 	scaled = scale_pmap(pmap,
 			0, 0, pmap->width, pmap->height,
-			0, 0, new_w, new_h,
 			0, 0, new_w, new_h);
 
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(scaled));

@@ -13,39 +13,6 @@ if (y < (yy)) {h += (y - (yy)); y = (yy);} \
 if ((x + w) > ((xx) + (ww))) {w = (ww) - (x - xx);} \
 if ((y + h) > ((yy) + (hh))) {h = (hh) - (y - yy);}
 
-#define INTERSECTS(x, y, w, h, xx, yy, ww, hh) \
-   ((x < (xx + ww)) && \
-       (y < (yy + hh)) && \
-       ((x + w) > xx) && \
-       ((y + h) > yy))
-
-#define CLIP_TO(_x, _y, _w, _h, _cx, _cy, _cw, _ch) \
-{ \
-if (INTERSECTS(_x, _y, _w, _h, _cx, _cy, _cw, _ch)) \
-   { \
-         if (_x < _cx) \
-	{ \
-	           _w += _x - _cx; \
-	           _x = _cx; \
-	           if (_w < 0) _w = 0; \
-	} \
-         if ((_x + _w) > (_cx + _cw)) \
-	     _w = _cx + _cw - _x; \
-         if (_y < _cy) \
-	{ \
-	           _h += _y - _cy; \
-	           _y = _cy; \
-	           if (_h < 0) _h = 0; \
-	} \
-         if ((_y + _h) > (_cy + _ch)) \
-	     _h = _cy + _ch - _y; \
-   } \
-else \
-   { \
-      _w = 0; _h = 0; \
-   } \
-}
-   
 #define RGBA_COMPOSE(r, g, b, a)  ((a) << 24) | ((r) << 16) | ((g) << 8) | (b)
 #define INV_XAP                   (256 - xapoints[x])
 #define XAP                       (xapoints[x])
@@ -612,12 +579,12 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 
 //>>>
 
-#define LINESIZE 16
+//#define LINESIZE 16
+#define LINESIZE 8
 gimp_image_t *scale_pmap( //<<<
 		gimp_image_t *src,
 		int ssx, int ssy, int ssw, int ssh,
-		int ddx, int ddy, int ddw, int ddh,
-		int clx, int cly, int clw, int clh)
+		int ddx, int ddy, int ddw, int ddh)
 {
 	ScaleInfo     *scaleinfo = NULL;
 	DATA32             *buf = NULL;
@@ -669,11 +636,6 @@ gimp_image_t *scale_pmap( //<<<
 	CLIP(dx, dy, dw, dh, 0, 0, dst->width, dst->height);
 	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
 		return NULL;
-	if (clw) {
-		CLIP_TO(dx, dy, dw, dh, clx, cly, clw, clh);
-		if ((dw < 1) || (dh < 1))
-			return NULL;
-	}
 	if (psx != dx)
 		sx += ((dx - psx) * ssw) / abs(ddw);
 	if (psy != dy)
