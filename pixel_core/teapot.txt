@@ -1,7 +1,14 @@
-Package Pixel 3.2.0
+Package Pixel 3.3.0
 Meta description 
 Meta entrysource pixel.tcl
 Meta included    generic/scripts/tclIndex libPixel3.so pixel.tcl
 Meta platform    linux-glibc2.6-ix86
 Meta require     {Itcl 3.1}
+
+#Package Pixel 3.3.0
+#Meta description 
+#Meta entrysource pixel.tcl
+#Meta included    generic/scripts/tclIndex libPixel3.dll pixel.tcl
+#Meta platform    win32-ix86
+#Meta require     {Itcl 3.1}
 

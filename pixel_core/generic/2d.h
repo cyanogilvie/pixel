@@ -288,5 +288,12 @@ EXTERN_C void do_dirty_tricks		();
  
 EXTERN_C void init_2d				();
 
+// From scale_image.c
+EXTERN_C gimp_image_t *scale_pmap(
+		gimp_image_t *src,
+		int ssx, int ssy, int ssw, int ssh,
+		int ddx, int ddy, int ddw, int ddh,
+		int clx, int cly, int clw, int clh);
+
 
 #endif

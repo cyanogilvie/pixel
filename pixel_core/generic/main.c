@@ -906,6 +906,33 @@ static int glue_process_image_hsv(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	gimp_image_t	*pmap;
+	gimp_image_t	*scaled;
+	int				new_w, new_h;
+
+	CHECK_ARGS(3, "src new_width new_height");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &new_h));
+
+	scaled = scale_pmap(pmap,
+			0, 0, pmap->width, pmap->height,
+			0, 0, new_w, new_h,
+			0, 0, new_w, new_h);
+
+	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(scaled));
+
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_Init(Tcl_Interp *interp)
 {
@@ -951,6 +978,7 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::rgb2hsv", glue_rgb2hsv);
 	NEW_CMD("pixel::hsv2rgb", glue_hsv2rgb);
 	NEW_CMD("pixel::process_image_hsv", glue_process_image_hsv);
+	NEW_CMD("pixel::scale_pmap", glue_scale_pmap);
 
 	return TCL_OK;
 }
