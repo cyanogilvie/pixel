@@ -580,7 +580,7 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 //>>>
 
 //#define LINESIZE 16
-#define LINESIZE 8
+#define LINESIZE 16
 gimp_image_t *scale_pmap( //<<<
 		gimp_image_t *src,
 		int ssx, int ssy, int ssw, int ssh,
