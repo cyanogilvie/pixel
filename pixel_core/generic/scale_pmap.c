@@ -13,7 +13,7 @@ if (y < (yy)) {h += (y - (yy)); y = (yy);} \
 if ((x + w) > ((xx) + (ww))) {w = (ww) - (x - xx);} \
 if ((y + h) > ((yy) + (hh))) {h = (hh) - (y - yy);}
 
-#define RGBA_COMPOSE(r, g, b, a)  ((a) << 24) | ((r) << 16) | ((g) << 8) | (b)
+#define RGBA_COMPOSE(r, g, b, a)  ((b) << 24) | ((g) << 16) | ((r) << 8) | (a)
 #define INV_XAP                   (256 - xapoints[x])
 #define XAP                       (xapoints[x])
 #define INV_YAP                   (256 - yapoints[dyy + y])
@@ -130,11 +130,11 @@ static int *CalcApoints(int s, int d, int b1, int b2, int up) //<<<
 }
 
 //>>>
-static DATA32 **CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2) //<<<
+static DATA32 **CalcYPoints(DATA32 *src, int sw, int sh, int dh, int b1, int b2) //<<<
 {
-	DATA32            **p;
-	int                 i, j = 0;
-	int                 val, inc, rv = 0;
+	DATA32	**p;
+	int		i, j = 0;
+	int		val, inc, rv = 0;
 
 	if (dh < 0) {
 		dh = -dh;
@@ -266,18 +266,18 @@ static ScaleInfo *CalcScaleInfo(gimp_image_t *im, int sw, int sh, int dw, int dh
 }
 
 //>>>
-static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx, int dy, int dw, int dh, int dow, int sow) //<<<
+static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, int dy, int dw, int dh, int dow, int sow) //<<<
 {
-   DATA32             *sptr, *dptr;
-   int                 x, y, end;
-   DATA32            **ypoints = isi->ypoints;
-   int                *xpoints = isi->xpoints;
-   int                *xapoints = isi->xapoints;
-   int                *yapoints = isi->yapoints;
+   DATA32	*sptr, *dptr;
+   int		x, y, end;
+   DATA32	**ypoints = isi->ypoints;
+   int		*xpoints = isi->xpoints;
+   int		*xapoints = isi->xapoints;
+   int		*yapoints = isi->yapoints;
 
    end = dxx + dw;
-   /* scaling up both ways */
-   if (isi->xup_yup == 3) {
+
+   if (isi->xup_yup == 3) { /* scaling up both ways <<< */
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   /* calculate the source line we'll scan from */
@@ -285,9 +285,9 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 		   sptr = ypoints[dyy + y];
 		   if (YAP > 0) {
 			   for (x = dxx; x < end; x++) {
-				   int                 r, g, b, a;
-				   int                 rr, gg, bb, aa;
-				   DATA32             *pix;
+				   int		r, g, b, a;
+				   int		rr, gg, bb, aa;
+				   DATA32	*pix;
 
 				   if (XAP > 0) {
 					   pix = ypoints[dyy + y] + xpoints[x];
@@ -335,8 +335,8 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 			   }
 		   } else {
 			   for (x = dxx; x < end; x++) {
-				   int                 r, g, b, a;
-				   DATA32             *pix;
+				   int		r, g, b, a;
+				   DATA32	*pix;
 
 				   if (XAP > 0) {
 					   pix = ypoints[dyy + y] + xpoints[x];
@@ -360,9 +360,8 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 			   }
 		   }
 	   }
-   }
-   /* if we're scaling down vertically */
-   else if (isi->xup_yup == 1) {
+   } /* scaling up both ways >>> */
+   else if (isi->xup_yup == 1) { /* if we're scaling down vertically <<< */
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   int                 yap;
@@ -444,9 +443,8 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 			   }
 		   }
 	   }
-   }
-   /* if we're scaling down horizontally */
-   else if (isi->xup_yup == 2) {
+   } /* if we're scaling down vertically >>> */
+   else if (isi->xup_yup == 2) { /* if we're scaling down horizontally <<< */
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   /* calculate the source line we'll scan from */
@@ -530,17 +528,15 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 			   }
 		   }
 	   }
-   }
-   /* if we're scaling down horizontally & vertically */
-   else {
-	   int                 count;
-	   DATA32             *pix;
-	   int                 a, r, g, b;
+   } /* if we're scaling down horizontally >>> */
+   else { /* if we're scaling down horizontally & vertically <<< */
+	   int		count;
+	   DATA32	*pix;
+	   int		a, r, g, b;
 
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
-		   int                 yap =
-			   (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
+		   int		yap = (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
 		   /* calculate the source line we'll scan from */
 		   dptr = dest + dx + ((y + dy) * dow);
 		   sptr = ypoints[dyy + y];
@@ -574,7 +570,7 @@ static void ScaleAARGBA(ScaleInfo * isi, DATA32 * dest, int dxx, int dyy, int dx
 			   }
 		   }
 	   }
-   }
+   } /* if we're scaling down horizontally & vertically >>> */
 }
 
 //>>>
@@ -586,13 +582,13 @@ gimp_image_t *scale_pmap( //<<<
 		int ssx, int ssy, int ssw, int ssh,
 		int ddx, int ddy, int ddw, int ddh)
 {
-	ScaleInfo     *scaleinfo = NULL;
-	DATA32             *buf = NULL;
-	int                 sx, sy, sw, sh, dx, dy, dw, dh, dxx, dyy, y2, x2;
-	int                 psx, psy, psw, psh;
-	int                 y, h, hh;
-	gimp_image_t       *dst;
-	_pel				init;
+	ScaleInfo		*scaleinfo = NULL;
+	DATA32			*buf = NULL;
+	int				sx, sy, sw, sh, dx, dy, dw, dh, dxx, dyy, y2, x2;
+	int				psx, psy, psw, psh;
+	int				y, h, hh;
+	gimp_image_t	*dst;
+	_pel			init;
 
 	init.c = 0;
 	dst = pmap_new(abs(ddw), abs(ddh), init);
@@ -677,7 +673,7 @@ gimp_image_t *scale_pmap( //<<<
 			hh = h;
 		/* scale the imagedata for this LINESIZE lines chunk of image */
 		ScaleAARGBA(scaleinfo, (DATA32 *)dst->pixel_data, dxx, dyy + y,
-				0, 0, dw, hh, dw, src->width);
+				0, y, dw, hh, dw, src->width);
 
 		h -= LINESIZE;
 	}
