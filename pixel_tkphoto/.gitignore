@@ -1,0 +1,12 @@
+core
+*.swp
+Makefile
+pkgIndex.tcl
+pixel_tkimage.tcl
+autom4te.cache
+config.log
+config.status
+configure
+build-stamp
+config.guess
+config.sub

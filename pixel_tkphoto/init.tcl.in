@@ -1,0 +1,18 @@
+package require Pixel 3
+package require Tk
+package require Itcl 3.1
+namespace import -force ::itcl::*
+
+namespace eval ::pixel::tkimage {
+	namespace export *
+
+	variable version @PACKAGE_VERSION@.@EXTRA_VERSION@
+
+	variable library \
+			[file normalize [file join [pwd] [file dirname [info script]]]]
+}
+
+load [file join $::pixel::tkimage::library @PKG_LIB_FILE@]
+
+package provide @PACKAGE_NAME@ $::pixel::tkimage::version
+
