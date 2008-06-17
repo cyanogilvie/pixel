@@ -3,4 +3,5 @@ Meta description
 Meta entryload   @PKG_LIB_FILE@
 Meta included    @PKG_LIB_FILE@
 Meta platform    linux-glibc2.6-ix86
+#Meta platform    win32-ix86
 
