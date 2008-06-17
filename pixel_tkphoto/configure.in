@@ -76,7 +76,7 @@ TEA_SETUP_COMPILER
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
 TEA_ADD_INCLUDES([])
-TEA_ADD_LIBS([-ltk8.4 -L/usr/lib/Pixel -lPixel3])
+TEA_ADD_LIBS([-L/usr/lib/Pixel -lPixel3])
 #TEA_ADD_LIBS([-ltk8.4 -lHermes -L/usr/lib/Pixel -lPixel3 -lgcov])
 TEA_ADD_CFLAGS([])
 #TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])
