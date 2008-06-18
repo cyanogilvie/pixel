@@ -269,7 +269,7 @@ EXTERN_C gimp_image_t *pmap_compose(gimp_image_t *pmap1, gimp_image_t *pmap2,
 
 EXTERN_C void pmap_free(gimp_image_t **pmap);
 
-EXTERN_C void pmap_filter	(gimp_image_t *dest, int flags, double factor);
+EXTERN_C void pmap_filter(gimp_image_t *dest, int flags, double factor);
 
 EXTERN_C gimp_image_t *pmap_dropshadow (gimp_image_t *src, int blur);
 

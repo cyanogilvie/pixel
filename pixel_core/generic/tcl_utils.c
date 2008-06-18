@@ -32,7 +32,7 @@ static int _read_file_ex(interp, filename, res, binary)
 }
 
 
-const char *read_vfs_file(const char *filename, int *len, int binary)
+const unsigned char *read_vfs_file(const char *filename, int *len, int binary)
 {
 	Tcl_Obj		*res;
 
@@ -47,7 +47,7 @@ const char *read_vfs_file(const char *filename, int *len, int binary)
 int read_vfs_file2(interp, filename, buf, len, binary)
 	Tcl_Interp		*interp;
 	const char		*filename;
-	char			**buf;
+	unsigned char	**buf;
 	int				*len;
 	int				binary;
 {

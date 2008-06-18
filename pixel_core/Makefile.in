@@ -63,7 +63,7 @@ PKG_HEADERS	= @PKG_HEADERS@
 PKG_LIB_FILE	= @PKG_LIB_FILE@
 PKG_STUB_LIB_FILE = @PKG_STUB_LIB_FILE@
 
-lib_BINARIES	= $(PKG_LIB_FILE)
+lib_BINARIES	= $(PKG_LIB_FILE) $(PKG_STUB_LIB_FILE)
 BINARIES	= $(lib_BINARIES)
 
 SHELL		= @SHELL@
@@ -447,6 +447,12 @@ uninstall-binaries:
 	list='$(bin_BINARIES)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(bindir)/$$p; \
 	done
+
+genstubs:
+	#$(TCLSH_PROG)
+	env tclsh8.5 \
+		$(srcdir)/tools/genStubs.tcl $(srcdir)/generic \
+		$(srcdir)/generic/Pixel.decls
 
 .PHONY: all binaries clean depend distclean doc install libraries test
 

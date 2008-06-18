@@ -39,9 +39,9 @@ namespace eval ::pixel {
 			[file normalize [file join [pwd] [file dirname [info script]]]]
 }
 
-load [file join $::pixel::library @PKG_LIB_FILE@]
-
 lappend auto_path [file join $::pixel::library]
 
-package provide @PACKAGE_NAME@ $::pixel::version
+load [file join $::pixel::library @PKG_LIB_FILE@]
+
+#package provide @PACKAGE_NAME@ $::pixel::version
 

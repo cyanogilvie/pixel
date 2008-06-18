@@ -5,12 +5,13 @@
 #define DBG(format , args...)
 #endif
 
-#include "all.h"
+#include "pixel.h"
 
 #define SQUARE		0
 #define	SINE		1
 #define LINEAR		2
 
+extern PixelStubs pixelStubs;
 
 // pmap_new x y colour {{{1
 static int glue_pmap_new(ClientData *foo, Tcl_Interp *interp, 
@@ -570,7 +571,7 @@ static int glue_rle_decode(ClientData foo, Tcl_Interp *interp, //{{{1
 
 	CHECK_ARGS(1, "rle_data");
 
-	rle_data = Tcl_GetByteArrayFromObj(objv[1], &len);
+	rle_data = Tcl_GetByteArrayFromObj(objv[1], (int *)&len);
 
 	pmap = rle_decode(rle_data, len, &status);
 	if (pmap == NULL)
@@ -585,12 +586,14 @@ static int glue_rle_decode(ClientData foo, Tcl_Interp *interp, //{{{1
 static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
+#ifdef BMP_CRUFT
 	gimp_image_t	*pmap;
 	unsigned char	*bmp;
+	int				x, y;
+	unsigned int	size, pixels, bperline, pad;
 	_pel			*s;
 	unsigned char	*d;
-	unsigned int	size, pixels, bperline, pad;
-	int				x, y;
+#endif
 
 	CHECK_ARGS(1, "pmap");
 
@@ -932,8 +935,7 @@ static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
 }
 
 
-// Init {{{1
-int Pixel_Init(Tcl_Interp *interp)
+int Pixel_Init(Tcl_Interp *interp) // {{{1
 {
 	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
 		return TCL_ERROR;
@@ -978,6 +980,8 @@ int Pixel_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::hsv2rgb", glue_hsv2rgb);
 	NEW_CMD("pixel::process_image_hsv", glue_process_image_hsv);
 	NEW_CMD("pixel::scale_pmap", glue_scale_pmap);
+
+	TEST_OK(Tcl_PkgProvideEx(interp, "Pixel", "3.3", &pixelStubs));
 
 	return TCL_OK;
 }

@@ -8,7 +8,7 @@
 
 #include <tclstuff.h>
 
-const char *read_vfs_file(const char *filename, int *len, int binary);
-int read_vfs_file2(Tcl_Interp *interp, const char *filename, char **buf, int *len, int binary);
+const unsigned char *read_vfs_file(const char *filename, int *len, int binary);
+int read_vfs_file2(Tcl_Interp *interp, const char *filename, unsigned char **buf, int *len, int binary);
 
 #endif

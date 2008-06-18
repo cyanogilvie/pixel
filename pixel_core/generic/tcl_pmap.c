@@ -15,7 +15,7 @@ Tcl_ObjType tcl_pmap = {
 };
 
 
-static void free_internal_rep(Tcl_Obj *obj)
+static void free_internal_rep(Tcl_Obj *obj) //<<<
 {
 	gimp_image_t *	pmap = (gimp_image_t *)obj->internalRep.twoPtrValue.ptr1;
 	sp_info *		sp = (sp_info *)obj->internalRep.twoPtrValue.ptr2;
@@ -28,8 +28,8 @@ static void free_internal_rep(Tcl_Obj *obj)
 		pmap_free(&pmap);
 }
 
-
-static void dup_internal_rep(Tcl_Obj *src, Tcl_Obj *dest)
+//>>>
+static void dup_internal_rep(Tcl_Obj *src, Tcl_Obj *dest) //<<<
 {
 	gimp_image_t *	src_pmap = (gimp_image_t *)src->internalRep.twoPtrValue.ptr1;
 	gimp_image_t *	dest_pmap;
@@ -51,8 +51,8 @@ static void dup_internal_rep(Tcl_Obj *src, Tcl_Obj *dest)
 	dest->internalRep.twoPtrValue.ptr2 = NULL;
 }
 
-
-static void update_string_rep(Tcl_Obj * obj)
+//>>>
+static void update_string_rep(Tcl_Obj * obj) //<<<
 {
 	gimp_image_t *	pmap = (gimp_image_t *)obj->internalRep.twoPtrValue.ptr1;
 	Tcl_Obj *		objv[4];
@@ -80,11 +80,11 @@ static void update_string_rep(Tcl_Obj * obj)
 	obj->bytes[length] = 0;
 	obj->length = length;
 
-//	fprintf(stderr, "rep: (%s)\n", Tcl_GetString(obj));
+	//fprintf(stderr, "rep: (%s)\n", Tcl_GetString(obj));
 }
 
-
-static int set_pmap_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
+//>>>
+static int set_pmap_from_any(Tcl_Interp *interp, Tcl_Obj *obj) //<<<
 {
 	Tcl_ObjType *	oldtype = obj->typePtr;
 	gimp_image_t *	pmap;
@@ -96,11 +96,15 @@ static int set_pmap_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	
 	//fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: (%s)\n", Tcl_GetString(obj));
 	//THROW_ERROR("Bang");
+	fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: current type: (%s), already pmap? (%d)\n", obj->typePtr->name, oldtype == &tcl_pmap);
 
+	fprintf(stderr, "pmap foo\n");
 	if (oldtype == &tcl_pmap)
 		return TCL_OK;
 
+	fprintf(stderr, "pmap bar\n");
 	TEST_OK(Tcl_ListObjGetElements(interp, obj, &objc, &objv));
+	fprintf(stderr, "pmap baz\n");
 	
 	if (objc != 4)
 		THROW_ERROR("PMAP expects a 4 element list: width height bytes_per_pixel pixel_data");
@@ -140,8 +144,9 @@ static int set_pmap_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	return TCL_OK;
 }
 
+//>>>
 
-void Tcl_SetPMAPObj(Tcl_Obj * obj, gimp_image_t * pmap)
+void Tcl_SetPMAPObj(Tcl_Obj * obj, gimp_image_t * pmap) //<<<
 {
 	Tcl_ObjType *	oldType = obj->typePtr;
 
@@ -159,8 +164,8 @@ void Tcl_SetPMAPObj(Tcl_Obj * obj, gimp_image_t * pmap)
 	Tcl_InvalidateStringRep(obj);
 }
 
-
-Tcl_Obj *Tcl_NewPMAPObj(gimp_image_t * pmap)
+//>>>
+Tcl_Obj *Tcl_NewPMAPObj(gimp_image_t * pmap) //<<<
 {
 	Tcl_Obj *	new;
 	
@@ -172,11 +177,14 @@ Tcl_Obj *Tcl_NewPMAPObj(gimp_image_t * pmap)
 	return new;
 }
 
-
-int Tcl_GetPMAPFromObj(Tcl_Interp * interp, Tcl_Obj * obj, gimp_image_t ** pmap)
+//>>>
+int Tcl_GetPMAPFromObj(Tcl_Interp * interp, Tcl_Obj * obj, gimp_image_t ** pmap) //<<<
 {
 //	fprintf(stderr, "tcl_pmap: Called Tcl_GetPMAPFromObj\n");
 
+	if (obj->typePtr != NULL) {
+		fprintf(stderr, "Tcl_GetPMAPFromObj() called to retrieve pmap from %s\n", obj->typePtr->name);
+	}
 	if (obj->typePtr != &tcl_pmap)
 		TEST_OK(set_pmap_from_any(interp, obj));
 
@@ -185,4 +193,6 @@ int Tcl_GetPMAPFromObj(Tcl_Interp * interp, Tcl_Obj * obj, gimp_image_t ** pmap)
 	return TCL_OK;
 }
 
+//>>>
 
+// vim: foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
