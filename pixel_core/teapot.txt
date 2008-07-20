@@ -7,4 +7,4 @@ Meta require     {Itcl 3.1}
 #Meta platform    linux-glibc2.6-ix86
 #Meta platform    win32-ix86
 
-Meta platform   win32-ix86
+Meta platform   linux-glibc2.6-ix86

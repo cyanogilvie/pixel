@@ -96,15 +96,15 @@ static int set_pmap_from_any(Tcl_Interp *interp, Tcl_Obj *obj) //<<<
 	
 	//fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: (%s)\n", Tcl_GetString(obj));
 	//THROW_ERROR("Bang");
-	fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: current type: (%s), already pmap? (%d)\n", obj->typePtr->name, oldtype == &tcl_pmap);
+	//fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: current type: (%s), already pmap? (%d)\n", obj->typePtr->name, oldtype == &tcl_pmap);
 
-	fprintf(stderr, "pmap foo\n");
+	//fprintf(stderr, "pmap foo\n");
 	if (oldtype == &tcl_pmap)
 		return TCL_OK;
 
-	fprintf(stderr, "pmap bar\n");
+	//fprintf(stderr, "pmap bar\n");
 	TEST_OK(Tcl_ListObjGetElements(interp, obj, &objc, &objv));
-	fprintf(stderr, "pmap baz\n");
+	//fprintf(stderr, "pmap baz\n");
 	
 	if (objc != 4)
 		THROW_ERROR("PMAP expects a 4 element list: width height bytes_per_pixel pixel_data");
@@ -182,9 +182,6 @@ int Tcl_GetPMAPFromObj(Tcl_Interp * interp, Tcl_Obj * obj, gimp_image_t ** pmap)
 {
 //	fprintf(stderr, "tcl_pmap: Called Tcl_GetPMAPFromObj\n");
 
-	if (obj->typePtr != NULL) {
-		fprintf(stderr, "Tcl_GetPMAPFromObj() called to retrieve pmap from %s\n", obj->typePtr->name);
-	}
 	if (obj->typePtr != &tcl_pmap)
 		TEST_OK(set_pmap_from_any(interp, obj));
 

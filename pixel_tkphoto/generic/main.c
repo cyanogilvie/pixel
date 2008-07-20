@@ -184,7 +184,6 @@ static int glue_violate_photo(cdata, interp, objc, objv) //<<<
 	int					x, y, strideskip;
 	*/
 
-	fprintf(stderr, "tkphoto foo\n");
 	CHECK_ARGS(2, "image_handle pmap");
 
 	imageHandle = Tk_FindPhoto(interp, Tcl_GetString(objv[1]));
@@ -204,7 +203,6 @@ static int glue_violate_photo(cdata, interp, objc, objv) //<<<
 	newblock.offset[0] = 2;	// R
 	newblock.offset[3] = 3;	// A
 
-	fprintf(stderr, "tkphoto bar\n");
 	TEST_OK(Tk_PhotoPutBlock(interp, imageHandle, &newblock, 0, 0,
 				pmap->width, pmap->height, TK_PHOTO_COMPOSITE_SET));
 
@@ -239,7 +237,6 @@ static int glue_violate_photo(cdata, interp, objc, objv) //<<<
 	}
 	*/
 
-	fprintf(stderr, "tkphoto baz\n");
 	return TCL_OK;
 }
 
