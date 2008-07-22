@@ -171,6 +171,9 @@ Tcl_Obj *Tcl_NewPMAPObj(gimp_image_t * pmap) //<<<
 	
 //	fprintf(stderr, "tcl_pmap: Called Tcl_NewPMAPObj\n");
 
+	if (pmap == NULL)
+		Tcl_Panic("Got a NULL pmap to wrap in a Tcl_Obj, refusing\n");
+
 	new = Tcl_NewObj();
 	Tcl_SetPMAPObj(new, pmap);
 
@@ -186,6 +189,8 @@ int Tcl_GetPMAPFromObj(Tcl_Interp * interp, Tcl_Obj * obj, gimp_image_t ** pmap)
 		TEST_OK(set_pmap_from_any(interp, obj));
 
 	*pmap = (gimp_image_t *)obj->internalRep.twoPtrValue.ptr1;
+	if (*pmap == NULL)
+		THROW_ERROR("pmap internal rep is NULL!");
 
 	return TCL_OK;
 }

@@ -925,9 +925,15 @@ static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &new_h));
 
+	if (new_w <= 0) THROW_ERROR("new_width must be greater than 0");
+	if (new_h <= 0) THROW_ERROR("new_height must be greater than 0");
+
 	scaled = scale_pmap(pmap,
 			0, 0, pmap->width, pmap->height,
 			0, 0, new_w, new_h);
+
+	if (scaled == NULL)
+		THROW_ERROR("Error scaling pmap");
 
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(scaled));
 
