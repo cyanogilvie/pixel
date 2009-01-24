@@ -1,0 +1,7 @@
+Package @PACKAGE_NAME@ @PACKAGE_VERSION@
+Meta description 
+Meta entryload   @PKG_LIB_FILE@
+Meta included    @PKG_LIB_FILE@
+Meta initprefix  @PKG_LIB_FILE@ @PACKAGE_NAME@
+Meta platform    linux-glibc2.7-ix86
+

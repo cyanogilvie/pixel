@@ -7,9 +7,8 @@
 
 #include <stdio.h>
 #include <jpeglib.h>
-#include "2d.h"
-#include "tcl_pmap.h"
 #include <tclstuff.h>
+#include <Pixel/pixel.h>
 #include <setjmp.h>
 
 
@@ -596,14 +595,20 @@ static int glue_jpeg_info(ClientData foo, Tcl_Interp *interp,
 // Init {{{1
 int Pixel_jpeg_Init(Tcl_Interp *interp)
 {
+	if (Tcl_InitStubs(interp, "8.4", 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "3.3", 0) == NULL) return TCL_ERROR;
+
 	NEW_CMD("pixel::jpeg::loadjpeg", glue_loadjpeg);
 	NEW_CMD("pixel::jpeg::savejpeg", glue_savejpeg);
 
 	NEW_CMD("pixel::jpeg::encodejpeg", glue_encodejpeg);
 	NEW_CMD("pixel::jpeg::decodejpeg", glue_decodejpeg);
-	
+
 	NEW_CMD("pixel::jpeg::jpeg_info", glue_jpeg_info);
-	
+
+	if (Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION) != TCL_OK)
+		return TCL_ERROR;
+
 	return TCL_OK;
 }
 
