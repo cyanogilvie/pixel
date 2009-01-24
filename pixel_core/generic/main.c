@@ -987,7 +987,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::process_image_hsv", glue_process_image_hsv);
 	NEW_CMD("pixel::scale_pmap", glue_scale_pmap);
 
-	TEST_OK(Tcl_PkgProvideEx(interp, PACKAGE_NAME, PACKAGE_VERSION, &pixelStubs));
+	TEST_OK(Tcl_PkgProvideEx(interp, PACKAGE_NAME, "3.4.0", &pixelStubs));
 
 	return TCL_OK;
 }
