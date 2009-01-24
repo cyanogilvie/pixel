@@ -173,11 +173,6 @@ ASSEMBLE	= $(ASM) -f elf -g
 #========================================================================
 # Start of user-definable TARGETS section
 #========================================================================
-scripts: scripts-stamp
-
-scripts-stamp: generic/scripts/*.itcl
-	./make_tclIndex.tcl
-	touch scripts-stamp
 
 #========================================================================
 # TEA TARGETS.  Please note that the "libraries:" target refers to platform
@@ -198,7 +193,7 @@ all: binaries libraries doc
 
 binaries: $(BINARIES)
 
-libraries: scripts
+libraries:
 
 #========================================================================
 # Your doc target should differentiate from doc builds (by the developer)
@@ -228,7 +223,6 @@ install-libraries: libraries
 	    echo "Installing $(srcdir)/$$i" ; \
 	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(pkgincludedir) ; \
 	done;
-	$(INSTALL_DATA) $(srcdir)/generic/scripts/tclIndex $(DESTDIR)$(pkglibdir)
 
 #========================================================================
 # Install documentation.  Unix manpages should go in the $(mandir)
