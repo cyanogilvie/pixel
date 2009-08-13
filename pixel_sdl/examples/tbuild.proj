@@ -1,0 +1,21 @@
+application "test_pixel_sdl_hello" {
+	version 1.2.0
+
+	runtime cfkit8.6
+
+	requires {
+	}
+
+	files {
+		hello.tcl
+	}
+
+	platform linux-glibc2.8-x86_64 {
+		requires {
+			{Pixel 3}
+			{Pixel_sdl 1.2}
+		}
+	}
+}
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4

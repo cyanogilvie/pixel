@@ -7,25 +7,6 @@
 #define DBG(format , args...)
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <string.h>
-#include <math.h>
-#include <signal.h>
-
-#include <SDL/SDL.h>
-
-//#include <sys/time.h>
-//#include <unistd.h>
-#include "sdl_timestuff.h"
-
-#include <tcl.h>
-#include <tclstuff.h>
-
-#include "2d.h"
-#include "tcl_pmap.h"
-
 #include "main.h"
 
 #define ADD_SUBLIST_LABEL(name, list) \
@@ -363,12 +344,15 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 			memcpy(surface->pixels, ci->prebuffer->pixel_data, 
 					surface->w * surface->h * 4);
 		} else {
-			int		line = 0;
+			//int		line = 0;
 			_pel	*s = ci->prebuffer->pixel_data;
 			_pel	*d = surface->pixels;
 			int		w = ci->prebuffer->width;
+			int		l = 0;
 			
-			for (line = 0; line<surface->h; line++, s+=w, d+=surface->pitch)
+			//for (line = 0; line < surface->h; line++, s+=w, d += surface->pitch)
+			//	memcpy(d, s, w);
+			for (l = 0; l < surface->h; l++, s+=w, d += surface->pitch)
 				memcpy(d, s, w);
 		}
 
@@ -1060,16 +1044,28 @@ static int glue_gl_swapbuffers(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int cleanup(ClientData cdata) //{{{1
+{
+	SDL_Quit();
+}
+
+
 // Init {{{1
 int Pixel_sdl_Init(Tcl_Interp *interp)
 {
 	int i;
 
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
+#ifdef USE_PIXEL_STUBS
+	if (Pixel_InitStubs(interp, "3.4", 0) == NULL) return TCL_ERROR;
+#endif
+
 	if (SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_NOPARACHUTE) < 0)
 		THROW_ERROR("Couldn't initialize SDL", SDL_GetError());
-	
-	atexit(SDL_Quit);
-	
+
+	Tcl_CreateExitHandler(cleanup, NULL);
+	//atexit(SDL_Quit);
+
 	SDL_JoystickEventState(1);
 	SDL_EnableUNICODE(1);
 	SDL_JoystickEventState(1);
@@ -1080,7 +1076,7 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 	for (i=0; i<SDL_NumJoysticks(); i++) {
 		SDL_JoystickOpen(i);
 	}
-	
+
 	NEW_CMD("pixel::sdl::setup_screen", glue_setup_screen);
 	NEW_CMD("pixel::sdl::get_caps", glue_get_caps);
 	NEW_CMD("pixel::sdl::do_frame", glue_do_frame);
@@ -1100,6 +1096,8 @@ int Pixel_sdl_Init(Tcl_Interp *interp)
 
 	// OpenGL
 	NEW_CMD("pixel::sdl::gl_swapbuffers", glue_gl_swapbuffers);
+
+	TEST_OK(Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION));
 
 	return TCL_OK;
 }

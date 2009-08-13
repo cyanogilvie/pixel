@@ -1,0 +1,24 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+lappend ::auto_path	[file join / home cyan .tbuild repo pkg linux-glibc2.8-x86_64]
+puts [lindex $::auto_path end]
+package require Pixel_sdl
+
+test sdl-1.1 {Create screen context} -body { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT}]
+	expr {[string length $scr] > 0}
+} -cleanup {
+	if {[info exists scr]} {
+		unset scr
+	}
+} -result {1}
+#>>>
+
+# cleanup
+::tcltest::cleanupTests
+return

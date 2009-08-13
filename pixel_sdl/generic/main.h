@@ -1,9 +1,30 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <string.h>
+#include <math.h>
+#include <signal.h>
 #include <SDL/SDL.h>
 #include <tcl.h>
-#include "2d.h"
+#include <tclstuff.h>
+#include <Pixel/pixel.h>
+
+typedef struct {
+	SDL_Surface		*console;
+	SDL_Surface		*surface;
+	long			lastsec;
+	long			lastusec;
+	long			elapsed;
+	double			fps;
+	long long		frames;
+	gimp_image_t	*prebuffer;
+	int				need_updaterects;
+} sdl_console_inf;
+
+#include "sdl_timestuff.h"
 
 /*
 EXTERN_C int alloc_buf(Tcl_Interp *interp, int *buf_id);
@@ -48,18 +69,6 @@ EXTERN_C int glue_gettimeofday(ClientData foo, Tcl_Interp *interp,
 EXTERN_C int glue_main_loop(ClientData foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[]);
 */
-
-typedef struct {
-	SDL_Surface		*console;
-	SDL_Surface		*surface;
-	long			lastsec;
-	long			lastusec;
-	long			elapsed;
-	double			fps;
-	long long		frames;
-	gimp_image_t	*prebuffer;
-	int				need_updaterects;
-} sdl_console_inf;
 
 
 EXTERN_C int Pixel_sdl_Init(Tcl_Interp *interp);

@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <SDL/SDL.h>
 #include "main.h"
 
 void sdl_frame_time(sdl_console_inf *inf)
