@@ -1,0 +1,25 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel
+
+test pmap_sub-1.1 {Test pmap subtraction} -setup { #<<<
+	set pmap1	[pixel::pmap_new 320 200 0x0]
+	set pmap2	[pixel::pmap_new 320 200 0x0]
+} -body {
+	set diff	[pixel::pmap_sub $pmap1 $pmap2]
+	lassign [pixel::pmap_info $diff] width height
+	list $width $height
+} -cleanup {
+	if {[info exists pmap1]} {unset pmap1}
+	if {[info exists pmap2]} {unset pmap2}
+	if {[info exists diff]} {unset diff}
+} -result {320 200}
+#>>>
+
+::tcltest::cleanupTests
+return

@@ -24,95 +24,31 @@
 #undef TCL_STORAGE_CLASS
 #define TCL_STORAGE_CLASS DLLEXPORT
 
-//effects flags
-#define MD_BLUR				0x00000001
-#define MD_CHANNEL_MASK		0x00000002
-// filter flags
-#define MD_FILTER_R			0x00000100
-#define MD_FILTER_G			0x00000200
-#define	MD_FILTER_B			0x00000400
-#define MD_FILTER_A			0x00000800
-#define MD_FILTER_SMOOTH	0x00001000
-#define MD_FILTER_ALPHA		0x00002000
-#define MD_FILTER_ALPHA_Q	0x00004000
-// blitter flags
-#define MD_BLEND			0x00010000
-#define MD_BLIT				0x00020000
-#define MD_ALPHA			0x00040000
-#define MD_ALPHA_UNDER		0x00080000
-#define MD_ADDITIVE			0x00100000
-// scale lookup table flags
-#define MD_SCALE_SQUARE		0x01000000
-#define MD_SCALE_SINE		0x02000000
-#define	MD_SCALE_LINEAR		0x04000000
-// channel masks
-#define MD_MASK_ALPHA		0xff000000
-#define MD_MASK_RED			0x00ff0000
-#define MD_MASK_GREEN		0x0000ff00
-#define MD_MASK_BLUE		0x000000ff
+#include "2d_types.h"
 
-/*
-typedef long signed int		sint32;
-typedef long unsigned int	uint32;
-//typedef unsigned int	uint;
-//typedef signed int		sint;
-typedef signed short	sint16;
-typedef unsigned short	uint16;
-typedef signed char		sint8;
-typedef unsigned char	uint8;
-*/
-#ifndef sint32
-#define sint32	long signed int
-#endif
-#ifndef uint32
-#define uint32	long unsigned int
-//typedef long unsigned int	uint32;
-#endif
-#ifndef uint
-//typedef unsigned int	uint;
-#endif
-#ifndef sint
-//typedef signed int		sint;
-#endif
-#ifndef sint16
-#define sint16	signed short
-#endif
-#ifndef uint16
-#define uint16	unsigned short
-#endif
-#ifndef sint8
-#define sint8	signed char
-#endif
-#ifndef uint8
-#define uint8	unsigned char
-#endif
-
-
-typedef union {
-	uint32	c;
-	struct {
-		uint8	b,g,r,a;
-	} ch;
-} _pel;
 
 
 typedef struct {
-	uint32	width;
-	uint32	height;
-	uint32	bytes_per_pixel;
-	_pel	*pixel_data;
-} gimp_image_t;
-
-
-typedef struct pmap_list {
-	gimp_image_t	*pmap;
-	void			*clientdata;
-	struct pmap_list		*next;
-} pmap_list;
-
+	char *		type;
+	void *		info;
+	//ptr to free_info routine
+} sp_info;
 
 EXTERN_C Tcl_ObjType tcl_pmap;
 
+
+typedef struct {
+	char			tag[8];					// "pixelrle"
+	unsigned char	line_end_check[3];		// "\x0a\x0d"'a'
+	unsigned char	unicode_check[2];		// "\0xf0\x00"
+	unsigned char	version;
+	unsigned int	width;
+	unsigned int	height;
+	unsigned short	map_table_length;		// Number of map entries
+	unsigned char	map_table_keysize;		// map offset keysize in bytes
+	unsigned int	num_chunks;				// number of chunks in data
+	unsigned int	chunks_size;			// size in bytes of chunk data
+} rle_header;
 
 #define RLE_VERSION						0x1
 

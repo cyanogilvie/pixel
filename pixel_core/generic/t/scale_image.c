@@ -1,19 +1,14 @@
-/*
- * Distilled from the Imlib2 library
- */
+typedef void *Imlib_Image;
+typedef void *Imlib_Context;
 
-#include "pixel.h"
-#include <stdlib.h>
-#include <string.h>
+# ifndef DATA64
+#  define DATA64 unsigned long long
+#  define DATA32 unsigned int
+#  define DATA16 unsigned short
+#  define DATA8  unsigned char
+# endif
 
-// Macros <<<
-#define CLIP(x, y, w, h, xx, yy, ww, hh) \
-if (x < (xx)) {w += (x - (xx)); x = (xx);} \
-if (y < (yy)) {h += (y - (yy)); y = (yy);} \
-if ((x + w) > ((xx) + (ww))) {w = (ww) - (x - xx);} \
-if ((y + h) > ((yy) + (hh))) {h = (hh) - (y - yy);}
-
-#define RGBA_COMPOSE(r, g, b, a)  ((b) << 24) | ((g) << 16) | ((r) << 8) | (a)
+#define RGBA_COMPOSE(r, g, b, a)  ((a) << 24) | ((r) << 16) | ((g) << 8) | (b)
 #define INV_XAP                   (256 - xapoints[x])
 #define XAP                       (xapoints[x])
 #define INV_YAP                   (256 - yapoints[dyy + y])
@@ -24,25 +19,362 @@ if ((y + h) > ((yy) + (hh))) {h = (hh) - (y - yy);}
 #define G_VAL(p) ((DATA8 *)(p))[2]
 #define B_VAL(p) ((DATA8 *)(p))[3]
 
-// Macros >>>
+#define CLIP(x, y, w, h, xx, yy, ww, hh) \
+if (x < (xx)) {w += (x - (xx)); x = (xx);} \
+if (y < (yy)) {h += (y - (yy)); y = (yy);} \
+if ((x + w) > ((xx) + (ww))) {w = (ww) - (x - xx);} \
+if ((y + h) > ((yy) + (hh))) {h = (hh) - (y - yy);}
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-# ifndef DATA64
-#  define DATA64 unsigned long long
-#  define DATA32 unsigned int
-#  define DATA16 unsigned short
-#  define DATA8  unsigned char
-# endif
+#define CLIP_TO(_x, _y, _w, _h, _cx, _cy, _cw, _ch) \
+{ \
+if (INTERSECTS(_x, _y, _w, _h, _cx, _cy, _cw, _ch)) \
+   { \
+         if (_x < _cx) \
+	{ \
+	           _w += _x - _cx; \
+	           _x = _cx; \
+	           if (_w < 0) _w = 0; \
+	} \
+         if ((_x + _w) > (_cx + _cw)) \
+	     _w = _cx + _cw - _x; \
+         if (_y < _cy) \
+	{ \
+	           _h += _y - _cy; \
+	           _y = _cy; \
+	           if (_h < 0) _h = 0; \
+	} \
+         if ((_y + _h) > (_cy + _ch)) \
+	     _h = _cy + _ch - _y; \
+   } \
+else \
+   { \
+      _w = 0; _h = 0; \
+   } \
+}
+   
+# define IMAGE_HAS_ALPHA(im) ((im)->flags & F_HAS_ALPHA)
+# define IMAGE_IS_UNLOADED(im) ((im)->flags & F_UNLOADED)
+# define IMAGE_IS_UNCACHEABLE(im) ((im)->flags & F_UNCACHEABLE)
+# define IMAGE_ALWAYS_CHECK_DISK(im) ((im)->flags & F_ALWAYS_CHECK_DISK)
+# define IMAGE_IS_VALID(im) (!((im)->flags & F_INVALID))
+# define IMAGE_FREE_DATA(im) (!((im)->flags & F_DONT_FREE_DATA))
 
-struct _scale_info {
+# define SET_FLAG(flags, f) ((flags) |= (f))
+# define UNSET_FLAG(flags, f) ((flags) &= (~f))
+
+#define   CAST_IMAGE(im, image) (im) = (ImlibImage *)(image)
+#define   CHECK_PARAM_POINTER_RETURN(func, sparam, param, ret) \
+if (!(param)) \
+{ \
+  fprintf(stderr, "***** Imlib2 Developer Warning ***** :\n" \
+                  "\tThis program is calling the Imlib call:\n\n" \
+                  "\t%s();\n\n" \
+                  "\tWith the parameter:\n\n" \
+                  "\t%s\n\n" \
+                  "\tbeing NULL. Please fix your program.\n", func, sparam); \
+  return ret; \
+}
+
+#define   CHECK_PARAM_POINTER(func, sparam, param) \
+if (!(param)) \
+{ \
+  fprintf(stderr, "***** Imlib2 Developer Warning ***** :\n" \
+                  "\tThis program is calling the Imlib call:\n\n" \
+                  "\t%s();\n\n" \
+                  "\tWith the parameter:\n\n" \
+                  "\t%s\n\n" \
+                  "\tbeing NULL. Please fix your program.\n", func, sparam); \
+  return; \
+}
+
+struct _imlib_scale_info {
    int                *xpoints;
    DATA32            **ypoints;
    int                *xapoints, *yapoints;
    int                 xup_yup;
+   DATA32             *pix_assert;
 };
 
-typedef struct _scale_info ScaleInfo;
+typedef struct _imlib_scale_info ImlibScaleInfo;
 
-static ScaleInfo *FreeScaleInfo(ScaleInfo * isi) //<<<
+enum _iflags
+{
+   F_NONE              = 0,
+   F_HAS_ALPHA         = (1 << 0),
+   F_UNLOADED          = (1 << 1),
+   F_UNCACHEABLE       = (1 << 2),
+   F_ALWAYS_CHECK_DISK = (1 << 3),
+   F_INVALID           = (1 << 4),
+   F_DONT_FREE_DATA    = (1 << 5),
+   F_FORMAT_IRRELEVANT = (1 << 6),
+   F_BORDER_IRRELEVANT = (1 << 7),
+   F_ALPHA_IRRELEVANT  = (1 << 8)
+};
+typedef enum   _iflags                  ImlibImageFlags;
+
+struct _imlibcontext;
+typedef struct _imlibcontext ImlibContext;
+struct _imlibcontext {
+   char                anti_alias;
+   char                dither;
+   char                blend;
+   Imlib_Color_Modifier color_modifier;
+   Imlib_Operation     operation;
+   Imlib_Font          font;
+   Imlib_Text_Direction direction;
+   double              angle;
+   Imlib_Color         color;
+   Imlib_Color_Range   color_range;
+   Imlib_Image         image;
+   Imlib_Progress_Function progress_func;
+   char                progress_granularity;
+   char                dither_mask;
+   int                 mask_alpha_threshold;
+   Imlib_Filter        filter;
+   Imlib_Rectangle     cliprect;
+   Imlib_TTF_Encoding  encoding;
+
+   int                 references;
+   char                dirty;
+};
+
+
+struct _imlibcontextitem;
+typedef struct _imlibcontextitem ImlibContextItem;
+struct _imlibcontextitem {
+   ImlibContext       *context;
+   ImlibContextItem   *below;
+};
+
+EAPI void
+imlib_context_push(Imlib_Context context)
+{
+   ImlibContextItem   *item;
+
+   CHECK_PARAM_POINTER("imlib_context_push", "context", context);
+   ctx = (ImlibContext *) context;
+
+   item = malloc(sizeof(ImlibContextItem));
+   item->context = ctx;
+   item->below = contexts;
+   contexts = item;
+
+   ctx->references++;
+}
+
+Imlib_Context imlib_context_new(void) {
+   ImlibContext       *context = malloc(sizeof(ImlibContext));
+
+   context->anti_alias = 1;
+   context->dither = 0;
+   context->blend = 1;
+   context->color_modifier = NULL;
+   context->operation = IMLIB_OP_COPY;
+   context->font = NULL;
+   context->direction = IMLIB_TEXT_TO_RIGHT;
+   context->angle = 0.0;
+   context->color.alpha = 255;
+   context->color.red = 255;
+   context->color.green = 255;
+   context->color.blue = 255;
+   context->color_range = NULL;
+   context->image = NULL;
+   context->progress_func = NULL;
+   context->progress_granularity = 0;
+   context->dither_mask = 0;
+   context->mask_alpha_threshold = 128;
+   context->filter = NULL;
+   context->cliprect.x = 0;
+   context->cliprect.y = 0;
+   context->cliprect.w = 0;
+   context->cliprect.h = 0;
+   context->encoding = IMLIB_TTF_ENCODING_ISO_8859_1;
+
+   context->references = 0;
+   context->dirty = 0;
+
+   return (Imlib_Context) context;
+}
+
+static ImlibContext *
+_imlib_context_get(void)
+{
+   ImlibContext       *context;
+
+   context = imlib_context_new();
+   imlib_context_push(context);
+
+   return context;
+}
+
+#define CHECK_CONTEXT(_ctx) \
+   if (!_ctx) _ctx = _imlib_context_get()
+
+struct _imlibimagetag
+{
+   char           *key;
+   int             val;
+   void           *data;
+   void          (*destructor)(ImlibImage *im, void *data);
+   ImlibImageTag  *next;
+};
+
+typedef struct _imlibimagetag           ImlibImageTag;
+
+typedef int (*ImlibProgressFunction)(ImlibImage *im, char percent,
+				      int update_x, int update_y,
+				      int update_w, int update_h);
+struct _imlibloader
+{
+   char         *file;
+   int           num_formats;
+   char        **formats;
+   void         *handle;
+   char        (*load)(ImlibImage *im,
+		       ImlibProgressFunction progress,
+		       char progress_granularity, char immediate_load);
+   char        (*save)(ImlibImage *im,
+		       ImlibProgressFunction progress,
+		       char progress_granularity);
+   ImlibLoader  *next;
+};
+
+typedef struct _imlibloader             ImlibLoader;
+
+struct _imlibborder
+{
+   int left, right, top, bottom;
+};
+
+typedef struct _imlibborder             ImlibBorder;
+
+enum _iflags
+{
+   F_NONE              = 0,
+   F_HAS_ALPHA         = (1 << 0),
+   F_UNLOADED          = (1 << 1),
+   F_UNCACHEABLE       = (1 << 2),
+   F_ALWAYS_CHECK_DISK = (1 << 3),
+   F_INVALID           = (1 << 4),
+   F_DONT_FREE_DATA    = (1 << 5),
+   F_FORMAT_IRRELEVANT = (1 << 6),
+   F_BORDER_IRRELEVANT = (1 << 7),
+   F_ALPHA_IRRELEVANT  = (1 << 8)
+};
+
+typedef enum   _iflags                  ImlibImageFlags;
+
+struct _imlibimage
+{
+   char             *file;
+   int               w, h;
+   DATA32           *data;
+   ImlibImageFlags   flags;
+   time_t            moddate;
+   ImlibBorder       border;
+   int               references;
+   ImlibLoader      *loader;
+   char             *format;
+   ImlibImage       *next;
+   ImlibImageTag    *tags;
+   char             *real_file;
+   char             *key;
+};
+
+typedef struct _imlibimage              ImlibImage;
+
+/* create an image data struct and fill it in */
+ImlibImage *__imlib_ProduceImage(void)
+{
+   ImlibImage         *im;
+
+   im = malloc(sizeof(ImlibImage));
+   memset(im, 0, sizeof(ImlibImage));
+   im->data = NULL;
+   im->file = NULL;
+   im->real_file = NULL;
+   im->key = NULL;
+   im->flags = F_FORMAT_IRRELEVANT | F_BORDER_IRRELEVANT | F_ALPHA_IRRELEVANT;
+   im->loader = NULL;
+   im->next = NULL;
+   im->tags = NULL;
+   return im;
+}
+
+/* create a new image struct from data passed that is wize w x h then return */
+/* a pointer to that image struct */
+ImlibImage *__imlib_CreateImage(int w, int h, DATA32 * data)
+{
+   ImlibImage         *im;
+
+   im = __imlib_ProduceImage();
+   im->w = w;
+   im->h = h;
+   im->data = data;
+   im->references = 1;
+   SET_FLAG(im->flags, F_UNCACHEABLE);
+   return im;
+}
+
+/* free an image struct */
+void __imlib_ConsumeImage(ImlibImage * im) {
+
+   __imlib_FreeAllTags(im);
+   if (im->file)
+      free(im->file);
+   if (im->real_file)
+      free(im->real_file);
+   if (im->key)
+      free(im->key);
+   if ((IMAGE_FREE_DATA(im)) && (im->data))
+      free(im->data);
+   if (im->format)
+      free(im->format);
+   free(im);
+}
+
+
+ImlibScaleInfo *__imlib_CalcScaleInfo(
+		gimp_image_t *im,
+		int sw, int sh, int dw, int dh)
+{
+	ImlibScaleInfo     *isi;
+	int                 scw, sch;
+
+	scw = dw * im->width / sw;
+	sch = dh * im->height / sh;
+
+	isi = malloc(sizeof(ImlibScaleInfo));
+	if (!isi)
+		return NULL;
+	memset(isi, 0, sizeof(ImlibScaleInfo));
+
+	isi->pix_assert = im->pixel_data + im->width * im->height;
+
+	isi->xup_yup = (abs(dw) >= sw) + ((abs(dh) >= sh) << 1);
+
+	isi->xpoints = __imlib_CalcXPoints(im->width, scw, 0, 0);
+	if (!isi->xpoints)
+		return __imlib_FreeScaleInfo(isi);
+	isi->ypoints = __imlib_CalcYPoints(im->pixel_data, im->width, im->height,
+			sch, 0, 0);
+	if (!isi->ypoints)
+		return __imlib_FreeScaleInfo(isi);
+
+	isi->xapoints = __imlib_CalcApoints(im->width, scw, 0, 0, isi->xup_yup & 1);
+	if (!isi->xapoints)
+		return __imlib_FreeScaleInfo(isi);
+
+	isi->yapoints = __imlib_CalcApoints(im->height, sch, 0, 0, isi->xup_yup & 2);
+	if (!isi->yapoints)
+		return __imlib_FreeScaleInfo(isi);
+
+	return isi;
+}
+
+ImlibScaleInfo *__imlib_FreeScaleInfo(ImlibScaleInfo * isi)
 {
 	if (isi) {
 		free(isi->xpoints);
@@ -54,10 +386,9 @@ static ScaleInfo *FreeScaleInfo(ScaleInfo * isi) //<<<
 	return NULL;
 }
 
-//>>>
-static int *CalcApoints(int s, int d, int b1, int b2, int up) //<<<
+static int *__imlib_CalcApoints(int s, int d, int b1, int b2, int up)
 {
-	int		*p, i, j = 0, rv = 0;
+	int                *p, i, j = 0, rv = 0;
 
 	if (d < 0) {
 		rv = 1;
@@ -129,12 +460,11 @@ static int *CalcApoints(int s, int d, int b1, int b2, int up) //<<<
 	return p;
 }
 
-//>>>
-static DATA32 **CalcYPoints(DATA32 *src, int sw, int sh, int dh, int b1, int b2) //<<<
+static DATA32 **__imlib_CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2)
 {
-	DATA32	**p;
-	int		i, j = 0;
-	int		val, inc, rv = 0;
+	DATA32            **p;
+	int                 i, j = 0;
+	int                 val, inc, rv = 0;
 
 	if (dh < 0) {
 		dh = -dh;
@@ -180,8 +510,7 @@ static DATA32 **CalcYPoints(DATA32 *src, int sw, int sh, int dh, int b1, int b2)
 	return p;
 }
 
-//>>>
-static int *CalcXPoints(int sw, int dw, int b1, int b2) //<<<
+static int *__imlib_CalcXPoints(int sw, int dw, int b1, int b2)
 {
 	int                *p, i, j = 0;
 	int                 val, inc, rv = 0;
@@ -230,54 +559,19 @@ static int *CalcXPoints(int sw, int dw, int b1, int b2) //<<<
 	return p;
 }
 
-//>>>
-static ScaleInfo *CalcScaleInfo(gimp_image_t *im, int sw, int sh, int dw, int dh) //<<<
+void __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
+                    int dx, int dy, int dw, int dh, int dow, int sow)
 {
-	ScaleInfo     *isi;
-	int                 scw, sch;
-
-	scw = dw * im->width / sw;
-	sch = dh * im->height / sh;
-
-	isi = malloc(sizeof(ScaleInfo));
-	if (!isi)
-		return NULL;
-	memset(isi, 0, sizeof(ScaleInfo));
-
-	isi->xup_yup = (abs(dw) >= sw) + ((abs(dh) >= sh) << 1);
-
-	isi->xpoints = CalcXPoints(im->width, scw, 0, 0);
-	if (!isi->xpoints)
-		return FreeScaleInfo(isi);
-	isi->ypoints = CalcYPoints((DATA32 *)im->pixel_data, im->width, im->height,
-			sch, 0, 0);
-	if (!isi->ypoints)
-		return FreeScaleInfo(isi);
-
-	isi->xapoints = CalcApoints(im->width, scw, 0, 0, isi->xup_yup & 1);
-	if (!isi->xapoints)
-		return FreeScaleInfo(isi);
-
-	isi->yapoints = CalcApoints(im->height, sch, 0, 0, isi->xup_yup & 2);
-	if (!isi->yapoints)
-		return FreeScaleInfo(isi);
-
-	return isi;
-}
-
-//>>>
-static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, int dy, int dw, int dh, int dow, int sow) //<<<
-{
-   DATA32	*sptr, *dptr;
-   int		x, y, end;
-   DATA32	**ypoints = isi->ypoints;
-   int		*xpoints = isi->xpoints;
-   int		*xapoints = isi->xapoints;
-   int		*yapoints = isi->yapoints;
+   DATA32             *sptr, *dptr;
+   int                 x, y, end;
+   DATA32            **ypoints = isi->ypoints;
+   int                *xpoints = isi->xpoints;
+   int                *xapoints = isi->xapoints;
+   int                *yapoints = isi->yapoints;
 
    end = dxx + dw;
-
-   if (isi->xup_yup == 3) { /* scaling up both ways <<< */
+   /* scaling up both ways */
+   if (isi->xup_yup == 3) {
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   /* calculate the source line we'll scan from */
@@ -285,9 +579,9 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 		   sptr = ypoints[dyy + y];
 		   if (YAP > 0) {
 			   for (x = dxx; x < end; x++) {
-				   int		r, g, b, a;
-				   int		rr, gg, bb, aa;
-				   DATA32	*pix;
+				   int                 r, g, b, a;
+				   int                 rr, gg, bb, aa;
+				   DATA32             *pix;
 
 				   if (XAP > 0) {
 					   pix = ypoints[dyy + y] + xpoints[x];
@@ -335,8 +629,8 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 			   }
 		   } else {
 			   for (x = dxx; x < end; x++) {
-				   int		r, g, b, a;
-				   DATA32	*pix;
+				   int                 r, g, b, a;
+				   DATA32             *pix;
 
 				   if (XAP > 0) {
 					   pix = ypoints[dyy + y] + xpoints[x];
@@ -360,8 +654,9 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 			   }
 		   }
 	   }
-   } /* scaling up both ways >>> */
-   else if (isi->xup_yup == 1) { /* if we're scaling down vertically <<< */
+   }
+   /* if we're scaling down vertically */
+   else if (isi->xup_yup == 1) {
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   int                 yap;
@@ -373,10 +668,9 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 		   yap = (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
 		   if (yap > 1) {
 			   for (x = dxx; x < end; x++) {
-				   int			r = 0, g = 0, b = 0, a = 0;
-				   int			rr = 0, gg = 0, bb = 0, aa = 0;
-				   int			j;
-				   DATA32		*pix;
+				   int                 r = 0, g = 0, b = 0, a = 0;
+				   int                 rr = 0, gg = 0, bb = 0, aa = 0;
+				   DATA32             *pix;
 
 				   if (XAP > 0) {
 					   pix = sptr + xpoints[x];
@@ -419,6 +713,7 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 		   } else {
 			   for (x = dxx; x < end; x++) {
 				   int                 r = 0, g = 0, b = 0, a = 0;
+				   int                 count;
 				   DATA32             *pix;
 
 				   if (XAP > 0) {
@@ -443,8 +738,9 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 			   }
 		   }
 	   }
-   } /* if we're scaling down vertically >>> */
-   else if (isi->xup_yup == 2) { /* if we're scaling down horizontally <<< */
+   }
+   /* if we're scaling down horizontally */
+   else if (isi->xup_yup == 2) {
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   /* calculate the source line we'll scan from */
@@ -452,11 +748,10 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 		   sptr = ypoints[dyy + y];
 		   if (YAP > 0) {
 			   for (x = dxx; x < end; x++) {
-				   int			r = 0, g = 0, b = 0, a = 0;
-				   int			rr = 0, gg = 0, bb = 0, aa = 0;
-				   int			xap;
-				   int			i;
-				   DATA32		*pix;
+				   int                 r = 0, g = 0, b = 0, a = 0;
+				   int                 rr = 0, gg = 0, bb = 0, aa = 0;
+				   int                 xap;
+				   DATA32             *pix;
 
 				   xap = xpoints[x + 1] - xpoints[x];
 				   if (xap > 1) {
@@ -503,10 +798,9 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 			   }
 		   } else {
 			   for (x = dxx; x < end; x++) {
-				   int		r = 0, g = 0, b = 0, a = 0;
-				   int		xap;
-				   int		i;
-				   DATA32	*pix;
+				   int                 r = 0, g = 0, b = 0, a = 0;
+				   int                 xap;
+				   DATA32             *pix;
 
 				   xap = xpoints[x + 1] - xpoints[x];
 				   if (xap > 1) {
@@ -528,27 +822,27 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 			   }
 		   }
 	   }
-   } /* if we're scaling down horizontally >>> */
-   else { /* if we're scaling down horizontally & vertically <<< */
-	   int		count;
-	   DATA32	*pix;
-	   int		a, r, g, b;
+   }
+   /* if we're scaling down horizontally & vertically */
+   else {
+	   int                 count;
+	   DATA32             *pix;
+	   int                 a, r, g, b;
 
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
-		   int		yap = (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
+		   int                 yap =
+			   (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
 		   /* calculate the source line we'll scan from */
 		   dptr = dest + dx + ((y + dy) * dow);
 		   sptr = ypoints[dyy + y];
 		   for (x = dxx; x < end; x++) {
-			   int		xap = xpoints[x + 1] - xpoints[x];
-			   int		i, j;
+			   int                 xap = xpoints[x + 1] - xpoints[x];
 
 			   if ((xap > 1) || (yap > 1)) {
 				   r = 0;
 				   g = 0;
 				   b = 0;
-				   a = 0; // Cyan ??
 				   pix = ypoints[dyy + y] + xpoints[x];
 				   for (j = yap; --j >= 0;) {
 					   for (i = xap; --i >= 0;) {
@@ -570,28 +864,29 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 			   }
 		   }
 	   }
-   } /* if we're scaling down horizontally & vertically >>> */
+   }
 }
 
-//>>>
-
-//#define LINESIZE 16
 #define LINESIZE 16
-gimp_image_t *scale_pmap( //<<<
+
+gimp_image_t *scale_image(
 		gimp_image_t *src,
 		int ssx, int ssy, int ssw, int ssh,
-		int ddx, int ddy, int ddw, int ddh)
+		int ddx, int ddy, int ddw, int ddh,
+		int clx, int cly, int clw, int clh)
 {
-	ScaleInfo		*scaleinfo = NULL;
-	DATA32			*buf = NULL;
-	int				sx, sy, sw, sh, dx, dy, dw, dh, dxx, dyy, y2, x2;
-	int				psx, psy, psw, psh;
-	int				y, h, hh;
-	gimp_image_t	*dst;
-	_pel			init;
+	char                rgb_src = 0;
+
+	ImlibScaleInfo     *scaleinfo = NULL;
+	DATA32             *buf = NULL;
+	int                 sx, sy, sw, sh, dx, dy, dw, dh, dxx, dyy, y2, x2;
+	int                 psx, psy, psw, psh;
+	int                 y, h, hh;
+	gimp_image_t       *dst;
+	_pel				init;
 
 	init.c = 0;
-	dst = pmap_new(abs(ddw), abs(ddh), init);
+	dst = pmap_new(abs(destination_width), abs(destination_height), init);
 	// We will be overwriting all the dst pixels, so don't bother to blank
 
 	sx = ssx;
@@ -605,7 +900,7 @@ gimp_image_t *scale_pmap( //<<<
 	/* don't do anything if we have a 0 width or height image to render */
 	/* if the input rect size < 0 don't render either */
 	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
-		return NULL;
+		return;
 	/* clip the source rect to be within the actual image */
 	psx = sx;
 	psy = sy;
@@ -621,7 +916,7 @@ gimp_image_t *scale_pmap( //<<<
 	if (psh != sh)
 		dh = (dh * sh) / psh;
 	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
-		return NULL;
+		return;
 	/* clip output coords to clipped input coords */
 	psx = dx;
 	psy = dy;
@@ -629,9 +924,14 @@ gimp_image_t *scale_pmap( //<<<
 	psh = dh;
 	x2 = sx;
 	y2 = sy;
-	CLIP(dx, dy, dw, dh, 0, 0, dst->width, dst->height);
+	CLIP(dx, dy, dw, dh, 0, 0, dst->w, dst->h);
 	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
-		return NULL;
+		return;
+	if (clw) {
+		CLIP_TO(dx, dy, dw, dh, clx, cly, clw, clh);
+		if ((dw < 1) || (dh < 1))
+			return;
+	}
 	if (psx != dx)
 		sx += ((dx - psx) * ssw) / abs(ddw);
 	if (psy != dy)
@@ -653,16 +953,16 @@ gimp_image_t *scale_pmap( //<<<
 	/* don't do anything if we have a 0 width or height image to render */
 	/* if the input rect size < 0 don't render either */
 	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
-		return NULL;
-	scaleinfo = CalcScaleInfo(src, ssw, ssh, ddw, ddh);
+		return;
+	scaleinfo = __imlib_CalcScaleInfo(src, ssw, ssh, ddw, ddh);
 	if (!scaleinfo)
-		return NULL;
+		return;
 	/* if we are scaling the image at all make a scaling buffer */
 	/* allocate a buffer to render scaled RGBA data into */
 	buf = malloc(dw * LINESIZE * sizeof(DATA32));
 	if (!buf) {
-		FreeScaleInfo(scaleinfo);
-		return NULL;
+		__imlib_FreeScaleInfo(scaleinfo);
+		return;
 	}
 	/* setup h */
 	h = dh;
@@ -672,18 +972,15 @@ gimp_image_t *scale_pmap( //<<<
 		if (h < LINESIZE)
 			hh = h;
 		/* scale the imagedata for this LINESIZE lines chunk of image */
-		ScaleAARGBA(scaleinfo, (DATA32 *)dst->pixel_data, dxx, dyy + y,
-				0, y, dw, hh, dw, src->width);
+		__imlib_ScaleAARGBA(scaleinfo, dst->pixel_data, dxx, dyy + y,
+				0, 0, dw, hh, dw, src->width);
 
 		h -= LINESIZE;
 	}
 	/* free up our buffers and point tables */
 	free(buf);
-	FreeScaleInfo(scaleinfo);
+	__imlib_FreeScaleInfo(scaleinfo);
 
    return dst;
 }
 
-//>>>
-
-// vim: foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4

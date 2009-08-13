@@ -5,8 +5,9 @@
 #include <math.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include "2d.h"
-#include "misc.h"
+#include "pixel.h"
+//#include "2d.h"
+//#include "misc.h"
 
 // lookups
 uint8	fact[256][256];	// [a][b] = a * (b/255.0)

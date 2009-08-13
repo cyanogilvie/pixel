@@ -651,6 +651,7 @@ static int glue_pmap_sub(ClientData foo, Tcl_Interp *interp, //{{{1
 {
 	gimp_image_t	*pmap1, *pmap2;
 	_pel			*s1, *s2, *d;
+	_pel			*s1_max, *s2_max, *d_max;
 	_pel			colour;
 	int				i, total;
 	gimp_image_t	*new;
@@ -664,6 +665,10 @@ static int glue_pmap_sub(ClientData foo, Tcl_Interp *interp, //{{{1
 		THROW_ERROR("Both pmaps must have the same dimensions");
 
 	new = pmap_new(pmap1->width, pmap1->height, colour);
+
+	s1_max = pmap1->pixel_data + pmap1->width * pmap1->height;
+	s2_max = pmap2->pixel_data + pmap2->width * pmap2->height;
+	d_max = new->pixel_data + new->width * new->height;
 
 	total = pmap1->width * pmap1->height;
 	for (
@@ -679,6 +684,12 @@ static int glue_pmap_sub(ClientData foo, Tcl_Interp *interp, //{{{1
 			s2++,
 			d++
 	) {
+		if (d >= d_max) Tcl_Panic("d (%p) is out of range %p + (%d*%d) = %p",
+				d, new->pixel_data,
+				new->width, new->height,
+				d_max);
+		if (s1 >= s1_max) Tcl_Panic("s1 is out of range");
+		if (s2 >= s2_max) Tcl_Panic("s2 is out of range");
 		d->ch.a = abs(s1->ch.a - s2->ch.a);
 		d->ch.b = abs(s1->ch.b - s2->ch.b);
 		d->ch.g = abs(s1->ch.g - s2->ch.g);
@@ -941,10 +952,43 @@ static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int initvars(Tcl_Interp* interp) //{{{1
+{
+#define MIRROR_FLAG(name, value) \
+	if (Tcl_ObjSetVar2(interp, Tcl_NewStringObj((name), -1), NULL, \
+			Tcl_NewIntObj((value)), TCL_LEAVE_ERR_MSG) == NULL) return TCL_ERROR;
+
+	MIRROR_FLAG("pixel::MD_BLUR",			MD_BLUR);
+	MIRROR_FLAG("pixel::MD_CHANNEL_MASK",	MD_CHANNEL_MASK);
+	MIRROR_FLAG("pixel::MD_FILTER_R",		MD_FILTER_R);
+	MIRROR_FLAG("pixel::MD_FILTER_G",		MD_FILTER_G);
+	MIRROR_FLAG("pixel::MD_FILTER_B",		MD_FILTER_B);
+	MIRROR_FLAG("pixel::MD_FILTER_A",		MD_FILTER_A);
+	MIRROR_FLAG("pixel::MD_FILTER_SMOOTH",	MD_FILTER_SMOOTH);
+	MIRROR_FLAG("pixel::MD_FILTER_ALPHA",	MD_FILTER_ALPHA);
+	MIRROR_FLAG("pixel::MD_FILTER_ALPHA_Q",	MD_FILTER_ALPHA_Q);
+	MIRROR_FLAG("pixel::MD_BLEND",			MD_BLEND);
+	MIRROR_FLAG("pixel::MD_BLIT",			MD_BLIT);
+	MIRROR_FLAG("pixel::MD_ALPHA",			MD_ALPHA);
+	MIRROR_FLAG("pixel::MD_ALPHA_UNDER",	MD_ALPHA_UNDER);
+	MIRROR_FLAG("pixel::MD_ADDITIVE",		MD_ADDITIVE);
+	MIRROR_FLAG("pixel::MD_SCALE_SQUARE",	MD_SCALE_SQUARE);
+	MIRROR_FLAG("pixel::MD_SCALE_SINE",		MD_SCALE_SINE);
+	MIRROR_FLAG("pixel::MD_SCALE_LINEAR",	MD_SCALE_LINEAR);
+	MIRROR_FLAG("pixel::MD_MASK_ALPHA",		MD_MASK_ALPHA);
+	MIRROR_FLAG("pixel::MD_MASK_RED",		MD_MASK_RED);
+	MIRROR_FLAG("pixel::MD_MASK_GREEN",		MD_MASK_GREEN);
+	MIRROR_FLAG("pixel::MD_MASK_BLUE",		MD_MASK_BLUE);
+
+#undef MIRROR_FLAG
+
+	return TCL_OK;
+}
+
+
 int Pixel_Init(Tcl_Interp *interp) // {{{1
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
-		return TCL_ERROR;
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
 
 	Tcl_RegisterObjType(&tcl_pmap);
 
@@ -987,7 +1031,9 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::process_image_hsv", glue_process_image_hsv);
 	NEW_CMD("pixel::scale_pmap", glue_scale_pmap);
 
-	TEST_OK(Tcl_PkgProvideEx(interp, PACKAGE_NAME, "3.4.0", &pixelStubs));
+	TEST_OK(initvars(interp));
+
+	TEST_OK(Tcl_PkgProvideEx(interp, PACKAGE_NAME, PACKAGE_VERSION, &pixelStubs));
 
 	return TCL_OK;
 }

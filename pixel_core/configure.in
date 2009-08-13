@@ -19,9 +19,7 @@ dnl	to configure the system for the local environment.
 # so you can encode the package version directly into the source files.
 #-----------------------------------------------------------------------
 
-AC_INIT([Pixel], [3])
-EXTRA_VERSION="4.0"
-AC_SUBST(EXTRA_VERSION)
+AC_INIT([Pixel], [3.4.0])
 
 #--------------------------------------------------------------------
 # Call TEA_INIT as the first TEA_ macro to set up initial vars.
@@ -83,8 +81,7 @@ TEA_ADD_INCLUDES([-Igeneric])
 TEA_ADD_LIBS([-lm])
 TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([PixelStubLib.c])
-AC_OUTPUT([pixel.tcl])
-TEA_ADD_TCL_SOURCES([pixel.tcl])
+TEA_ADD_TCL_SOURCES([])
 
 #--------------------------------------------------------------------
 # __CHANGE__

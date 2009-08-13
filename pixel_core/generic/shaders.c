@@ -1,5 +1,5 @@
-#include "all.h"
-
+#include "pixel.h"
+#include "2d_lookups.h"
 
 void quadshade(double x, double y, _pel colour, int osa, int flags, gimp_image_t *dest)
 {

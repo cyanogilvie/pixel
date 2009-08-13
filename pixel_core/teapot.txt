@@ -1,7 +1,7 @@
-Package Pixel 3.4.0
+Package Pixel 3.4.0.@EXTRA_VERSION@
 Meta description 
 Meta entrysource pixel.tcl
-Meta included    libPixel3.so pixel.tcl
-Meta platform    linux-glibc2.7-ix86
+Meta included    libPixel3.4.0.so pixel.tcl
+#Meta platform    linux-glibc2.6-ix86
 #Meta platform    win32-ix86
 

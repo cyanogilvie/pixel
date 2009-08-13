@@ -1,4 +1,4 @@
-#include "all.h"
+#include "pixel.h"
 
 
 gimp_image_t *rle_decode(rle_data, data_len, status) //{{{1

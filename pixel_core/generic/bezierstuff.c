@@ -1,4 +1,5 @@
-#include "all.h"
+//#include "all.h"
+#include "pixel.h"
 
 // Code originally from Milton Friedman <uncle@stein.u.washington.edu> _____________
 #define sqr(x) (x * x)

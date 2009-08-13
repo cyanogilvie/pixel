@@ -1,4 +1,4 @@
-#include "all.h"
+#include "pixel.h"
 
 
 void asm_pelset(_pel *dest, _pel colour, uint32 count)

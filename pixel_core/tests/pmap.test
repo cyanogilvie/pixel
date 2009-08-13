@@ -1,0 +1,19 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel
+
+test pmap-1.1 {Construct and free a pmap} -body { #<<<
+	set pmap	[pixel::pmap_new 320 200 0x0]
+	lassign [pixel::pmap_info $pmap] width height
+	unset pmap
+	list $width $height
+} -result {320 200}
+#>>>
+
+::tcltest::cleanupTests
+return

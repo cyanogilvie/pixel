@@ -1,4 +1,6 @@
-#include "all.h"
+#include "pixel.h"
+#include "2d_lookups.h"
+
 
 void box(dest, x, y, w, h, colour, flags)
 	gimp_image_t	*dest;
