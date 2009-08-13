@@ -1,0 +1,35 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> shiftwidth=4 ts=4
+
+if {[lsearch [namespace children] ::tcltest] == -1} {
+	package require tcltest 2.2.5
+	namespace import ::tcltest::*
+}
+
+set ourdir	[file dirname [info script]]
+set tmpdir	[makeDirectory tmp]
+
+lappend ::auto_path	[file join / home cyan .tbuild repo pkg linux-glibc2.8-x86_64]
+package require Pixel 3.4
+package require Pixel_gl
+package require Pixel_sdl
+
+test glew-1.1 {glewInit} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	pixel::gl::glewInit
+} -cleanup {
+	#unset scr
+} -result {1.5.0}
+#>>>
+test glew-1.2 {glewIsSupported} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	pixel::gl::glewInit
+	pixel::gl::glewIsSupported "GL_VERSION_1_2"
+} -cleanup {
+	#unset scr
+} -result {1}
+#>>>
+
+::tcltest::cleanupTests
+return

@@ -1,0 +1,101 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> shiftwidth=4 ts=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+lappend ::auto_path	[file join / home cyan .tbuild repo pkg linux-glibc2.8-x86_64]
+package require Pixel_gl
+package require Pixel_sdl
+
+proc readfile {fn} { #<<<
+	set fp	[open [file join [file dirname [info script]] $fn] r]
+	try {
+		chan read $fp
+	} finally {
+		catch {chan close $fp}
+	}
+}
+
+#>>>
+
+test gl-1.1 {glGetString} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	pixel::gl::glGetString GL_VENDOR
+	pixel::gl::glGetString GL_RENDERER
+	pixel::gl::glGetString GL_VERSION
+	pixel::gl::glGetString GL_SHADING_LANGUAGE_VERSION
+	list 1
+} -cleanup {
+	if {[info exists scr]} {unset scr}
+} -result {1}
+#>>>
+test gl-1.2 {glCreateShader GL_VERTEX_SHADER} -setup { #<<<
+	set width	800
+	set height	600
+	set scr	[pixel::sdl::setup_screen $width $height 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	pixel::gl::glewInit
+	puts "Vendor: [pixel::gl::glGetString GL_VENDOR]"
+	puts "Renderer: [pixel::gl::glGetString GL_RENDERER]"
+	puts "Version: [pixel::gl::glGetString GL_VERSION]"
+	puts "GLSL Version: [pixel::gl::glGetString GL_SHADING_LANGUAGE_VERSION]"
+	puts "OpenGL 2.0 supported? [pixel::gl::glewIsSupported GL_VERSION_2_0]"
+	#pixel::gl::glShadeModel GL_SMOOTH
+	#pixel::gl::glCullFace GL_BACK
+	#pixel::gl::glFrontFace GL_CCW
+	#pixel::gl::glEnable GL_CULL_FACE
+	#pixel::gl::glEnable GL_LINE_SMOOTH
+	#pixel::gl::glEnable GL_POINT_SMOOTH
+	#pixel::gl::glClearColor 0 0 0 0
+	#pixel::gl::glViewport 0 0 $width $height
+	#pixel::gl::glMatrixMode GL_PROJECTION
+	#pixel::gl::glLoadIdentity
+	#pixel::gl::gluPerspective 60.0 [expr {$width/double($height)}] 1.0 1024.0
+
+	set p	[pixel::gl::glCreateProgram]
+
+	set v	[pixel::gl::glCreateShader GL_VERTEX_SHADER]
+	pixel::gl::glShaderSource $v [readfile default.vert]
+	pixel::gl::glCompileShader $v
+	pixel::gl::glAttachShader $p $v
+
+	set f	[pixel::gl::glCreateShader GL_FRAGMENT_SHADER]
+	pixel::gl::glShaderSource $f [readfile lambert.frag]
+	pixel::gl::glCompileShader $f
+	pixel::gl::glAttachShader $p $f
+
+	pixel::gl::glLinkProgram $p
+	set isvalid	[pixel::gl::glValidateProgram $p]
+	puts [pixel::gl::glGetProgramInfoLog $p]
+	pixel::gl::glUseProgram $p
+
+	pixel::gl::glDeleteShader $v
+	pixel::gl::glDeleteShader $f
+	pixel::gl::glDeleteProgram $p
+
+	set isvalid
+} -cleanup {
+	if {[info exists scr]} {unset scr}
+	foreach var {width height} {
+		if {[info exists $var]} {
+			unset $var
+		}
+	}
+} -result {1}
+#>>>
+test gl-1.3 {glCreateShader GL_FRAGMENT_SHADER} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	set s	[pixel::gl::glCreateShader GL_FRAGMENT_SHADER]
+	pixel::gl::glDeleteShader $s
+	expr {$s > 0}
+} -cleanup {
+	if {[info exists scr]} {unset scr}
+} -result {1}
+#>>>
+
+::tcltest::cleanupTests
+return

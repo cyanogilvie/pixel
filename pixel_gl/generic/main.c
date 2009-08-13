@@ -1,15 +1,6 @@
-// vim: ts=4 shiftwidth=4 tags=../tags
+// vim: ts=4 shiftwidth=4
 
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <tcl.h>
-#include <tclstuff.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <string.h>
-
-#include <Pixel/pixel.h>
+#include "main.h"
 
 static int glue_glShadeModel(cdata, interp, objc, objv) //{{{1
 	ClientData		cdata;
@@ -1206,50 +1197,629 @@ static int glue_glTexCoord2f(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_glTexCoord3f(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	double		s, t, r;
+
+	CHECK_ARGS(3, "s t r");
+
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &s));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &t));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &r));
+
+	glTexCoord3f(s, t, r);
+
+	return TCL_OK;
+}
+
+
+static int glue_glPushMatrix(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	CHECK_ARGS(0, "");
+
+	glPushMatrix();
+
+	return TCL_OK;
+}
+
+
+static int glue_glPopMatrix(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	CHECK_ARGS(0, "");
+
+	glPopMatrix();
+
+	return TCL_OK;
+}
+
+
+static int glue_glLoadMatrixf(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	float*		m[16];
+
+	CHECK_ARGS(1, "glMatrix");
+
+	TEST_OK(Tcl_GetGlMatrixFromObj(interp, objv[1], (float **)&m));
+
+	glLoadMatrixf((float *)m);
+
+	return TCL_OK;
+}
+
+
+static int glue_glMultMatrixf(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	float*		m[16];
+
+	CHECK_ARGS(1, "glMatrix");
+
+	TEST_OK(Tcl_GetGlMatrixFromObj(interp, objv[1], (float **)&m));
+
+	glMultMatrixf((float *)m);
+
+	return TCL_OK;
+}
+
+
+static int glue_glFlush(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	CHECK_ARGS(0, "");
+
+	glFlush();
+
+	return TCL_OK;
+}
+
+
+static int glue_glFinish(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	CHECK_ARGS(0, "");
+
+	glFinish();
+
+	return TCL_OK;
+}
+
+
+static int glue_glGetString(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int		index;
+	static CONST char *tokens[] = {
+		"GL_VENDOR",
+		"GL_RENDERER",
+		"GL_VERSION",
+		"GL_SHADING_LANGUAGE_VERSION",
+		(char *)NULL
+	};
+	GLenum map[] = {
+		GL_VENDOR,
+		GL_RENDERER,
+		GL_VERSION,
+		GL_SHADING_LANGUAGE_VERSION
+	};
+
+	CHECK_ARGS(1, "token");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], tokens, "token", TCL_EXACT,
+				&index));
+
+	Tcl_SetObjResult(interp, Tcl_NewStringObj((const char*)glGetString(map[index]), -1));
+
+	return TCL_OK;
+}
+
+
+static int glue_glCreateProgram(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	p;
+
+	CHECK_ARGS(0, "");
+
+	p = glCreateProgram();
+	if (p == 0) {
+		Tcl_SetErrorCode(interp, "GL", NULL);
+		Tcl_SetObjResult(interp, Tcl_NewStringObj("Cannot create shader program", -1));
+		return TCL_ERROR;
+	}
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp = p;
+		Tcl_SetObjResult(interp, Tcl_NewWideIntObj(tmp));
+	} else {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj((int)p));
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_glDeleteProgram(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	p;
+
+	CHECK_ARGS(1, "programhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		p = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&p));
+	}
+
+	glDeleteProgram(p);
+
+	// TODO: handle errors GL_INVALID_VALUE and GL_INVALID_OPERATION
+
+	return TCL_OK;
+}
+
+
+static int glue_glCreateShader(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int		index;
+	static CONST char *types[] = {
+		"GL_VERTEX_SHADER",
+		"GL_FRAGMENT_SHADER",
+		(char *)NULL
+	};
+	GLenum map[] = {
+		GL_VERTEX_SHADER,
+		GL_FRAGMENT_SHADER
+	};
+	GLuint	shaderhandle;
+
+	CHECK_ARGS(1, "type");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], types, "type", TCL_EXACT,
+				&index));
+
+	shaderhandle = glCreateShader(map[index]);
+	if (shaderhandle == 0) {
+		Tcl_SetErrorCode(interp, "GL", NULL);
+		Tcl_SetObjResult(interp, Tcl_NewStringObj("Cannot create shader", -1));
+		return TCL_ERROR;
+	}
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp = shaderhandle;
+		Tcl_SetObjResult(interp, Tcl_NewWideIntObj(tmp));
+	} else {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(shaderhandle));
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_glDeleteShader(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	shaderhandle;
+
+	CHECK_ARGS(1, "shaderhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		shaderhandle = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&shaderhandle));
+	}
+
+	glDeleteShader(shaderhandle);
+	// TODO: Handle errors GL_INVALID_VALUE and GL_INVALID_OPERATION
+
+	return TCL_OK;
+}
+
+
+static int glue_glShaderSource(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint			shaderhandle;
+	const GLchar*	sources[objc-2];
+	const GLint		lengths[objc-2];
+	int				i, count;
+
+	count = objc - 2;
+	if (count < 1) {
+		// For some reason glShaderSource takes an array of sources
+		CHECK_ARGS(2, "shaderhandle shadersource ?shadersource ...?");
+	}
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		shaderhandle = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&shaderhandle));
+	}
+
+	for (i=0; i<count; i++) {
+		sources[i] = Tcl_GetStringFromObj(objv[i+2], (int*)&lengths[i]);
+	}
+
+	glShaderSource(shaderhandle, count, sources, lengths);
+	// TODO: handle errors GL_INVALID_VALUE GL_INVALID_OPERATION
+
+	return TCL_OK;
+}
+
+
+static int glue_glCompileShader(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	shaderhandle;
+	GLint	compileok;
+
+	CHECK_ARGS(1, "shaderhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		shaderhandle = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&shaderhandle));
+	}
+
+	glCompileShader(shaderhandle);
+	// TODO: Handle errors GL_INVALID_VALUE and GL_INVALID_OPERATION
+	glGetShaderiv(shaderhandle, GL_COMPILE_STATUS, &compileok);
+	if (compileok != GL_TRUE) {
+		GLint	loglength;
+		GLchar*	logdata;
+		GLsizei	gotlength;
+
+		glGetShaderiv(shaderhandle, GL_INFO_LOG_LENGTH, &loglength);
+		if (loglength == 0)
+			THROW_ERROR("Unspecified error compiling shader");
+
+		logdata = (GLchar*)ckalloc(sizeof(GLchar) * loglength);
+		glGetShaderInfoLog(shaderhandle, loglength, &gotlength, logdata);
+		Tcl_SetErrorCode(interp, "GL", "COMPILE", NULL);
+		Tcl_SetObjResult(interp, Tcl_NewStringObj(logdata, gotlength));
+		ckfree((char*)logdata);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_glAttachShader(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	shaderhandle;
+	GLuint	p;
+
+	CHECK_ARGS(2, "programhandle shaderhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		p = tmp;
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[2], &tmp));
+		shaderhandle = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&p));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[2], (int*)&shaderhandle));
+	}
+
+	glAttachShader(p, shaderhandle);
+	// TODO: Handle errors GL_INVALID_VALUE and GL_INVALID_OPERATION
+
+	return TCL_OK;
+}
+
+
+static int glue_glLinkProgram(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	p;
+
+	CHECK_ARGS(1, "programhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		p = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&p));
+	}
+
+	glLinkProgram(p);
+	// TODO: Handle errors GL_INVALID_VALUE and GL_INVALID_OPERATION
+
+	return TCL_OK;
+}
+
+
+static int glue_glValidateProgram(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	p;
+	GLint	valid;
+
+	CHECK_ARGS(1, "programhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		p = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&p));
+	}
+
+	glValidateProgram(p);
+	glGetProgramiv(p, GL_VALIDATE_STATUS, &valid);
+	if (valid == GL_TRUE) {
+		Tcl_SetObjResult(interp, Tcl_NewBooleanObj(1));
+	} else {
+		Tcl_SetObjResult(interp, Tcl_NewBooleanObj(0));
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_glGetProgramInfoLog(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	p;
+	GLint	loglength;
+	GLsizei	gotlength;
+	GLchar*	logdata;
+
+	CHECK_ARGS(1, "programhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		p = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&p));
+	}
+
+	glGetProgramiv(p, GL_INFO_LOG_LENGTH, &loglength);
+	if (loglength == 0) return TCL_OK;
+
+	logdata = ckalloc(sizeof(GLchar) * loglength);
+	glGetProgramInfoLog(p, loglength, &gotlength, logdata);
+
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(logdata, gotlength));
+
+	ckfree((char*)logdata);
+
+	return TCL_OK;
+}
+
+
+static int glue_glUseProgram(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	p;
+
+	CHECK_ARGS(1, "programhandle");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		p = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&p));
+	}
+
+	glUseProgram(p);
+	// TODO: Handle errors GL_INVALID_VALUE and GL_INVALID_OPERATION
+
+	return TCL_OK;
+}
+
+
+static int glue_glGetUniformLocation(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLuint	p;
+	GLint	loc;
+
+	CHECK_ARGS(2, "programhandle varname");
+
+	if (sizeof(GLuint) > sizeof(int)) {
+		Tcl_WideInt	tmp;
+
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &tmp));
+		p = tmp;
+	} else {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int*)&p));
+	}
+
+	loc = glGetUniformLocation(p, Tcl_GetString(objv[2]));
+	// TODO: Handle errors GL_INVALID_VALUE and GL_INVALID_OPERATION
+	if (loc == -1)
+		THROW_ERROR("Couldn't get uniform location for \"", Tcl_GetString(objv[2]), "\"");
+	if (sizeof(GLint) > sizeof(int)) {
+		Tcl_WideInt	tmp = loc;
+		Tcl_SetObjResult(interp, Tcl_NewWideIntObj(tmp));
+	} else {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(loc));
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_glUniform1f(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLint	loc;
+	GLfloat	val;
+	double	tmp;
+
+	CHECK_ARGS(2, "uniformloc floatval");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &loc));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &tmp));
+	val = tmp;
+
+	glUniform1f(loc, val);
+
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_gl_Init(Tcl_Interp *interp)
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
-		return TCL_ERROR;
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "3.3", 0) == NULL) return TCL_ERROR;
 
 	// GL
-	NEW_CMD("pixel::sdl::glShadeModel", glue_glShadeModel);
-	NEW_CMD("pixel::sdl::glCullFace", glue_glCullFace);
-	NEW_CMD("pixel::sdl::glFrontFace", glue_glFrontFace);
-	NEW_CMD("pixel::sdl::glEnable", glue_glEnable);
-	NEW_CMD("pixel::sdl::glDisable", glue_glDisable);
-	NEW_CMD("pixel::sdl::glClearColor", glue_glClearColor);
-	NEW_CMD("pixel::sdl::glViewport", glue_glViewport);
-	NEW_CMD("pixel::sdl::glGenList", glue_glGenList);
-	NEW_CMD("pixel::sdl::glNewList", glue_glNewList);
-	NEW_CMD("pixel::sdl::glEndList", glue_glEndList);
-	NEW_CMD("pixel::sdl::glCallList", glue_glCallList);
-	NEW_CMD("pixel::sdl::glBegin", glue_glBegin);
-	NEW_CMD("pixel::sdl::glEnd", glue_glEnd);
-	NEW_CMD("pixel::sdl::glColor3f", glue_glColor3f);
-	NEW_CMD("pixel::sdl::glColor4f", glue_glColor4f);
-	NEW_CMD("pixel::sdl::glPointSize", glue_glPointSize);
-	NEW_CMD("pixel::sdl::glVertex3f", glue_glVertex3f);
-	NEW_CMD("pixel::sdl::glNormal3f", glue_glNormal3f);
-	NEW_CMD("pixel::sdl::glClear", glue_glClear);
-	NEW_CMD("pixel::sdl::glMatrixMode", glue_glMatrixMode);
-	NEW_CMD("pixel::sdl::glLoadIdentity", glue_glLoadIdentity);
-	NEW_CMD("pixel::sdl::glTranslatef", glue_glTranslatef);
-	NEW_CMD("pixel::sdl::glRotatef", glue_glRotatef);
-	NEW_CMD("pixel::sdl::glGenTextures", glue_glGenTextures);
-	NEW_CMD("pixel::sdl::glBindTexture", glue_glBindTexture);
-	NEW_CMD("pixel::sdl::glTexParameter", glue_glTexParameter);
-	NEW_CMD("pixel::sdl::glTexParameteri", glue_glTexParameter);
-	NEW_CMD("pixel::sdl::glTexParameterf", glue_glTexParameter);
-	NEW_CMD("pixel::sdl::glTexParameterfv", glue_glTexParameter);
-	NEW_CMD("pixel::sdl::glTexEnv", glue_glTexEnv);
-	NEW_CMD("pixel::sdl::glTexEnvi", glue_glTexEnv);
-	NEW_CMD("pixel::sdl::glTexEnvfv", glue_glTexEnv);
-	NEW_CMD("pixel::sdl::glTexImage2D", glue_glTexImage2D);
-	NEW_CMD("pixel::sdl::glTexCoord2f", glue_glTexCoord2f);
+	NEW_CMD("pixel::gl::glShadeModel", glue_glShadeModel);
+	NEW_CMD("pixel::gl::glCullFace", glue_glCullFace);
+	NEW_CMD("pixel::gl::glFrontFace", glue_glFrontFace);
+	NEW_CMD("pixel::gl::glEnable", glue_glEnable);
+	NEW_CMD("pixel::gl::glDisable", glue_glDisable);
+	NEW_CMD("pixel::gl::glClearColor", glue_glClearColor);
+	NEW_CMD("pixel::gl::glViewport", glue_glViewport);
+	NEW_CMD("pixel::gl::glGenList", glue_glGenList);
+	NEW_CMD("pixel::gl::glNewList", glue_glNewList);
+	NEW_CMD("pixel::gl::glEndList", glue_glEndList);
+	NEW_CMD("pixel::gl::glCallList", glue_glCallList);
+	NEW_CMD("pixel::gl::glBegin", glue_glBegin);
+	NEW_CMD("pixel::gl::glEnd", glue_glEnd);
+	NEW_CMD("pixel::gl::glColor3f", glue_glColor3f);
+	NEW_CMD("pixel::gl::glColor4f", glue_glColor4f);
+	NEW_CMD("pixel::gl::glPointSize", glue_glPointSize);
+	NEW_CMD("pixel::gl::glVertex3f", glue_glVertex3f);
+	NEW_CMD("pixel::gl::glNormal3f", glue_glNormal3f);
+	NEW_CMD("pixel::gl::glClear", glue_glClear);
+	NEW_CMD("pixel::gl::glMatrixMode", glue_glMatrixMode);
+	NEW_CMD("pixel::gl::glLoadIdentity", glue_glLoadIdentity);
+	NEW_CMD("pixel::gl::glTranslatef", glue_glTranslatef);
+	NEW_CMD("pixel::gl::glRotatef", glue_glRotatef);
+	NEW_CMD("pixel::gl::glGenTextures", glue_glGenTextures);
+	NEW_CMD("pixel::gl::glBindTexture", glue_glBindTexture);
+	NEW_CMD("pixel::gl::glTexParameter", glue_glTexParameter);
+	NEW_CMD("pixel::gl::glTexParameteri", glue_glTexParameter);
+	NEW_CMD("pixel::gl::glTexParameterf", glue_glTexParameter);
+	NEW_CMD("pixel::gl::glTexParameterfv", glue_glTexParameter);
+	NEW_CMD("pixel::gl::glTexEnv", glue_glTexEnv);
+	NEW_CMD("pixel::gl::glTexEnvi", glue_glTexEnv);
+	NEW_CMD("pixel::gl::glTexEnvfv", glue_glTexEnv);
+	NEW_CMD("pixel::gl::glTexImage2D", glue_glTexImage2D);
+	NEW_CMD("pixel::gl::glTexCoord2f", glue_glTexCoord2f);
+	NEW_CMD("pixel::gl::glTexCoord3f", glue_glTexCoord3f);
+	NEW_CMD("pixel::gl::glPushMatrix", glue_glPushMatrix);
+	NEW_CMD("pixel::gl::glPopMatrix", glue_glPopMatrix);
+	NEW_CMD("pixel::gl::glLoadMatrixf", glue_glLoadMatrixf);
+	NEW_CMD("pixel::gl::glMultMatrixf", glue_glMultMatrixf);
+	NEW_CMD("pixel::gl::glFlush", glue_glFlush);
+	NEW_CMD("pixel::gl::glFinish", glue_glFinish);
+	NEW_CMD("pixel::gl::glGetString", glue_glGetString);
+	NEW_CMD("pixel::gl::glCreateProgram", glue_glCreateProgram);
+	NEW_CMD("pixel::gl::glDeleteProgram", glue_glDeleteProgram);
+	NEW_CMD("pixel::gl::glCreateShader", glue_glCreateShader);
+	NEW_CMD("pixel::gl::glDeleteShader", glue_glDeleteShader);
+	NEW_CMD("pixel::gl::glShaderSource", glue_glShaderSource);
+	NEW_CMD("pixel::gl::glCompileShader", glue_glCompileShader);
+	NEW_CMD("pixel::gl::glAttachShader", glue_glAttachShader);
+	NEW_CMD("pixel::gl::glLinkProgram", glue_glLinkProgram);
+	NEW_CMD("pixel::gl::glValidateProgram", glue_glValidateProgram);
+	NEW_CMD("pixel::gl::glUseProgram", glue_glUseProgram);
+	NEW_CMD("pixel::gl::glGetProgramInfoLog", glue_glGetProgramInfoLog);
+	NEW_CMD("pixel::gl::glGetUniformLocation", glue_glGetUniformLocation);
+	NEW_CMD("pixel::gl::glUniform1f", glue_glUniform1f);
 
 	// GLU
-	NEW_CMD("pixel::sdl::gluPerspective", glue_gluPerspective);
+	NEW_CMD("pixel::gl::gluPerspective", glue_gluPerspective);
+
+	// GLEW
+	init_glew(interp);
+
+	// Helpers
+
+	TEST_OK(Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION));
 
 	return TCL_OK;
 }
