@@ -3,6 +3,5 @@ Meta description
 Meta entrysource pixel_imlib2.tcl
 Meta included    libPixel_imlib21.so pixel_imlib2.tcl
 Meta platform    linux-glibc2.6-ix86
-Meta require     {Itcl 3.1}
 Meta require     {Pixel}
 

@@ -8,6 +8,7 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
 set ourdir	[file dirname [info script]]
 set tmpdir	[makeDirectory tmp]
 
+lappend ::auto_path	[file join / home cyan .tbuild repo pkg linux-glibc2.8-x86_64]
 package require Pixel 3.1
 package require Pixel_imlib2
 

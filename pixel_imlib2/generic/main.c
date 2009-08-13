@@ -409,10 +409,12 @@ static int glue_sharpen_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 	
 
-int Pixel_imlib_Init(Tcl_Interp *interp) //{{{1
+int Pixel_imlib2_Init(Tcl_Interp *interp) //{{{1
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
-		return TCL_ERROR;
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
+#ifdef USE_PIXEL_STUBS
+	if (Pixel_InitStubs(interp, "3.4", 0) == NULL) return TCL_ERROR;
+#endif
 
 	imlib_set_color_usage(128);
 	imlib_set_cache_size(0);
@@ -429,7 +431,9 @@ int Pixel_imlib_Init(Tcl_Interp *interp) //{{{1
 	NEW_CMD("pixel::imlib2::scale_pmap", glue_scale_pmap);
 	NEW_CMD("pixel::imlib2::blur", glue_blur_pmap);
 	NEW_CMD("pixel::imlib2::sharpen", glue_sharpen_pmap);
-	
+
+	TEST_OK(Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION));
+
 	return TCL_OK;
 }
 
