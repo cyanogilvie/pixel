@@ -23,5 +23,13 @@ install: all
 uninstall:
 	-rm -rf $(TARGETDIR)
 
+teapot: all teapot.txt
+	-rm -f teapot/*
+	teapot-pkg generate --type zip --output teapot .
+
+refresh-teapot: teapot
+	teacup remove Pixel_fonts
+	teacup install teapot/*
+
 clean:
-	-rm -rf scripts-stamp scripts/tclIndex
+	-rm -rf scripts-stamp scripts/tclIndex teapot/*

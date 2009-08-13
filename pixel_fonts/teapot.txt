@@ -1,0 +1,10 @@
+Package Pixel_fonts 0.1
+Meta description 
+Meta entrysource fonts.tcl
+Meta included    fonts.tcl scripts/tclIndex scripts/fonts.itcl fonts/*
+Meta platform    tcl
+Meta require     Itcl
+Meta require     Pixel
+Meta require     Pixel_ttf
+Meta require     TLC-base
+

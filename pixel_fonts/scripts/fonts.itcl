@@ -49,7 +49,7 @@ body pixel::fonts::Font::get_face {fontdesc} { #<<<1
 	}
 
 	# Force face compilation on our copy, so it's only done once per font
-	pixel::compile_face $reg($name)
+	pixel::ttf::compile_face $reg($name)
 
 	return $reg($name)
 }
