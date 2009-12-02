@@ -428,6 +428,7 @@ void pmap_free(gimp_image_t **pmap) // {{{1
 //	g_total_pmaps--;
 //	fprintf(stderr, "freeing pmap: w: %d h: %d  %p %d\n", (*pmap)->width, (*pmap)->height, *pmap, g_total_pmaps);
 	free((*pmap)->pixel_data);
+	(*pmap)->pixel_data = NULL;
 	free(*pmap);
 	*pmap = NULL;
 }

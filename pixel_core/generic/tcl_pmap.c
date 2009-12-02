@@ -20,18 +20,13 @@ static void free_internal_rep(Tcl_Obj *obj) //<<<
 {
 	gimp_image_t *	pmap = (gimp_image_t *)obj->internalRep.twoPtrValue.ptr1;
 	sp_info *		sp = (sp_info *)obj->internalRep.twoPtrValue.ptr2;
-//	fprintf(stderr, "tcl_pmap: Called free_internal_rep\n");
+	//fprintf(stderr, "tcl_pmap: Called free_internal_rep\n");
 
 #warning pmap free_internal rep must free sp_info
 	//call sp->free_info(obj) routine
 
 	if (pmap != NULL) {
-		if (pmap->pixel_data != NULL) {
-			ckfree((char*)(pmap->pixel_data));
-			pmap->pixel_data = NULL;
-		}
-		ckfree((char*)pmap);
-		pmap = NULL;
+		pmap_free(&pmap);
 	}
 }
 
