@@ -46,6 +46,7 @@ PixelStubs pixelStubs = {
     read_vfs_file2, /* 35 */
     rle_decode, /* 36 */
     rle_encode, /* 37 */
+    Tcl_IsPMAPObj, /* 38 */
 };
 
 /* !END!: Do not edit above this line. */

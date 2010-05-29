@@ -19,9 +19,7 @@ dnl	to configure the system for the local environment.
 # so you can encode the package version directly into the source files.
 #-----------------------------------------------------------------------
 
-AC_INIT([Pixel_tkimage], [1])
-EXTRA_VERSION="1.0"
-AC_SUBST(EXTRA_VERSION)
+AC_INIT([Pixel_tkimage], [1.1.0])
 
 #--------------------------------------------------------------------
 # Call TEA_INIT as the first TEA_ macro to set up initial vars.
@@ -75,13 +73,12 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([-I.. -I/usr/include/Hermes])
-TEA_ADD_LIBS([-ltk8.4 -lHermes -L/usr/lib/Pixel -lPixel3])
+TEA_ADD_INCLUDES([-I.. -I/usr/include/Hermes -I/home/cyan/git/pixel/pixel_core/generic])
+TEA_ADD_LIBS([-lHermes -L/home/cyan/.tbuild/repo/pkg/linux-glibc2.10-x86_64/pixel_core-3.4.1])
 #TEA_ADD_LIBS([-ltk8.4 -lHermes -L/usr/lib/Pixel -lPixel3 -lgcov])
 TEA_ADD_CFLAGS([])
 #TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])
-AC_OUTPUT([pixel_tkimage.tcl])
-TEA_ADD_TCL_SOURCES([pixel_tkimage.tcl])
+TEA_ADD_TCL_SOURCES([])
 TEA_ADD_STUB_SOURCES([])
 
 #--------------------------------------------------------------------
@@ -100,7 +97,7 @@ TEA_ADD_STUB_SOURCES([])
 
 # Add pkgIndex.tcl if it is generated in the Makefile instead of ./configure
 # and change Makefile.in to move it from CONFIG_CLEAN_FILES to BINARIES var.
-CLEANFILES="pixel_tkimage.tcl"
+CLEANFILES=""
 AC_SUBST(CLEANFILES)
 
 #--------------------------------------------------------------------
@@ -183,4 +180,3 @@ TEA_PROG_WISH
 #--------------------------------------------------------------------
 
 AC_OUTPUT([Makefile pkgIndex.tcl])
-#AC_OUTPUT([Makefile pkgIndex.tcl pixel_tkimage.tcl])

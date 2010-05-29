@@ -9,6 +9,19 @@
 # 
 # RCS: @(#) $Id: all.tcl,v 1.4 2004/07/04 22:04:20 patthoyts Exp $
 
+package require platform
+
+foreach platform [platform::patterns [platform::identify]] {
+	set tm_path		[file join $env(HOME) .tbuild repo tm $platform]
+	set pkg_path	[file join $env(HOME) .tbuild repo pkg $platform]
+	if {[file exists $tm_path]} {
+		tcl::tm::path add $tm_path
+	}
+	if {[file exists $pkg_path]} {
+		lappend auto_path $pkg_path
+	}
+}
+
 if {[lsearch [namespace children] ::tcltest] == -1} {
     package require tcltest
     namespace import ::tcltest::*

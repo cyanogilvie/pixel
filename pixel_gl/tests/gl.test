@@ -5,7 +5,7 @@ if {"::tcltest" ni [namespace children]} {
 	namespace import ::tcltest::*
 }
 
-lappend ::auto_path	[file join / home cyan .tbuild repo pkg linux-glibc2.8-x86_64]
+#lappend ::auto_path	[file join / home cyan .tbuild repo pkg linux-glibc2.8-x86_64]
 package require Pixel_gl
 package require Pixel_sdl
 

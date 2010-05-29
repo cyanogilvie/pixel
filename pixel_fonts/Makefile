@@ -1,13 +1,7 @@
 DESTDIR=
 TARGETDIR=$(DESTDIR)/usr/lib/pixel_fonts
 
-all: scripts
-
-scripts: scripts-stamp
-
-scripts-stamp: scripts/*.itcl
-	./make_tclIndex.tcl
-	touch scripts-stamp
+all:
 
 install: all
 	install -d $(TARGETDIR)

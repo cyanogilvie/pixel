@@ -1,5 +1,15 @@
 #
 # Tcl package index file
 #
-package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@.@EXTRA_VERSION@ \
-		[list eval [list namespace eval ::pixel::ttf [list variable library $dir]]\n[list source [file join $dir pixel_ttf.tcl]]]
+package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@ [list apply {
+	{dir} {
+		package require Pixel 3
+		namespace eval ::pixel::ttf {
+			namespace export *
+
+			variable version @PACKAGE_VERSION@
+		}
+		load [file join $dir @PKG_LIB_FILE@]
+		package provide @PACKAGE_NAME@ $::pixel::ttf::version
+	}
+} $dir]

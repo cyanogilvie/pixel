@@ -1,13 +1,11 @@
 #include <Pixel/pixel.h>
 #include "ttf.h"
 #include <ft2build.h>
+#include <string.h>
 #include FT_FREETYPE_H
-
-//extern int g_total_pmaps;
 
 
 FT_Library  ft_library;
-//FT_Face		face;
 char		*g_last_error = "";
 
 
@@ -20,9 +18,7 @@ typedef struct TGlyph_
 } TGlyph, *PGlyph;
 
 
-
-static void blit_glyph(int x, int y, _pel base_col, FT_Bitmap *glyph,
-		gimp_image_t *pmap)
+static void blit_glyph(int x, int y, _pel base_col, FT_Bitmap *glyph, gimp_image_t *pmap) //<<<
 {
 	uint32				px, py, mx, my;
 	unsigned char		*s;
@@ -50,8 +46,8 @@ static void blit_glyph(int x, int y, _pel base_col, FT_Bitmap *glyph,
 	}
 }
 
-
-pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width, ttf_feedback_cb cb, void *clientdata)
+//>>>
+pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width, ttf_feedback_cb cb, void *clientdata) //<<<
 {
 	int				n, from_glyph, glyphno, numchars, numwchars, error;
 	int				pen_x, pen_y, size;
@@ -328,15 +324,188 @@ error:
 }
 
 
-char *ttf_last_error_txt()
+//>>>
+int ttf_init_state(Tcl_Interp* interp, _pel base_col, FT_Face face, int px_size, struct ttf_state* state) //<<<
+{
+	int		error;
+
+	setlocale(LC_CTYPE, "en_GB.UTF-8");
+
+	memset(state, 0, sizeof(*state));
+
+	error = FT_Set_Pixel_Sizes(
+			face,
+			0,
+			px_size);
+
+	state->advance_x = 0.0;
+	state->advance_y = 0.0;
+	state->previous = 0;
+	state->face = face;
+	state->use_kerning = FT_HAS_KERNING(face);
+	state->slot = face->glyph;
+	state->base_col = base_col;
+
+	return TCL_OK;
+}
+
+//>>>
+int ttf_next_char(Tcl_Interp* interp, struct ttf_state* state, const char* utf8_char, int char_byte_len, double* dx, double* dy, int* ox, int* oy, int* width, gimp_image_t** pmap) //<<<
+{
+	FT_Glyph		image;
+	FT_BBox			glyph_bbox;
+	FT_BitmapGlyph	bitmap;
+	double			delta_x = state->advance_x;
+	double			delta_y = state->advance_y;
+	wchar_t			this_wchar;
+	const char		*mbptr;
+	int				res, error, size, numwchars;
+	mbstate_t		ps;
+	TGlyph			glyph;
+	FT_BBox			bbox;
+
+	mbptr = utf8_char;
+
+	// Figure out actual number of (wide) characters
+	memset(&ps, 0, sizeof(mbstate_t));
+	numwchars = mbsrtowcs(NULL, (const char **)&mbptr, char_byte_len, &ps);
+	mbptr = utf8_char;
+	memset(&ps, 0, sizeof(mbstate_t));
+
+	res = mbrtowc(&this_wchar, mbptr, char_byte_len - (mbptr - utf8_char), &ps);
+	if (res < 0) {
+		switch (res) {
+			case -1:
+				THROW_ERROR("No complete multibyte character while decoding input");
+				break;
+			case -2:
+				THROW_ERROR("Invalid multibyte character in input");
+				break;
+			default:
+				THROW_ERROR("Unknown error processing input");
+				break;
+		}
+	}
+	
+	if (res == 0) 
+		THROW_ERROR("No characters found");
+
+	mbptr += res;
+	if (mbptr < utf8_char + char_byte_len)
+		fprintf(stderr, "Warning: got more utf8 data than we consumed\n");
+
+	// retrieve glyph index from character code
+	glyph.index = FT_Get_Char_Index(state->face, this_wchar);
+
+	if (state->use_kerning && state->previous && glyph.index) {
+		FT_Vector	delta;
+
+		FT_Get_Kerning(state->face, state->previous, glyph.index,
+				ft_kerning_default, &delta);
+
+		delta_x += (double)delta.x / (1<<6);
+		delta_y += (double)delta.y / (1<<6);
+	}
+
+	glyph.pos.x = (int)delta_x;
+	glyph.pos.y = (int)delta_y;
+
+	error = FT_Load_Glyph(state->face, glyph.index, FT_LOAD_DEFAULT);
+	if (error) THROW_ERROR("Error loading glyph");
+
+	error = FT_Get_Glyph(state->face->glyph, &glyph.image);
+	if (error) THROW_ERROR("Error retrieving glyph image");
+
+	FT_Glyph_Transform(glyph.image, 0, &glyph.pos);
+
+	*dx = delta_x;
+	*dy = delta_y;
+	delta_x += (double)state->slot->advance.x / (1<<6);
+	delta_y += (double)state->slot->advance.y / (1<<6);
+	state->advance_x = (double)state->slot->advance.x / (1<<6);
+	state->advance_y = (double)state->slot->advance.y / (1<<6);
+	state->previous = glyph.index;
+
+	// Get bounding box <<<
+	bbox.xMin = bbox.yMin = 32000;
+	bbox.xMax = bbox.yMax = -32000;
+
+	FT_Glyph_Get_CBox(glyph.image, ft_glyph_bbox_pixels, &glyph_bbox);
+
+	if (glyph_bbox.xMin + glyph.pos.x < bbox.xMin)
+		bbox.xMin = glyph_bbox.xMin + glyph.pos.x;
+
+	if (glyph_bbox.yMin + glyph.pos.y < bbox.yMin)
+		bbox.yMin = glyph_bbox.yMin + glyph.pos.y;
+
+	if (glyph_bbox.xMax + glyph.pos.x > bbox.xMax)
+		bbox.xMax = glyph_bbox.xMax + glyph.pos.x;
+
+	if (glyph_bbox.yMax + glyph.pos.y > bbox.yMax)
+		bbox.yMax = glyph_bbox.yMax + glyph.pos.y;
+
+	if (bbox.xMin > bbox.xMax) {
+		bbox.xMin = 0;
+		bbox.yMin = 0;
+		bbox.xMax = 0;
+		bbox.yMax = 0;
+	}
+	// Get bounding box >>>
+
+	//	fprintf(stderr, "bbox.yMin: (%d) bbox.xMin: (%d)\nbbox.yMax: (%d) bbox.xMax: (%d)\n", bbox.yMin, bbox.xMin, bbox.yMax, bbox.xMax);
+	// Alloc pmap
+	*pmap = (gimp_image_t*)malloc(sizeof(**pmap));
+	(*pmap)->width = bbox.xMax - bbox.xMin + 1;
+	(*pmap)->height = bbox.yMax - bbox.yMin + 1;
+	(*pmap)->bytes_per_pixel = 4;
+	size = (*pmap)->width * (*pmap)->height * (*pmap)->bytes_per_pixel;
+	(*pmap)->pixel_data = (_pel*)malloc(size);
+	memset((*pmap)->pixel_data, 0x00, size);
+
+	// create a copy of the original glyph
+	error = FT_Glyph_Copy(glyph.image, &image);
+	if (error) THROW_ERROR("Error copying glyph");
+
+	// transform copy (this will also translate it to the correct position
+	//FT_Glyph_Transform(image, &matrix, &start);
+
+	// convert glyph image to bitmap (destroy the glyph copy !!)
+	error = FT_Glyph_To_Bitmap(&image,
+			ft_render_mode_normal,
+			0,		// no additional translation
+			1);		// destroy copy in "image"
+	if (error) THROW_ERROR("Error rendering glyph bitmap");
+
+	bitmap = (FT_BitmapGlyph)image;
+	*ox = bitmap->left;
+	//*oy = (*pmap)->height - bitmap->top + bbox.yMin + glyph.pos.y + (int)delta_y;
+	*oy = bitmap->top + (int)delta_y;
+	//fprintf(stderr, "rendering %s, bbox.yMin: %d, bbox.yMax: %d, bitmap->top: %d\n", utf8_char, bbox.yMin, bbox.yMax, bitmap->top);
+	blit_glyph(0, 0,
+			state->base_col,
+			&bitmap->bitmap,
+			*pmap);
+
+	*width = (*pmap)->width;
+	FT_Done_Glyph(image);
+	
+	FT_Done_Glyph(glyph.image);
+	return TCL_OK;
+}
+
+
+//>>>
+char *ttf_last_error_txt() //<<<
 {
 	return g_last_error;
 }
 
-
-int init_ttf()
+//>>>
+int init_ttf() //<<<
 {
 	return FT_Init_FreeType(&ft_library);
 }
 
+//>>>
 
+// vim: ft=c foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4

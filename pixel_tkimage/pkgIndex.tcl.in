@@ -1,4 +1,22 @@
-#
+
 # Tcl package index file
 #
-package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@.@EXTRA_VERSION@ [list source [file join $dir pixel_tkimage.tcl]]
+package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@ [list apply {
+	{dir} {
+		package require Pixel 3
+		package require Tk
+
+		namespace eval ::pixel::tkimage {
+			namespace export *
+
+			variable version @PACKAGE_VERSION@
+
+			variable library
+		}
+		set ::pixel::tkimage::library	$dir
+
+		load [file join $::pixel::tkimage::library @PKG_LIB_FILE@]
+
+		package provide @PACKAGE_NAME@ $::pixel::tkimage::version
+	}
+} $dir]

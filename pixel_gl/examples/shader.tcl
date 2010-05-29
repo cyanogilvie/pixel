@@ -57,7 +57,7 @@ proc shader_program {vert_fn frag_fn} { #<<<
 	try {
 		glCompileShader $f
 	} trap {GL COMPILE} {errmsg options} {
-		puts stderr "Could not compile fragment shader \"$frag_fn:\n$errmsg"
+		puts stderr "Could not compile fragment shader \"$frag_fn\":\n$errmsg"
 		exit 1
 	}
 	glAttachShader $p $f

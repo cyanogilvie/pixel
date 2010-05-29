@@ -19,7 +19,7 @@ dnl	to configure the system for the local environment.
 # so you can encode the package version directly into the source files.
 #-----------------------------------------------------------------------
 
-AC_INIT([Pixel_devil], [0.1])
+AC_INIT([Pixel_devil], [0.2])
 
 #--------------------------------------------------------------------
 # Call TEA_INIT as the first TEA_ macro to set up initial vars.
@@ -79,7 +79,6 @@ CUSTOM_ENABLE_STATIC_DEVIL
 
 TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([])
-#TEA_ADD_TCL_SOURCES([pixel_devil.tcl])
 TEA_ADD_TCL_SOURCES([])
 
 #--------------------------------------------------------------------
@@ -102,7 +101,7 @@ if test "${TEA_PLATFORM}" = "windows" ; then
     #TEA_ADD_SOURCES([win/winFile.c])
     #TEA_ADD_INCLUDES([-I\"$(${CYGPATH} ${srcdir}/win)\"])
 else
-    CLEANFILES="pkgIndex.tcl pixel_devil.tcl"
+    CLEANFILES="pkgIndex.tcl"
     #TEA_ADD_SOURCES([unix/unixFile.c])
     #TEA_ADD_LIBS([-lsuperfly])
 fi
@@ -187,4 +186,4 @@ TEA_PROG_TCLSH
 # which require substituting th AC variables in.  Include these here.
 #--------------------------------------------------------------------
 
-AC_OUTPUT([Makefile pkgIndex.tcl pixel_devil.tcl])
+AC_OUTPUT([Makefile pkgIndex.tcl])

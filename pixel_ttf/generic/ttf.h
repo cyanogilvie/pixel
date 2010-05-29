@@ -11,6 +11,16 @@
 
 typedef void (* ttf_feedback_cb)(void *clientdata, int what, int value);
 
+struct ttf_state {
+	double			advance_x;
+	double			advance_y;
+	int				previous;
+	int				use_kerning;
+	FT_Face			face;
+	FT_GlyphSlot	slot;
+	_pel			base_col;
+};
+
 enum {
 	TTF_FEEDBACK_LINESTART,
 	TTF_FEEDBACK_CHAR
@@ -20,6 +30,8 @@ EXTERN_C FT_Library	ft_library;
 EXTERN_C Tcl_ObjType	tcl_ttf_face;
 
 EXTERN_C pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width, ttf_feedback_cb cb, void *clientdata);
+EXTERN_C int ttf_init_state(Tcl_Interp* interp, _pel base_col, FT_Face face, int px_size, struct ttf_state* state);;
+EXTERN_C int ttf_next_char(Tcl_Interp* interp, struct ttf_state* state, const char* utf8_char, int char_byte_len, double* dx, double* dy, int* ox, int* oy, int* width, gimp_image_t** pmap);
 EXTERN_C int new_face(char *ttf_file, int px_height);
 EXTERN_C int init_ttf();
 

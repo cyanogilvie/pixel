@@ -1,0 +1,38 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel 3.4
+package require Pixel_gl
+package require Pixel_sdl
+
+if {"::pixel::gl" ni [namespace path]} {
+	namespace path [concat [namespace path] {::pixel::gl}]
+}
+
+test draw_buffers-1.1 {glDrawBuffer} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	glDrawBuffer GL_FRONT
+} -cleanup {
+	glDrawBuffer GL_BACK
+	if {[info exists scr]} {unset scr}
+} -result {}
+
+#>>>
+test draw_buffers-2.1 {glReadBuffer} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	glReadBuffer GL_FRONT
+} -cleanup {
+	glReadBuffer GL_BACK
+	if {[info exists scr]} {unset scr}
+} -result {}
+
+#>>>
+
+::tcltest::cleanupTests
+return

@@ -1,5 +1,18 @@
 #
 # Tcl package index file
 #
-package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@ \
-		[list eval [list namespace eval ::pixel::svg_cairo [list variable library $dir]]\n[list source [file join $dir pixel_svg_cairo.tcl]]]
+package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@ [list apply {
+	{dir} {
+		package require Pixel
+
+		namespace eval ::pixel::svg_cairo {
+			namespace export *
+
+			variable version @PACKAGE_VERSION@
+		}
+
+		load [file join $dir @PKG_LIB_FILE@] @PACKAGE_NAME@
+
+		package provide @PACKAGE_NAME@ @PACKAGE_VERSION@
+	}
+} $dir]

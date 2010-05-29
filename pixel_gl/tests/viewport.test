@@ -1,0 +1,49 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel 3.4
+package require Pixel_sdl
+package require Pixel_gl
+
+if {"::pixel::gl" ni [namespace path]} {
+	namespace path [concat [namespace path] {::pixel::gl}]
+}
+
+test viewport-1.1 {glViewport} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	glViewport 0 0 320 200
+} -cleanup {
+	if {[info exists scr]} {unset scr}
+} -result {}
+
+#>>>
+test viewport-1.2 {glViewport noargs} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	glViewport
+} -cleanup {
+	if {[info exists scr]} {unset scr}
+} -returnCodes {
+	error
+} -result {Wrong # of arguments.  Must be "x y w h"}
+
+#>>>
+test viewport-1.3 {glViewport invalidargs} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	glViewport a b c d
+} -cleanup {
+	if {[info exists scr]} {unset scr}
+} -returnCodes {
+	error
+} -result {expected integer but got "a"}
+
+#>>>
+
+::tcltest::cleanupTests
+return

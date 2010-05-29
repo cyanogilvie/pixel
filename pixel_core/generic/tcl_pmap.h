@@ -7,6 +7,7 @@ EXTERN_C void Tcl_SetPMAPObj(Tcl_Obj * obj, gimp_image_t * pmap);
 EXTERN_C Tcl_Obj *Tcl_NewPMAPObj(gimp_image_t * pmap);
 EXTERN_C int Tcl_GetPMAPFromObj(Tcl_Interp * interp, Tcl_Obj * obj,
 		gimp_image_t ** pmap);
+EXTERN_C int Tcl_IsPMAPObj(Tcl_Obj* obj);
 
 #endif
 

@@ -14,6 +14,11 @@ typedef struct ttf_feedback_data {
 	Tcl_Obj		*line;
 } ttf_feedback_data;
 
+static Tcl_Obj*		g_key_base_col = NULL;
+static Tcl_Obj*		g_key_face = NULL;
+static Tcl_Obj*		g_key_px_size = NULL;
+static Tcl_Obj*		g_key_px_width = NULL;
+
 // render_ttf colour fft_face px_size text ?width? {{{1
 static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
@@ -112,29 +117,32 @@ static int glue_render_ttf_adv(ClientData *foo, Tcl_Interp *interp,
 	pmap_list			*next;
 	_pel				base_col;
 	FT_Face				face;
-	int					len, width;
-	char				*utf8;
+	int					width;
 	Tcl_Obj				*res;
-	char				*base_arr;
-	
-	
-	
-	CHECK_ARGS(2, "meta text");
+
+	CHECK_ARGS(3, "meta text feedbackvar");
 
 	width = 0;
 	px_size = 14;
 	base_col.c = 0xff000000;
 
-	base_arr = Tcl_GetString(objv[1]);
+	TEST_OK(Tcl_DictObjGet(interp, objv[1], g_key_base_col, &base_col_o));
+	TEST_OK(Tcl_DictObjGet(interp, objv[1], g_key_face, &face_o));
+	TEST_OK(Tcl_DictObjGet(interp, objv[1], g_key_px_size, &px_size_o));
+	TEST_OK(Tcl_DictObjGet(interp, objv[1], g_key_px_width, &width_o));
 
-	if ((base_col_o	= Tcl_GetVar2Ex(interp, base_arr, "base_col", 0)) != NULL)
-		TEST_OK(Tcl_GetIntFromObj(interp, base_col_o, (int *)&base_col.c));
-	if ((face_o		= Tcl_GetVar2Ex(interp, base_arr, "face", 0)) != NULL)
+	if (base_col_o != NULL)
+		TEST_OK(Tcl_GetIntFromObj(interp, base_col_o, (int*)&base_col.c));
+	if (face_o != NULL) {
 		TEST_OK(Tcl_GetTTFFaceFromObj(interp, face_o, &face));
-	if ((px_size_o	= Tcl_GetVar2Ex(interp, base_arr, "px_size", 0)) != NULL)
+	} else {
+		THROW_ERROR("Must specifiy a font face");
+	}
+	if (px_size_o != NULL)
 		TEST_OK(Tcl_GetIntFromObj(interp, px_size_o, &px_size));
-	if ((width_o	= Tcl_GetVar2Ex(interp, base_arr, "width", 0)) != NULL)
+	if (width_o != NULL)
 		TEST_OK(Tcl_GetIntFromObj(interp, width_o, &width));
+
 
 	feedback.interp = interp;
 	feedback.res = Tcl_NewListObj(0, NULL);
@@ -167,7 +175,7 @@ static int glue_render_ttf_adv(ClientData *foo, Tcl_Interp *interp,
 		Tcl_SetObjResult(interp, res);
 	}
 
-	Tcl_ObjSetVar2(interp, objv[1], Tcl_NewStringObj("feedback", -1), feedback.res, 0);
+	Tcl_ObjSetVar2(interp, objv[3], NULL, feedback.res, 0);
 
 	return TCL_OK;
 }
@@ -700,7 +708,7 @@ static int glue_ttf_info(cdata, interp, objc, objv)
 				Tcl_NewStringObj("string", -1));
 		
 		Tcl_ListObjAppendElement(interp, item,
-				Tcl_NewStringObj(finfo.string, finfo.string_len));
+				Tcl_NewStringObj((const char*)finfo.string, finfo.string_len));
 
 		Tcl_ListObjAppendElement(interp, res, item);
 	}
@@ -711,13 +719,128 @@ static int glue_ttf_info(cdata, interp, objc, objv)
 }
 
 
+// init_state meta {{{1
+static int glue_init_state(cdata, interp, objc, objv)
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	Tcl_Obj				*base_col_o;
+	Tcl_Obj				*face_o;
+	Tcl_Obj				*px_size_o;
+	int					width, px_size;
+	_pel				base_col;
+	FT_Face				face;
+	struct ttf_state*	state = NULL;
+
+	CHECK_ARGS(1, "meta");
+
+	width = 0;
+	px_size = 14;
+	base_col.c = 0xff000000;
+
+	TEST_OK(Tcl_DictObjGet(interp, objv[1], g_key_base_col, &base_col_o));
+	TEST_OK(Tcl_DictObjGet(interp, objv[1], g_key_face, &face_o));
+	TEST_OK(Tcl_DictObjGet(interp, objv[1], g_key_px_size, &px_size_o));
+
+	if (base_col_o != NULL)
+		TEST_OK(Tcl_GetIntFromObj(interp, base_col_o, (int*)&base_col.c));
+	if (face_o != NULL) {
+		TEST_OK(Tcl_GetTTFFaceFromObj(interp, face_o, &face));
+	} else {
+		THROW_ERROR("Must specifiy a font face");
+	}
+	if (px_size_o != NULL)
+		TEST_OK(Tcl_GetIntFromObj(interp, px_size_o, &px_size));
+
+	state = (struct ttf_state*)malloc(sizeof(*state));
+
+	if (ttf_init_state(interp, base_col, face, px_size, state) != TCL_OK)
+		goto failed;
+
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((const unsigned char*)state, sizeof(*state)));
+	free(state); state = NULL;
+	return TCL_OK;
+
+failed:
+	free(state); state = NULL;
+	return TCL_ERROR;
+}
+
+
+// next_char char {{{1
+static int glue_next_char(cdata, interp, objc, objv)
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	struct ttf_state*	state = NULL;
+	int					len;
+	const char*			c;
+	gimp_image_t*		glyph_pmap;
+	double				dx, dy;
+	int					ox, oy;
+	int					width;
+	Tcl_Obj*			res;
+
+	CHECK_ARGS(2, "state char");
+
+	state = (struct ttf_state*)Tcl_GetByteArrayFromObj(objv[1], &len);
+	if (len != sizeof(*state))
+		THROW_ERROR("Invalid state token");
+
+	c = Tcl_GetStringFromObj(Tcl_GetRange(objv[2], 0, 0), &len);
+	if (len == 0)
+		THROW_ERROR("No characters specified");
+
+	TEST_OK(ttf_next_char(interp, state, c, len, &dx, &dy, &ox, &oy, &width, &glyph_pmap));
+
+	res = Tcl_NewListObj(0, NULL);
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewDoubleObj(dx)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewDoubleObj(dy)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(ox)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(oy)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(width)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewPMAPObj(glyph_pmap)));
+
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+// cleanup_state meta {{{1
+static int glue_cleanup_state(cdata, interp, objc, objv)
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	CHECK_ARGS(1, "meta");
+
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_ttf_Init(Tcl_Interp *interp)
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL)
+	if (Tcl_InitStubs(interp, "8.6", 0) == NULL)
 		return TCL_ERROR;
 
 	Tcl_RegisterObjType(&tcl_ttf_face);
+
+	if (g_key_base_col == NULL) g_key_base_col = Tcl_NewStringObj("base_col", -1);
+	if (g_key_face == NULL) g_key_face = Tcl_NewStringObj("face", -1);
+	if (g_key_px_size == NULL) g_key_px_size = Tcl_NewStringObj("px_size", -1);
+	if (g_key_px_width == NULL) g_key_px_width = Tcl_NewStringObj("px_width", -1);
+
+	Tcl_IncrRefCount(g_key_base_col);
+	Tcl_IncrRefCount(g_key_face);
+	Tcl_IncrRefCount(g_key_px_size);
+	Tcl_IncrRefCount(g_key_px_width);
 
 	init_ttf();
 
@@ -726,6 +849,9 @@ int Pixel_ttf_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::ttf::render_ttf_adv", glue_render_ttf_adv);
 	NEW_CMD("pixel::ttf::compile_face", glue_compile_face);
 	NEW_CMD("pixel::ttf::ttf_info", glue_ttf_info);
+	NEW_CMD("pixel::ttf::init_state", glue_init_state);
+	NEW_CMD("pixel::ttf::next_char", glue_next_char);
+	NEW_CMD("pixel::ttf::cleanup_state", glue_cleanup_state);
 
 	return TCL_OK;
 }

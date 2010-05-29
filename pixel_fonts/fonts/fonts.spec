@@ -1,6 +1,6 @@
 arial {
-	attribs		{}
-	filename	"arial.ttf"
+	attribs		{normal}
+	filename	"Arial.ttf"
 }
 arial {
 	attribs		{bold}
@@ -81,4 +81,8 @@ tahoma {
 tahoma {
 	attribs		{bold}
 	filename	"tahomabd.ttf"
+}
+freesans {
+	attribs		{}
+	filename	"FreeSans.ttf"
 }

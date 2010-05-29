@@ -71,13 +71,13 @@ static int glue_load_image_from_var(cdata, interp, objc, objv) //<<<
 	_pel				init;
 	gimp_image_t		*new;
 	int					w, h, data_len;
-	ILvoid				*data;
+	const void			*data;
 	
 	CHECK_ARGS(1, "data");
 
 	ilGenImages(1, &id);
 	ilBindImage(id);
-	data = (ILvoid *)Tcl_GetByteArrayFromObj(objv[1], &data_len);
+	data = (const void *)Tcl_GetByteArrayFromObj(objv[1], &data_len);
 	size = data_len;
 	ilLoadL(IL_TYPE_UNKNOWN, data, size);
 	Error = ilGetError();

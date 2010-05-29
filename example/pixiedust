@@ -1,19 +1,30 @@
-#!/usr/bin/itkwish3.1
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
 
-# vim: ft=tcl
-
-
+lappend auto_path	[file join $env(HOME) .tbuild repo pkg linux-glibc2.10-x86_64]
 package require Pixel
-namespace import pixel::*
 package require Pixel_imlib2
-package require Pixel_tkimage
+package require Pixel_sdl
+package require Pixel_ttf
 package require Pixel_fonts
+package require cflib
+
+namespace path [concat [namespace path] {
+	::pixel
+	::pixel::ttf
+	::tcl::mathop
+}]
+
+set scr_width	1024
+set scr_height	768
+
+set scr		[pixel::sdl::setup_screen $scr_width $scr_height 32 {SDL_ANYFORMAT}]
 
 set img		[pixel::imlib2::load_image "kenshin2.png"]
+pmap_paste $scr $img 0 0 0
 
 set flare1	[pixel::imlib2::load_image "flare.png"]
-pmap_filter $flare1 $::MD_FILTER_ALPHA 0.5
-foreach {fw fh} [pmap_info $flare1] break
+pmap_filter $flare1 $::pixel::MD_FILTER_ALPHA 0.5
+lassign [pixel::pmap_info $flare1] fw fh
 set it		3
 set fade	0.2
 set base	0.8
@@ -22,7 +33,7 @@ while {[incr it -1]} {
 	set fw		[expr {$fw >> 1}]
 	set fh		[expr {$fh >> 1}]
 	set new		[pixel::dup $flare1]
-	pmap_filter $new $::MD_FILTER_ALPHA $base
+	pmap_filter $new $::pixel::MD_FILTER_ALPHA $base
 	set base	[expr {$base * $fade}]
 	lappend flares	$new
 }
@@ -30,18 +41,19 @@ while {[incr it -1]} {
 
 set buttonimg	[pixel::imlib2::load_image "window.png"]
 
-pixel::fonts::Font fontreg
+pixel::fonts::Font create fontreg
 
-array set text_info [list \
+set text_info [dict create \
 	base_col	0xffdf0020 \
 	face		[fontreg get_face {arial {bold italic}}] \
 	px_size		18 \
 ]
-set textimg	[render_ttf_adv text_info "Hello world"]
+set textimg	[render_ttf_adv $text_info "Hello world" feedback]
+puts "render_ttf_adv feedback: ($feedback)"
 set dropshadow	[pmap_dropshadow $textimg 2]
-pmap_filter $dropshadow $::MD_FILTER_ALPHA 0.7
+pmap_filter $dropshadow $::pixel::MD_FILTER_ALPHA 0.7
 
-foreach {width height} [pmap_info $textimg] break
+lassign [pmap_info $textimg] width height
 
 set scaled	[pixel::imlib2::scale_pmap $buttonimg \
 		[expr {$width+16}] \
@@ -49,117 +61,155 @@ set scaled	[pixel::imlib2::scale_pmap $buttonimg \
 		1 2 2 2 2]
 
 # Paste our dropshadow and text pmap onto the button
-pmap_paste $scaled $dropshadow 8 8 $::MD_ALPHA
-pmap_filter $scaled $::MD_FILTER_ALPHA 0.75
-pmap_paste $scaled $textimg 8 8 $::MD_ALPHA
+pmap_paste $scaled $dropshadow 8 8 $::pixel::MD_ALPHA
+pmap_filter $scaled $::pixel::MD_FILTER_ALPHA 0.75
+pmap_paste $scaled $textimg 8 8 $::pixel::MD_ALPHA
 
-class Particle {
-	constructor {args} {
-		eval configure $args
+cflib::pclass create Particle {
+	property x
+	property y
+	property g			40
+	property life		1.0
+
+	variable {*}{
+		spawned
+		pmap
+		w
+		h
+		atx
+		aty
+		xv
+	}
+
+	constructor {args} { #<<<
+		namespace path [concat [namespace path] {
+			::pixel
+			::pixel::ttf
+			::tcl::mathop
+		}]
+
+		my configure {*}$args
 
 		set spawned	[clock clicks -milliseconds]
 
 		set xv		[expr {40 - rand() * 80}]
-		set ::particles($this)	1
+		set ::particles([self])	1
 
 		set aty		$y
 		set atx		$x
 	}
 
-	destructor {
-		unset ::particles($this)
+	#>>>
+	destructor { #<<<
+		unset ::particles([self])
 	}
 
-	public {
-		method draw {dest} {
-			age
-			if {![info exists pmap]} return
-			set t	[expr {$atx - $w/2}]
-			set l	[expr {$aty - $h/2}]
-			pmap_paste $dest $pmap $t $l $::MD_ADDITIVE
-		}
-		method undraw {dest ref} {
-			if {![info exists pmap]} return
-			set t	[expr {$atx - $w/2}]
-			set l	[expr {$aty - $h/2}]
-			pmap_patch $dest $ref \
-					$t \
-					$l \
-					[expr {$t + $w}] \
-					[expr {$l + $h}] \
-					$t $l \
-					0
-		}
+	#>>>
 
-		variable x
-		variable y
-		variable g			40
-		variable life		1.0
+	method draw {dest} { #<<<
+		my _age
+		if {![info exists pmap]} return
+		set t	[expr {$atx - $w/2}]
+		set l	[expr {$aty - $h/2}]
+		pmap_paste $dest $pmap $t $l $::pixel::MD_ADDITIVE
 	}
 
-	private {
-		variable spawned
-		variable pmap
-		variable w
-		variable h
-		variable atx
-		variable aty
-		variable xv
-
-		method age {} {
-			set elapsed	[expr {[clock clicks -milliseconds] - $spawned}]
-			if {$elapsed >= $life * 1000} {
-				delete object $this
-				unset pmap
-				return
-			}
-
-			set perc	[expr {$elapsed / ($life * 1000)}]
-			
-			set pmap	[lindex $::flares [expr {int($perc * [llength $::flares])}]]
-			if {[catch {
-				foreach {w h} [pmap_info $pmap] break
-			} msg]} {
-				puts "error: ($msg)\n($pmap)"
-			}
-
-			set atx		[expr {round($x + $perc * $xv)}]
-			set aty		[expr {round($aty + ($elapsed * $g) / 1000)}]
-		}
+	#>>>
+	method undraw {dest ref} { #<<<
+		if {![info exists pmap]} return
+		set t	[expr {$atx - $w/2}]
+		set l	[expr {$aty - $h/2}]
+		pmap_patch $dest $ref \
+				$t \
+				$l \
+				[expr {$t + $w}] \
+				[expr {$l + $h}] \
+				$t $l \
+				0
 	}
+
+	#>>>
+
+	method _age {} { #<<<
+		set elapsed	[expr {[clock clicks -milliseconds] - $spawned}]
+		if {$elapsed >= $life * 1000} {
+			my destroy
+			unset pmap
+			return
+		}
+
+		set perc	[expr {$elapsed / ($life * 1000)}]
+		
+		set pmap	[lindex $::flares [expr {int($perc * [llength $::flares])}]]
+		try {
+			lassign [pmap_info $pmap] w h
+		} on error {errmsg options} {
+			puts "error: ($errmsg)\n($pmap)"
+		}
+
+		set atx		[expr {round($x + $perc * $xv)}]
+		set aty		[expr {round($aty + ($elapsed * $g) / 1000)}]
+	}
+
+	#>>>
 }
 
 
 array set particles	{}
-proc spawn_dust {x y} {
-	Particle ::#auto -x $x -y [expr {$y + 15}]
-}
+# Keyboard event handler <<<
+pixel::sdl::bind_events key [list apply {
+	{evname ev} {
+		dict with ev {}
 
-image create pmap tkimg -pmap $img
+		if {$state eq "SDL_PRESSED"} {
+			if {$ascii eq "q" || $sym eq 27} {
+				exit
+			}
+		}
+	}
+}]
+# Keyboard event handler >>>
+# Expose event handler <<<
+pixel::sdl::bind_events expose [list apply {
+	{evname ev} {
+		pixel::sdl::do_frame $::scr
+	}
+}]
+# Expose event handler >>>
+# Mouse motion event handler <<<
+pixel::sdl::bind_events motion [list apply {
+	{evname ev} {
+		Particle new -x [dict get $ev x] -y [expr {[dict get $ev y] + 15}]
+	}
+}]
+# Mouse motion event handler >>>
+# Quit event handler <<<
+pixel::sdl::bind_events expose [list apply {
+	{evname ev} {
+		exit 0
+	}
+}]
+# Quit event handler >>>
 
-label .img_l -text "Image:"
-label .img -image tkimg
+lassign [pmap_info $scr] bg_w bg_h
+lassign [center 0 0 $bg_w $bg_h $scaled] atx aty
 
-bind .img <Motion> {spawn_dust %x %y}
-
-pack .img_l .img -side top -anchor w
-
-foreach {bg_w bg_h} [pmap_info $img] break
-foreach {atx aty} [center 0 0 $bg_w $bg_h $scaled] break
-
-pmap_paste $img $scaled $atx $aty $::MD_ALPHA
-set bg	[pixel::dup $img]
+pmap_paste $scr $scaled $atx $aty $::pixel::MD_ALPHA
+set bg	[pixel::dup $scr]
 
 proc do_idle {} {
 	foreach particle [array names ::particles] {
-		$particle undraw $::img $::bg
+		$particle undraw $::scr $::bg
 	}
 	foreach particle [array names ::particles] {
-		$particle draw $::img
+		$particle draw $::scr
 	}
-	tkimg do_frame
+	pixel::sdl::dispatch_events
+	pixel::sdl::do_frame $::scr
 	update
-	after idle do_idle
+	after 18 do_idle
 }
 
 do_idle
+
+vwait ::forever

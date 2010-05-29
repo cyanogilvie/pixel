@@ -240,6 +240,11 @@ EXTERN gimp_image_t *	rle_decode (const unsigned char * rle_data,
 EXTERN unsigned char *	rle_encode (const gimp_image_t * pmap, 
 				unsigned int * data_len, int * status);
 #endif
+#ifndef Tcl_IsPMAPObj_TCL_DECLARED
+#define Tcl_IsPMAPObj_TCL_DECLARED
+/* 38 */
+EXTERN int		Tcl_IsPMAPObj (Tcl_Obj* obj);
+#endif
 
 typedef struct PixelStubs {
     int magic;
@@ -283,6 +288,7 @@ typedef struct PixelStubs {
     int (*read_vfs_file2) (Tcl_Interp * interp, const char * filename, unsigned char ** buf, int * len, int binary); /* 35 */
     gimp_image_t * (*rle_decode) (const unsigned char * rle_data, unsigned int data_len, int * status); /* 36 */
     unsigned char * (*rle_encode) (const gimp_image_t * pmap, unsigned int * data_len, int * status); /* 37 */
+    int (*tcl_IsPMAPObj) (Tcl_Obj* obj); /* 38 */
 } PixelStubs;
 
 #ifdef __cplusplus
@@ -447,6 +453,10 @@ extern PixelStubs *pixelStubsPtr;
 #ifndef rle_encode
 #define rle_encode \
 	(pixelStubsPtr->rle_encode) /* 37 */
+#endif
+#ifndef Tcl_IsPMAPObj
+#define Tcl_IsPMAPObj \
+	(pixelStubsPtr->tcl_IsPMAPObj) /* 38 */
 #endif
 
 #endif /* defined(USE_PIXEL_STUBS) && !defined(USE_PIXEL_STUB_PROCS) */

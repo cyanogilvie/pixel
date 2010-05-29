@@ -1,0 +1,29 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel 3.4
+package require Pixel_gl
+package require Pixel_sdl
+
+if {"::pixel::gl" ni [namespace path]} {
+	namespace path [concat [namespace path] {::pixel::gl}]
+}
+
+test read_pixels-1.1 {glReadPixels} -setup { #<<<
+	set scr	[pixel::sdl::setup_screen 800 600 32 {SDL_ANYFORMAT SDL_OPENGL}]
+} -body {
+	set pmap	[glReadPixels 0 0 800 600]
+	lrange [pixel::pmap_info $pmap] 0 1
+} -cleanup {
+	if {[info exists scr]} {unset scr}
+	if {[info exists pmap]} {unset pmap}
+} -result {800 600}
+
+#>>>
+
+::tcltest::cleanupTests
+return

@@ -113,4 +113,7 @@ declare 36 generic {
 declare 37 generic {
 	unsigned char *rle_encode(const gimp_image_t *pmap, unsigned int *data_len, int *status)
 }
+declare 38 generic {
+	int Tcl_IsPMAPObj(Tcl_Obj* obj)
+}
 

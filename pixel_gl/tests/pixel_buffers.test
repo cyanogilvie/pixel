@@ -1,0 +1,122 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+puts stderr "Pixel buffer support not finalized"
+return
+
+package require Pixel 3.4
+package require Pixel_gl
+
+if {"::pixel::gl" ni [namespace path]} {
+	namespace path [concat [namespace path] {::pixel::gl}]
+}
+
+test pixel_buffers-1.1 {glGenBuffers} -body { #<<<
+	set bufs	[glGenBuffers 3]
+	llength $bufs
+} -cleanup {
+	if {[info exists bufs]} {
+		glDeleteBuffers $bufs
+		unset bufs
+	}
+} -result {3}
+
+#>>>
+test pixel_buffers-1.2 {glGenBuffers no arg} -body { #<<<
+	glGenBuffers
+} -returnCodes {
+	error
+} -result {Wrong # of arguments.  Must be "count"}
+
+#>>>
+test pixel_buffers-1.3 {glGenBuffers invalid arg} -body { #<<<
+	glGenBuffers foo
+} -returnCodes {
+	error
+} -result {expected integer but got "foo"}
+
+#>>>
+test pixel_buffers-2.1 {glDeleteBuffers} -setup { #<<<
+	set bufs	[glGenBuffers 2]
+} -body {
+	glDeleteBuffers $bufs
+} -cleanup {
+	if {[info exists bufs]} {
+		# glDeleteBuffers $bufs is sort of pointless here
+		unset bufs
+	}
+}
+
+#>>>
+test pixel_buffers-2.2 {glDeleteBuffers no arg} -body { #<<<
+	glDeleteBuffers
+} -returnCodes {
+	error
+} -result {Wrong # of arguments.  Must be "buffers"}
+
+#>>>
+test pixel_buffers-2.3 {glDeleteBuffers invalid arg} -body { #<<<
+	glDeleteBuffers foo
+} -returnCodes {
+	error
+} -result {expected integer but got "foo"}
+
+#>>>
+test pixel_buffers-3.1 {glBindBuffer valid target, valid buffer} -setup { #<<<
+	set buf	[lindex [glGenBuffers 1] 0]
+} -body {
+	glBindBuffer GL_ARRAY_BUFFER $buf
+} -cleanup {
+	if {[info exists buf]} {
+		glDeleteBuffers [list $buf]
+		unset buf
+	}
+} -result {}
+
+#>>>
+test pixel_buffers-3.2 {glBindBuffer invalid target, valid buffer} -setup { #<<<
+	set buf	[lindex [glGenBuffers 1] 0]
+} -body {
+	glBindBuffer GL_ARRAY_BUFFERX $buf
+} -cleanup {
+	if {[info exists buf]} {
+		glDeleteBuffers [list $buf]
+		unset buf
+	}
+} -returnCodes {
+	error
+} -result {bad target "GL_ARRAY_BUFFERX": must be GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_PIXEL_PACK_BUFFER, or GL_PIXEL_UNPACK_BUFFER}
+
+#>>>
+test pixel_buffers-4.1 {glIsBuffer yes} -setup { #<<<
+	set buf	[lindex [glGenBuffers 1] 0]
+	glBindBuffer GL_ARRAY_BUFFER $buf
+} -body {
+	glIsBuffer $buf
+} -cleanup {
+	if {[info exists buf]} {
+		glDeleteBuffers [list $buf]
+		unset buf
+	}
+} -result 1
+
+#>>>
+test pixel_buffers-4.2 {glIsBuffer no} -setup { #<<<
+	set buf	[lindex [glGenBuffers 1] 0]
+	glDeleteBuffers [list $buf]
+} -body {
+	glIsBuffer $buf
+} -cleanup {
+	if {[info exists buf]} {
+		unset buf
+	}
+} -result 0
+
+#>>>
+
+::tcltest::cleanupTests
+return

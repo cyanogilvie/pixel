@@ -19,9 +19,7 @@ dnl	to configure the system for the local environment.
 # so you can encode the package version directly into the source files.
 #-----------------------------------------------------------------------
 
-AC_INIT([Pixel_ttf], [3])
-EXTRA_VERSION="0.0"
-AC_SUBST(EXTRA_VERSION)
+AC_INIT([Pixel_ttf], [3.2.0])
 
 #--------------------------------------------------------------------
 # Call TEA_INIT as the first TEA_ macro to set up initial vars.
@@ -76,10 +74,9 @@ TEA_SETUP_COMPILER
 TEA_ADD_SOURCES([main.c tcl_ttf_face.c ttf.c])
 TEA_ADD_HEADERS([generic/ttf.h])
 TEA_ADD_INCLUDES([`freetype-config --cflags`])
-TEA_ADD_LIBS([`freetype-config --libs` -L/usr/lib/Pixel -lPixel3])
+TEA_ADD_LIBS([`freetype-config --libs`])
 TEA_ADD_CFLAGS([])
-AC_OUTPUT([pixel_ttf.tcl])
-TEA_ADD_TCL_SOURCES([pixel_ttf.tcl])
+TEA_ADD_TCL_SOURCES([])
 TEA_ADD_STUB_SOURCES([])
 
 #--------------------------------------------------------------------
