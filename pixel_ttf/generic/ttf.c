@@ -1,4 +1,6 @@
-#include <Pixel/pixel.h>
+//#include <Pixel/pixel.h>
+extern double *pmap_new_x(int x, int y);
+#include <pixel.h>
 #include "ttf.h"
 #include <ft2build.h>
 #include <string.h>

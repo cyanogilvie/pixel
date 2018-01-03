@@ -1,4 +1,5 @@
-#include <Pixel/pixel.h>
+//#include <Pixel/pixel.h>
+#include <pixel.h>
 #include "ttf.h"
 
 static void free_internal_rep(Tcl_Obj *obj);
@@ -81,7 +82,7 @@ static int set_ttf_face_from_any(Tcl_Interp *interp, Tcl_Obj *obj)
 	Tcl_Obj **		objv;
 	char *			filename;
 	int				face_index, error;
-	const char		*fontdata;
+	unsigned char	*fontdata;
 	int				fontdata_len;
 	FT_Open_Args	open_args;
 	

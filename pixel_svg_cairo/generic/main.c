@@ -1,12 +1,13 @@
 #include <tclstuff.h>
-#include "2d.h"
-#include "primitives.h"
-#include "tcl_pmap.h"
-
-#include <cairo.h>
 #include <librsvg/rsvg.h>
 #include <librsvg/rsvg-cairo.h>
+#include <cairo.h>
+
 #include <stdlib.h>
+#include <pixel.h>
+//#include "2d.h"
+//#include "primitives.h"
+//#include "tcl_pmap.h"
 
 
 static int glue_load_svg(cdata, interp, objc, objv)
@@ -100,9 +101,8 @@ static int glue_load_svg(cdata, interp, objc, objv)
 
 int Pixel_svg_cairo_Init(Tcl_Interp *interp)
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) {
-		return TCL_ERROR;
-	}
+	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "3.4", 0) == NULL) return TCL_ERROR;
 
 	rsvg_init();
 

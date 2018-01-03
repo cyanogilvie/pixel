@@ -1,7 +1,9 @@
 #ifndef _TTF_H
 #define _TTF_H
 
-#include <Pixel/2d.h>
+//#include <Pixel/2d.h>
+EXTERN_C gimp_image_t *pmap_new_y(int x, int y, _pel colour);
+//#include <2d.h>
 #include <tcl.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -25,9 +27,17 @@ enum {
 	TTF_FEEDBACK_LINESTART,
 	TTF_FEEDBACK_CHAR
 };
+#ifndef EXTERN_C
+#  ifdef __cplusplus
+#    define EXTERN_C extern "C"
+#  else
+#    define EXTERN_C extern
+#  endif
+#endif
 
 EXTERN_C FT_Library	ft_library;
 EXTERN_C Tcl_ObjType	tcl_ttf_face;
+EXTERN_C uint8_t	fact[256][256];
 
 EXTERN_C pmap_list *render_ttf(_pel base_col, FT_Face face, int px_size, char *utf8_text, int wrap_width, ttf_feedback_cb cb, void *clientdata);
 EXTERN_C int ttf_init_state(Tcl_Interp* interp, _pel base_col, FT_Face face, int px_size, struct ttf_state* state);;

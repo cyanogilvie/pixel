@@ -5,19 +5,23 @@
 #define DBG(format , args...)
 #endif
 
-#include <Pixel/pixel.h>
-#include "ttf.h"
+//#include <Pixel/pixel.h>
+#include <tcl.h>
+#include <pixel.h>
 
-typedef struct ttf_feedback_data {
+typedef struct _ttf_feedback_data {
 	Tcl_Interp	*interp;
 	Tcl_Obj		*res;
-	Tcl_Obj		*line;
+	Tcl_Obj		*line_no;
 } ttf_feedback_data;
+
+#include "ttf.h"
 
 static Tcl_Obj*		g_key_base_col = NULL;
 static Tcl_Obj*		g_key_face = NULL;
 static Tcl_Obj*		g_key_px_size = NULL;
 static Tcl_Obj*		g_key_px_width = NULL;
+uint8_t		fact[256][256];			// [a][b] = a * (b/255.0)
 
 // render_ttf colour fft_face px_size text ?width? {{{1
 static int glue_render_ttf(ClientData *foo, Tcl_Interp *interp,
@@ -88,13 +92,13 @@ static void render_ttf_feedback(void *clientdata, int what, int value)
 			Tcl_ListObjAppendElement(feedback->interp, feedback->res,
 					Tcl_NewIntObj(value));
 			Tcl_ListObjAppendElement(feedback->interp, feedback->res,
-					feedback->line);
-			feedback->line = Tcl_NewListObj(0, NULL);
+					feedback->line_no);
+			feedback->line_no = Tcl_NewListObj(0, NULL);
 			break;
 
 		case TTF_FEEDBACK_CHAR:
 			//fprintf(stderr, "render_ttf_feedback: TTF_FEEDBACK_CHAR: %d\n", value);
-			Tcl_ListObjAppendElement(feedback->interp, feedback->line,
+			Tcl_ListObjAppendElement(feedback->interp, feedback->line_no,
 					Tcl_NewIntObj(value));
 			break;
 
@@ -146,7 +150,7 @@ static int glue_render_ttf_adv(ClientData *foo, Tcl_Interp *interp,
 
 	feedback.interp = interp;
 	feedback.res = Tcl_NewListObj(0, NULL);
-	feedback.line = Tcl_NewListObj(0, NULL);
+	feedback.line_no = Tcl_NewListObj(0, NULL);
 
 	pmaps = render_ttf(base_col, face, px_size, 
 			Tcl_GetString(objv[2]), width, render_ttf_feedback, (void *)&feedback);
@@ -827,8 +831,19 @@ static int glue_cleanup_state(cdata, interp, objc, objv)
 // Init {{{1
 int Pixel_ttf_Init(Tcl_Interp *interp)
 {
-	if (Tcl_InitStubs(interp, "8.6", 0) == NULL)
-		return TCL_ERROR;
+	double		foo;
+	uint32_t	a,b,bar;
+
+	if (Tcl_InitStubs(interp, "8.6", 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "3.4", 0) == NULL) return TCL_ERROR;
+
+	for( a=0; a<=255; a++ )
+		for( b=0; b<=255; b++ ) {
+			foo = a * (b/255.0);
+			bar = (uint8)foo;
+			if( foo - (uint8)(foo) > 0.5 ) bar++;
+			fact[a][b] = bar;
+		}
 
 	Tcl_RegisterObjType(&tcl_ttf_face);
 

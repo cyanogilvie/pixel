@@ -392,7 +392,6 @@ install-lib-binaries: binaries
 	@if test "x$(SHARED_BUILD)" = "x1"; then \
 	    echo " Install pkgIndex.tcl $(DESTDIR)$(pkglibdir)"; \
 	    $(INSTALL_DATA) pkgIndex.tcl $(DESTDIR)$(pkglibdir); \
-	    $(INSTALL_DATA) pixel_svg_cairo.tcl $(DESTDIR)$(pkglibdir); \
 	fi
 
 #========================================================================
