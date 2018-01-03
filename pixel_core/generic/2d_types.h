@@ -219,13 +219,12 @@ typedef union {
 } _pel;
 
 
-typedef struct {
+typedef struct gimp_image {
 	uint32	width;
 	uint32	height;
 	uint32	bytes_per_pixel;
 	_pel	*pixel_data;
 } gimp_image_t;
-
 
 typedef struct pmap_list {
 	gimp_image_t	*pmap;

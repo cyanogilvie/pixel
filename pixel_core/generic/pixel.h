@@ -8,7 +8,6 @@
 #include <math.h>
 #include <signal.h>
 #include <tcl.h>
-#include <tclstuff.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <wchar.h>
@@ -24,6 +23,7 @@
 #undef TCL_STORAGE_CLASS
 #define TCL_STORAGE_CLASS DLLEXPORT
 
+//#include "tclstuff.h"
 #include "2d_types.h"
 
 

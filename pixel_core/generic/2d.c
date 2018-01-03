@@ -179,8 +179,8 @@ gimp_image_t *pmap_cut(gimp_image_t *src, int x1, int y1, int x2, int y2) //{{{1
 	if (x1 < 0) x1 = 0;
 	if (y1 < 0) y1 = 0;
 
-	if (x2 > src->width) x2 = src->width;
-	if (y2 > src->height) y2 = src->height;
+	if (x2 > src->width) x2 = src->width-1;
+	if (y2 > src->height) y2 = src->height-1;
 	
 	width = x2 - x1 + 1;
 	height = y2 - y1 + 1;
