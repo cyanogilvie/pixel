@@ -81,7 +81,7 @@ mandir		= @mandir@
 
 DESTDIR		=
 
-PKG_DIR		= $(PACKAGE_NAME)
+PKG_DIR		= $(PACKAGE_NAME)$(PACKAGE_VERSION)
 pkgdatadir	= $(datadir)/$(PKG_DIR)
 pkglibdir	= $(libdir)/$(PKG_DIR)
 pkgincludedir	= $(includedir)/$(PKG_DIR)
@@ -90,6 +90,7 @@ top_builddir	= .
 
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_LIBRARY	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
 INSTALL_SCRIPT	= @INSTALL_SCRIPT@
 
@@ -131,18 +132,18 @@ TCL_SRC_DIR	= @TCL_SRC_DIR@
 EXTRA_PATH	= $(top_builddir):$(TCL_BIN_DIR)
 #EXTRA_PATH	= $(top_builddir):$(TCL_BIN_DIR):$(TK_BIN_DIR)
 TCLLIBPATH	= $(top_builddir)
-TCLSH_ENV	= TCL_LIBRARY=`@CYGPATH@ $(TCL_SRC_DIR)/library` \
-		  @LD_LIBRARY_PATH_VAR@="$(EXTRA_PATH):$(@LD_LIBRARY_PATH_VAR@)" \
+TCLSH_ENV	= TCL_LIBRARY=`@CYGPATH@ $(TCL_SRC_DIR)/library`
+PKG_ENV		= @LD_LIBRARY_PATH_VAR@="$(EXTRA_PATH):$(@LD_LIBRARY_PATH_VAR@)" \
 		  PATH="$(EXTRA_PATH):$(PATH)" \
-		  TCLLIBPATH="$(TCLLIBPATH)"
-#		  TK_LIBRARY=`@CYGPATH@ $(TK_SRC_DIR)/library`
+		  TCLLIBPATH="$(TCLLIBPATH)" \
+                  TDBC_LIBRARY=`@CYGPATH@ $(srcdir)/library` 
 
 TCLSH_PROG	= @TCLSH_PROG@
-TCLSH   	= $(TCLSH_ENV) $(TCLSH_PROG)
+TCLSH   	= $(PKG_ENV) $(TCLSH_ENV) $(TCLSH_PROG)
 
+#WISH_ENV	= TK_LIBRARY=`@CYGPATH@ $(TK_SRC_DIR)/library`
 #WISH_PROG	= @WISH_PROG@
-#WISH   	= $(TCLSH_ENV) $(WISH_PROG)
-
+#WISH   	= $(PKG_ENV) $(TCLSH_ENV) $(WISH_ENV) $(WISH_PROG)
 
 SHARED_BUILD	= @SHARED_BUILD@
 
@@ -160,7 +161,7 @@ PKG_CFLAGS	= @PKG_CFLAGS@
 DEFS		= @DEFS@ $(PKG_CFLAGS)
 
 # Move pkgIndex.tcl to 'BINARIES' var if it is generated in the Makefile
-CONFIG_CLEAN_FILES = Makefile pkgIndex.tcl
+CONFIG_CLEAN_FILES = Makefile pkgIndex.tcl pixelConfig.sh
 CLEANFILES	= @CLEANFILES@
 
 CPPFLAGS	= @CPPFLAGS@
@@ -202,10 +203,6 @@ libraries:
 #========================================================================
 
 doc:
-	@echo "If you have documentation to create, place the commands to"
-	@echo "build the docs in the 'doc:' target.  For example:"
-	@echo "        xml2nroff sample.xml > sample.n"
-	@echo "        xml2html sample.xml > sample.html"
 
 install: all install-binaries install-libraries install-doc
 
@@ -217,11 +214,11 @@ install-binaries: binaries install-lib-binaries install-bin-binaries
 #========================================================================
 
 install-libraries: libraries
-	@mkdir -p $(DESTDIR)$(pkgincludedir)
-	@echo "Installing header files in $(DESTDIR)$(pkgincludedir)"
+	@mkdir -p $(DESTDIR)$(includedir)
+	@echo "Installing header files in $(DESTDIR)$(includedir)"
 	@list='$(PKG_HEADERS)'; for i in $$list; do \
 	    echo "Installing $(srcdir)/$$i" ; \
-	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(pkgincludedir) ; \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir) ; \
 	done;
 
 #========================================================================
@@ -336,6 +333,14 @@ dist: dist-clean
 	(cd $(DIST_ROOT); $(COMPRESS);)
 
 #========================================================================
+# How to rebuild the package's stub table.
+#========================================================================
+
+genstubs:
+	@echo $(TCLSH_PROGRAM) $(srcdir)/tools/genStubs.tcl $(srcdir)/generic $(srcdir)/generic/Pixel.decls
+	@$(TCLSH) `@CYGPATH@ $(srcdir)/tools/genStubs.tcl` `@CYGPATH@ $(srcdir)/generic` `@CYGPATH@ $(srcdir)/generic/Pixel.decls`
+
+#========================================================================
 # End of user-definable section
 #========================================================================
 
@@ -369,8 +374,8 @@ install-lib-binaries: binaries
 	@mkdir -p $(DESTDIR)$(pkglibdir)
 	@list='$(lib_BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo " $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkglibdir)/$$p"; \
-	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkglibdir)/$$p; \
+	    echo " $(INSTALL_LIBRARY) $$p $(DESTDIR)$(pkglibdir)/$$p"; \
+	    $(INSTALL_LIBRARY) $$p $(DESTDIR)$(pkglibdir)/$$p; \
 	    stub=`echo $$p|sed -e "s/.*\(stub\).*/\1/"`; \
 	    if test "x$$stub" = "xstub"; then \
 		echo " $(RANLIB_STUB) $(DESTDIR)$(pkglibdir)/$$p"; \
@@ -400,10 +405,12 @@ install-lib-binaries: binaries
 	    echo " Install pkgIndex.tcl $(DESTDIR)$(pkglibdir)"; \
 	    $(INSTALL_DATA) pkgIndex.tcl $(DESTDIR)$(pkglibdir); \
 	fi
-	( \
-	cd $(DESTDIR)$(libdir); \
-	test -e libPixel3.so || ln -s $(PKG_DIR)/libPixel3.so .; \
-	)
+	@echo " Install pixelConfig.sh $(DESTDIR)$(pkglibdir)"; \
+	$(INSTALL_DATA) pixelConfig.sh $(DESTDIR)$(pkglibdir)/pixelConfig.sh
+	#( \
+	#cd $(DESTDIR)$(libdir); \
+	#test -e libPixel3.so || ln -s $(PKG_DIR)/libPixel3.so .; \
+	#)
 
 #========================================================================
 # Install binary executables (e.g. .exe files and dependent .dll files)
@@ -423,7 +430,6 @@ install-bin-binaries: binaries
 	  fi; \
 	done
 
-
 .SUFFIXES: .c .$(OBJEXT)
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
@@ -441,12 +447,6 @@ uninstall-binaries:
 	list='$(bin_BINARIES)'; for p in $$list; do \
 	  rm -f $(DESTDIR)$(bindir)/$$p; \
 	done
-
-genstubs:
-	#$(TCLSH_PROG)
-	env tclsh8.5 \
-		$(srcdir)/tools/genStubs.tcl $(srcdir)/generic \
-		$(srcdir)/generic/Pixel.decls
 
 .PHONY: all binaries clean depend distclean doc install libraries test
 
