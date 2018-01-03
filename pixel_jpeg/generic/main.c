@@ -139,88 +139,18 @@ int savejpeg(char *filename, gimp_image_t *pmap, int quality) // {{{1
 }
 
 
-// Global vars for dest manager {{{1
-static unsigned char	*g_buf;
-static int				g_buf_size;
-static unsigned char	*g_buf_tail;
-static JOCTET			*g_buf_start;
-
-static void init_dest(j_compress_ptr cinfo) //{{{1
-{
-	cinfo->dest->next_output_byte = g_buf_start = \
-		(JOCTET *)malloc(JPEG_ENCODE_BUFSIZE);
-	cinfo->dest->free_in_buffer = JPEG_ENCODE_BUFSIZE;
-	//g_buf_size = JPEG_ENCODE_BUFSIZE;
-	g_buf_size = 512000;
-	g_buf_tail = g_buf = (unsigned char *)malloc(g_buf_size);
-}
-
-
-static void flush_remaining(j_compress_ptr cinfo) //{{{1
-{
-	int			avail = JPEG_ENCODE_BUFSIZE - cinfo->dest->free_in_buffer;
-
-	cinfo->dest->next_output_byte -= avail;
-
-	if (g_buf_tail - g_buf + avail > g_buf_size) {
-		g_buf_size += JPEG_ENCODE_BUFSIZE;
-		g_buf = realloc(g_buf, g_buf_size);
-	}
-	memcpy(g_buf_tail, cinfo->dest->next_output_byte, avail);
-	cinfo->dest->free_in_buffer = JPEG_ENCODE_BUFSIZE;
-	g_buf_tail += avail;
-}
-
-
-static boolean empty_buffer(j_compress_ptr cinfo) //{{{1
-{
-	int			avail = JPEG_ENCODE_BUFSIZE;
-
-	cinfo->dest->next_output_byte = g_buf_start;
-
-	if (g_buf_tail - g_buf + avail > g_buf_size) {
-		g_buf_size += JPEG_ENCODE_BUFSIZE;
-		g_buf = realloc(g_buf, g_buf_size);
-	}
-	memcpy(g_buf_tail, cinfo->dest->next_output_byte, avail);
-	cinfo->dest->free_in_buffer = JPEG_ENCODE_BUFSIZE;
-	g_buf_tail += avail;
-
-	return TRUE;
-}
-
-
-static void term_dest(j_compress_ptr cinfo) //{{{1
-{
-	flush_remaining(cinfo);
-}
-
-
-static void cleanup_dest() //{{{1
-{
-	free(g_buf);
-	g_buf_tail = g_buf = NULL;
-	g_buf_size = 0;
-}
-
-
-unsigned char *encodejpeg(gimp_image_t *pmap, int *length, int quality) //{{{1
+unsigned char *encodejpeg(gimp_image_t *pmap, unsigned long *length, int quality) //{{{1
 {
 	struct jpeg_compress_struct		cinfo;
 	struct jpeg_error_mgr			jerr;
-	struct jpeg_destination_mgr		jdest;
 	_pel		*s;
 	JSAMPROW	row_pointer[1];
-	unsigned char	*odata;
+	unsigned char	*odata = NULL;
 
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
 
-	jdest.init_destination = init_dest;
-	jdest.empty_output_buffer = empty_buffer;
-	jdest.term_destination = term_dest;
-
-	cinfo.dest = &jdest;
+	jpeg_mem_dest(&cinfo, &odata, length);
 
 	cinfo.image_width = pmap->width;
 	cinfo.image_height = pmap->height;
@@ -235,17 +165,11 @@ unsigned char *encodejpeg(gimp_image_t *pmap, int *length, int quality) //{{{1
 
 	while (cinfo.next_scanline < cinfo.image_height) {
 		row_pointer[0] = (JSAMPLE*)s;
-		//fprintf(stderr, "Writing scanline %d/%d: %p (%d)\n", cinfo.next_scanline, pmap->height, s, g_buf_size);
 		s += pmap->width;
 		(void)jpeg_write_scanlines(&cinfo, row_pointer, 1);
 	}
 
 	jpeg_finish_compress(&cinfo);
-
-	*length = g_buf_tail - g_buf;
-	odata = (unsigned char *)malloc(*length);
-	memcpy(odata, g_buf, *length);
-	cleanup_dest();
 
 	jpeg_destroy_compress(&cinfo);
 
@@ -253,43 +177,12 @@ unsigned char *encodejpeg(gimp_image_t *pmap, int *length, int quality) //{{{1
 }
 
 
-// global vars for source manager {{{1
-static JOCTET	*g_src_buf;
-static int		g_src_buf_size;
-
-static void init_source(j_decompress_ptr cinfo) //{{{1
-{
-	cinfo->src->next_input_byte = g_src_buf;
-	cinfo->src->bytes_in_buffer = g_src_buf_size;
-}
-
-
-static boolean fill_buffer(j_decompress_ptr cinfo) //{{{1
-{
-	fprintf(stderr, "Error: fill_input_buffer called when it shouldn't have been");
-	return TRUE;
-}
-
-
-static void skip_input_data(j_decompress_ptr cinfo, long num_bytes) // {{{1
-{
-	if (num_bytes <= 0) return;
-	g_src_buf += num_bytes;
-}
-
-
-static void term_source(j_decompress_ptr cinfo) // {{{1
-{
-}
-
-
-gimp_image_t *decodejpeg(unsigned char *jpeg_data, int *length) // {{{1
+gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 {
 	struct jpeg_decompress_struct	cinfo;
 	struct custom_error_mgr			jerr;
 	struct jpeg_source_mgr			jsrc;
 	gimp_image_t	*dest = (gimp_image_t *)malloc(sizeof(gimp_image_t));
-	//FILE			*fp;
 	JSAMPLE			*buffer;
 	int				row_stride, i;
 	_pel			*r;
@@ -297,14 +190,7 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int *length) // {{{1
 
 	jpeg_create_decompress(&cinfo);
 
-	g_src_buf = jpeg_data;
-	g_src_buf_size = *length;
-	
-	jsrc.init_source = init_source;
-	jsrc.fill_input_buffer = fill_buffer;
-	jsrc.skip_input_data = skip_input_data;
-	jsrc.resync_to_restart = jpeg_resync_to_restart;
-	jsrc.term_source = term_source;
+	jpeg_mem_src(&cinfo, jpeg_data, length);
 	
 	cinfo.err = jpeg_std_error(&jerr.pub);
 	jerr.pub.error_exit = custom_error_exit;
@@ -313,7 +199,6 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int *length) // {{{1
 		return NULL;
 	}
 	
-	cinfo.src = &jsrc;
 	(void)jpeg_read_header(&cinfo, TRUE);
 	(void)jpeg_start_decompress(&cinfo);
 
@@ -391,7 +276,8 @@ static int glue_encodejpeg(ClientData *foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
 {
 	gimp_image_t	*pmap;
-	int				quality, length;
+	int				quality;
+	unsigned long	length;
 	unsigned char	*jpeg_data;
 	
 	CHECK_ARGS(2, "pmap quality");
@@ -421,7 +307,7 @@ static int glue_decodejpeg(ClientData *foo, Tcl_Interp *interp,
 
 	jpeg_data = Tcl_GetByteArrayFromObj(objv[1], &length);
 
-	new = decodejpeg(jpeg_data, &length);
+	new = decodejpeg(jpeg_data, length);
 	if (new == NULL)
 		THROW_ERROR("Error loading jpeg");
 
