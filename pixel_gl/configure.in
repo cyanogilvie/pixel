@@ -19,7 +19,7 @@ dnl	to configure the system for the local environment.
 # so you can encode the package version directly into the source files.
 #-----------------------------------------------------------------------
 
-AC_INIT([Pixel_gl], [0.3.0])
+AC_INIT([Pixel_gl], [0.6.1])
 
 #--------------------------------------------------------------------
 # Call TEA_INIT as the first TEA_ macro to set up initial vars.
@@ -74,7 +74,7 @@ TEA_SETUP_COMPILER
 TEA_ADD_SOURCES([main.c glew.c tcl_glmatrix.c])
 TEA_ADD_HEADERS([])
 TEA_ADD_INCLUDES([-I../pixel_core/generic])
-TEA_ADD_LIBS([-L/home/cyan/.tbuild/repo/pkg/linux-glibc2.10-x86_64/pixel_core-3.4.2 -lPixelstub3.4.2 -lGLEW -lGL -lGLU])
+TEA_ADD_LIBS([-L/home/cyan/.tbuild/repo/pkg/linux-glibc2.10-x86_64/pixel_core-3.4.2 -lPixelstub3.4.2 -lGLEW -lGL -lGLU -lglut])
 #TEA_ADD_LIBS([-L/usr/lib/Pixel -lPixel3 -lGL -lgcov])
 TEA_ADD_CFLAGS([-DUSE_PIXEL_STUBS])
 #TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])

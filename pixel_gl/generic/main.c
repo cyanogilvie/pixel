@@ -123,11 +123,7 @@ static int glue_glShadeModel(cdata, interp, objc, objv) //{{{1
 }
 
 
-static int glue_glCullFace(cdata, interp, objc, objv) //{{{1
-	ClientData		cdata;
-	Tcl_Interp		*interp;
-	int				objc;
-	Tcl_Obj *CONST	objv[];
+static int GetFaceFromObj(Tcl_Interp* interp, Tcl_Obj* obj, GLenum* face) //{{{1
 {
 	int		index;
 	static CONST char *types[] = {
@@ -142,12 +138,127 @@ static int glue_glCullFace(cdata, interp, objc, objv) //{{{1
 		GL_FRONT_AND_BACK
 	};
 
+	TEST_OK(Tcl_GetIndexFromObj(interp, obj, types, "face_type", TCL_EXACT,
+				&index));
+	*face = map[index];
+
+	return TCL_OK;
+}
+
+
+static int GetMaterialParamFromObj(Tcl_Interp* interp, Tcl_Obj* obj, GLenum* param) //{{{1
+{
+	int		index;
+	static CONST char *types[] = {
+		"GL_AMBIENT",
+		"GL_DIFFUSE",
+		"GL_AMBIENT_AND_DIFFUSE",
+		"GL_SPECULAR",
+		"GL_SHININESS",
+		"GL_EMISSION",
+		"GL_COLOR_INDEXES",
+		(char *)NULL
+	};
+	GLenum map[] = {
+		GL_AMBIENT,
+		GL_DIFFUSE,
+		GL_AMBIENT_AND_DIFFUSE,
+		GL_SPECULAR,
+		GL_SHININESS,
+		GL_EMISSION,
+		GL_COLOR_INDEXES
+	};
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, obj, types, "material_param", TCL_EXACT,
+				&index));
+	*param = map[index];
+
+	return TCL_OK;
+}
+
+
+static int GetLightFromObj(Tcl_Interp* interp, Tcl_Obj* obj, GLenum* light) //{{{1
+{
+	int		index;
+	static CONST char *types[] = {
+		"GL_LIGHT0",
+		"GL_LIGHT1",
+		"GL_LIGHT2",
+		"GL_LIGHT3",
+		"GL_LIGHT4",
+		"GL_LIGHT5",
+		"GL_LIGHT6",
+		"GL_LIGHT7",
+		(char *)NULL
+	};
+	GLenum map[] = {
+		GL_LIGHT0,
+		GL_LIGHT1,
+		GL_LIGHT2,
+		GL_LIGHT3,
+		GL_LIGHT4,
+		GL_LIGHT5,
+		GL_LIGHT6,
+		GL_LIGHT7
+	};
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, obj, types, "light", TCL_EXACT,
+				&index));
+	*light = map[index];
+
+	return TCL_OK;
+}
+
+
+static int GetLightParamFromObj(Tcl_Interp* interp, Tcl_Obj* obj, GLenum* param) //{{{1
+{
+	int		index;
+	static CONST char *types[] = {
+		"GL_AMBIENT",
+		"GL_DIFFUSE",
+		"GL_SPECULAR",
+		"GL_POSITION",
+		"GL_SPOT_DIRECTION",
+		"GL_SPOT_EXPONENT",
+		"GL_SPOT_CUTOFF",
+		"GL_CONSTANT_ATTENUATION",
+		"GL_LINEAR_ATTENUATION",
+		"GL_QUADRATIC_ATTENUATION",
+		(char *)NULL
+	};
+	GLenum map[] = {
+		GL_AMBIENT,
+		GL_DIFFUSE,
+		GL_SPECULAR,
+		GL_POSITION,
+		GL_SPOT_DIRECTION,
+		GL_SPOT_EXPONENT,
+		GL_SPOT_CUTOFF,
+		GL_CONSTANT_ATTENUATION,
+		GL_LINEAR_ATTENUATION,
+		GL_QUADRATIC_ATTENUATION
+	};
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, obj, types, "light_param", TCL_EXACT,
+				&index));
+	*param = map[index];
+
+	return TCL_OK;
+}
+
+
+static int glue_glCullFace(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLenum	face;
+
 	CHECK_ARGS(1, "type");
 
-	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], types, "type", TCL_EXACT,
-				&index));
-
-	glCullFace(map[index]);
+	TEST_OK(GetFaceFromObj(interp, objv[1], &face));
+	glCullFace(face);
 
 	return TCL_OK;
 }
@@ -648,6 +759,24 @@ static int glue_glPointSize(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_glLineWidth(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	double	size;
+
+	CHECK_ARGS(1, "size");
+
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &size));
+
+	glLineWidth(size);
+
+	return TCL_OK;
+}
+
+
 static int glue_glVertex3f(cdata, interp, objc, objv) //{{{1
 	ClientData		cdata;
 	Tcl_Interp		*interp;
@@ -832,6 +961,33 @@ static int glue_gluPerspective(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_gluLookAt(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	double	eyex, eyey, eyez, centerx, centery, centerz, upx, upy, upz;
+
+	CHECK_ARGS(9, "eyex eyey eyez centerx centery centerz upx upy upz");
+
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &eyex));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &eyey));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &eyez));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[4], &centerx));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[5], &centery));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[6], &centerz));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[7], &upx));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[8], &upy));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[9], &upz));
+
+	//fprintf(stderr, "Calling gluLookAt(%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\n", eyex, eyey, eyez, centerx, centery, centerz, upx, upy, upz);
+	gluLookAt(eyex, eyey, eyez, centerx, centery, centerz, upx, upy, upz);
+
+	return TCL_OK;
+}
+
+
 static int glue_glGenTextures(cdata, interp, objc, objv) //{{{1
 	ClientData		cdata;
 	Tcl_Interp		*interp;
@@ -862,6 +1018,35 @@ static int glue_glGenTextures(cdata, interp, objc, objv) //{{{1
 	ckfree((char *)names);
 
 	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+static int glue_glDeleteTextures(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			oc, i;
+	Tcl_Obj**	ov;
+
+	CHECK_ARGS(1, "textures");
+
+	TEST_OK(Tcl_ListObjGetElements(interp, objv[1], &oc, &ov));
+
+	{
+		uint framebuffers[oc];
+
+		for (i=0; i<oc; i++) {
+			int	tmp;
+			TEST_OK(Tcl_GetIntFromObj(interp, ov[i], &tmp));
+			framebuffers[i] = tmp;
+		}
+
+		glDeleteTextures(oc, framebuffers);
+	}
 
 	return TCL_OK;
 }
@@ -967,12 +1152,14 @@ static int glue_glTexParameter(cdata, interp, objc, objv) //{{{1
 				static CONST char *values[] = {
 					"GL_CLAMP",
 					"GL_CLAMP_TO_EDGE",
+					"GL_CLAMP_TO_BORDER",
 					"GL_REPEAT",
 					(char *)NULL
 				};
 				GLenum value_map[] = {
 					GL_CLAMP,
 					GL_CLAMP_TO_EDGE,
+					GL_CLAMP_TO_BORDER,
 					GL_REPEAT
 				};
 
@@ -1229,7 +1416,10 @@ static int glue_glTexImage2D(cdata, interp, objc, objv) //{{{1
 	int				objc;
 	Tcl_Obj *CONST	objv[];
 {
+	int		width, height;
 	int		index;
+	GLvoid*	data;
+
 	static CONST char *targets[] = {
 		"GL_TEXTURE_1D",
 		"GL_TEXTURE_2D",
@@ -1245,27 +1435,38 @@ static int glue_glTexImage2D(cdata, interp, objc, objv) //{{{1
 	GLuint			border;
 	gimp_image_t	*pmap;
 
-	CHECK_ARGS(4, "target level border pmap");
+	if (objc < 5 || objc > 6) {
+		CHECK_ARGS(4, "target level border [pmap | width height]");
+	}
 
 	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
 				&index));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &level));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], (int *)&border));
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[4], &pmap));
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, pmap->width);
+	if (objc == 5) {
+		TEST_OK(Tcl_GetPMAPFromObj(interp, objv[4], &pmap));
+		width = pmap->width;
+		height = pmap->height;
+		data = pmap->pixel_data;
+	} else if (objc == 6) {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &width));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &height));
+		data = NULL;
+	}
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	glTexImage2D(
 			target_map[index],
 			level,
 			GL_RGBA8,
-			pmap->width,
-			pmap->height,
+			width,
+			height,
 			border,
 			//GL_RGBA,
 			GL_BGRA,
 			GL_UNSIGNED_INT_8_8_8_8_REV,
-			pmap->pixel_data
+			data
 	);
 
 	return TCL_OK;
@@ -1470,13 +1671,13 @@ static int glue_glLoadMatrixf(cdata, interp, objc, objv) //{{{1
 	int				objc;
 	Tcl_Obj *CONST	objv[];
 {
-	float*		m[16];
+	GLfloat*	m;
 
 	CHECK_ARGS(1, "glMatrix");
 
-	TEST_OK(Tcl_GetGlMatrixFromObj(interp, objv[1], (float **)&m));
+	TEST_OK(Tcl_GetGlMatrixFromObj(interp, objv[1], &m));
 
-	glLoadMatrixf((float *)m);
+	glLoadMatrixf(m);
 
 	return TCL_OK;
 }
@@ -1989,6 +2190,141 @@ static int glue_glUniform1i(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_glUniformfv(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLint		loc;
+	GLfloat*	vals = NULL;
+	GLfloat		tmp;
+	int			vecsize = -1;
+	int			i, j, oc, rc;
+	Tcl_Obj**	ov;
+	Tcl_Obj**	rv;
+
+	CHECK_ARGS(2, "uniformloc floats");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &loc));
+	TEST_OK(Tcl_ListObjGetElements(interp, objv[2], &oc, &ov));
+
+	for (i=0; i<oc; i++) {
+		double tmp_h;
+		TEST_OK(Tcl_ListObjGetElements(interp, ov[i], &rc, &rv));
+		if (vecsize == -1)
+			vecsize = rc;
+		if (rc != vecsize)
+			THROW_ERROR("All vectors must be the same size");
+		if (rc < 1 || rc > 4)
+			THROW_ERROR("Only vectors from 1 to 4 elements are supported");
+		// Done here to verify that all values are ints, so we won't hit
+		// an error after allocating the memory to store the list of vects
+		for (j=0; j<rc; j++) {
+			TEST_OK(Tcl_GetDoubleFromObj(interp, rv[j], &tmp_h));
+		}
+	}
+
+	//fprintf(stderr, "glUniformfv is %d count of vec%d\n", oc, vecsize);
+	vals = (GLfloat*)ckalloc(sizeof(GLfloat)*oc*vecsize);
+
+	for (i=0; i<oc; i++) {
+		//fprintf(stderr, "ov[%d]: \"%s\"\n", i, Tcl_GetString(ov[i]));
+		TEST_OK(Tcl_ListObjGetElements(interp, ov[i], &rc, &rv));
+		for (j=0; j<rc; j++) {
+			double tmp_h;
+			TEST_OK(Tcl_GetDoubleFromObj(interp, rv[j], &tmp_h));
+			tmp = tmp_h;
+			//fprintf(stderr, "setting vals[%d][%d](%d) = \"%s\" -> %.2f\n", i, j, i*vecsize+j, Tcl_GetString(rv[j]), tmp);
+			vals[i*vecsize+j] = tmp;
+		}
+	}
+
+	switch (vecsize) {
+		case 1:
+			glUniform1fv(loc, oc, vals);
+			break;
+		case 2:
+			glUniform2fv(loc, oc, vals);
+			break;
+		case 3:
+			glUniform3fv(loc, oc, vals);
+			break;
+		case 4: 
+			glUniform4fv(loc, oc, vals);
+			break;
+	}
+
+	ckfree(vals); vals = NULL;
+
+	return TCL_OK;
+}
+
+
+static int glue_glUniformiv(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLint		loc;
+	GLint*		vals = NULL;
+	int			vecsize = -1;
+	int			i, j, oc, rc, tmp;
+	Tcl_Obj**	ov;
+	Tcl_Obj**	rv;
+
+	CHECK_ARGS(2, "uniformloc ints");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &loc));
+	TEST_OK(Tcl_ListObjGetElements(interp, objv[2], &oc, &ov));
+
+	for (i=0; i<oc; i++) {
+		TEST_OK(Tcl_ListObjGetElements(interp, ov[i], &rc, &rv));
+		if (vecsize == -1)
+			vecsize = rc;
+		if (rc != vecsize)
+			THROW_ERROR("All vectors must be the same size");
+		if (rc < 1 || rc > 4)
+			THROW_ERROR("Only vectors from 1 to 4 elements are supported");
+		// Done here to verify that all values are ints, so we won't hit
+		// an error after allocating the memory to store the list of vects
+		for (j=0; j<rc; j++) {
+			TEST_OK(Tcl_GetIntFromObj(interp, rv[j], &tmp));
+		}
+	}
+
+	vals = (GLint*)ckalloc(sizeof(GLint)*oc*vecsize);
+
+	for (i=0; i<oc; i++) {
+		TEST_OK(Tcl_ListObjGetElements(interp, ov[i], &rc, &rv));
+		for (j=0; j<rc; j++) {
+			TEST_OK(Tcl_GetIntFromObj(interp, rv[j], &tmp));
+			vals[i*vecsize+j] = tmp;
+		}
+	}
+
+	switch (vecsize) {
+		case 1:
+			glUniform1iv(loc, oc, vals);
+			break;
+		case 2:
+			glUniform2iv(loc, oc, vals);
+			break;
+		case 3:
+			glUniform3iv(loc, oc, vals);
+			break;
+		case 4:
+			glUniform4iv(loc, oc, vals);
+			break;
+	}
+
+	ckfree(vals); vals = NULL;
+
+	return TCL_OK;
+}
+
+
 static int glue_glOrtho(cdata, interp, objc, objv) //{{{1
 	ClientData		cdata;
 	Tcl_Interp		*interp;
@@ -2287,7 +2623,7 @@ static int glue_glRenderMode(cdata, interp, objc, objv) //{{{1
 							selectbufobj, &buflen);
 
 					if (buflen < sizeof(GLuint) * arraysize) {
-						Tcl_SetObjResult(interp, Tcl_ObjPrintf("Buffer size mismatch, expected array of %d GLuints (%d bytes each) == %d bytes, got %d bytes",
+						Tcl_SetObjResult(interp, Tcl_ObjPrintf("Buffer size mismatch, expected array of %d GLuints (%ld bytes each) == %ld bytes, got %d bytes",
 									arraysize, sizeof(GLuint),
 									arraysize * sizeof(GLuint), buflen));
 						goto failed;
@@ -2322,7 +2658,7 @@ static int glue_glRenderMode(cdata, interp, objc, objv) //{{{1
 							goto failed;
 
 						if (names > arraysize - i) {
-							Tcl_SetObjResult(interp, Tcl_ObjPrintf("Too many names for remaining array entries: %d, remaining slots: %d",
+							Tcl_SetObjResult(interp, Tcl_ObjPrintf("Too many names for remaining array entries: %d, remaining slots: %ld",
 										names, arraysize - (ptr - selectbuf)));
 							goto failed;
 						}
@@ -2845,6 +3181,794 @@ static int glue_glDrawBuffer(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_glHint(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int		type_index, hint_index;
+	static CONST char *types[] = {
+		"GL_POINT_SMOOTH_HINT",
+		"GL_LINE_SMOOTH_HINT",
+		"GL_POLYGON_SMOOTH_HINT",
+		"GL_FOG_HINT",
+		"GL_PERSPECTIVE_CORRECTION_HINT",
+		"GL_GENERATE_MIPMAP_HINT",
+		"GL_TEXTURE_COMPRESSION_HINT",
+		(char *)NULL
+	};
+	GLenum type_map[] = {
+		GL_POINT_SMOOTH_HINT,
+		GL_LINE_SMOOTH_HINT,
+		GL_POLYGON_SMOOTH_HINT,
+		GL_FOG_HINT,
+		GL_PERSPECTIVE_CORRECTION_HINT,
+		GL_GENERATE_MIPMAP_HINT,
+		GL_TEXTURE_COMPRESSION_HINT
+	};
+	static CONST char *hints[] = {
+		"GL_FASTEST",
+		"GL_NICEST",
+		"GL_DONT_CARE",
+		(char *)NULL
+	};
+	GLenum hint_map[] = {
+		GL_FASTEST,
+		GL_NICEST,
+		GL_DONT_CARE
+	};
+
+	CHECK_ARGS(2, "type hint");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], types, "type", TCL_EXACT,
+				&type_index));
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[2], hints, "hint", TCL_EXACT,
+				&hint_index));
+
+	glHint(type_map[type_index], hint_map[hint_index]);
+
+	return TCL_OK;
+}
+
+
+static int glue_glMaterialf(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLenum	face, param;
+	double	v;
+
+	CHECK_ARGS(3, "face param value");
+
+	TEST_OK(GetFaceFromObj(interp, objv[1], &face));
+	TEST_OK(GetMaterialParamFromObj(interp, objv[2], &param));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &v));
+
+	glMaterialf(face, param, v);
+
+	return TCL_OK;
+}
+
+
+static int glue_glMaterialfv(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLenum		face, param;
+	double		v;
+	Tcl_Obj**	ov;
+	int			oc, i;
+	GLfloat		vals[4];
+
+	CHECK_ARGS(3, "face param value");
+
+	TEST_OK(GetFaceFromObj(interp, objv[1], &face));
+	TEST_OK(GetMaterialParamFromObj(interp, objv[2], &param));
+	TEST_OK(Tcl_ListObjGetElements(interp, objv[3], &oc, &ov));
+	if (oc != 4) THROW_ERROR("Expecting a list of 4 values");
+
+	for (i=0; i<4; i++) {
+		TEST_OK(Tcl_GetDoubleFromObj(interp, ov[i], &v));
+		vals[i] = v;
+	}
+
+	glMaterialfv(face, param, vals);
+
+	return TCL_OK;
+}
+
+
+static int glue_glLightf(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLenum	light, param;
+	double	v;
+
+	CHECK_ARGS(3, "light param value");
+
+	TEST_OK(GetLightFromObj(interp, objv[1], &light));
+	TEST_OK(GetLightParamFromObj(interp, objv[2], &param));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &v));
+
+	glLightf(light, param, v);
+
+	return TCL_OK;
+}
+
+
+static int glue_glLightfv(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	GLenum		light, param;
+	double		v;
+	Tcl_Obj**	ov;
+	int			oc, i;
+	GLfloat		vals[4];
+
+	CHECK_ARGS(3, "light param value");
+
+	TEST_OK(GetLightFromObj(interp, objv[1], &light));
+	TEST_OK(GetLightParamFromObj(interp, objv[2], &param));
+	TEST_OK(Tcl_ListObjGetElements(interp, objv[3], &oc, &ov));
+	if (oc != 4) THROW_ERROR("Expecting a list of 4 values");
+
+	for (i=0; i<4; i++) {
+		TEST_OK(Tcl_GetDoubleFromObj(interp, ov[i], &v));
+		vals[i] = v;
+	}
+
+	glLightfv(light, param, vals);
+
+	return TCL_OK;
+}
+
+
+static int glue_glGenRenderbuffers(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			count, i;
+	Tcl_Obj*	res;
+
+	CHECK_ARGS(1, "count");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &count));
+	res = Tcl_NewListObj(0, NULL);
+
+	{
+		uint renderbuffers[count];
+
+		glGenRenderbuffers(count, renderbuffers);
+		for (i=0; i<count; i++) {
+			TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(renderbuffers[i])));
+		}
+	}
+
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+static int glue_glDeleteRenderbuffers(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			oc, i;
+	Tcl_Obj**	ov;
+
+	CHECK_ARGS(1, "renderbuffers");
+
+	TEST_OK(Tcl_ListObjGetElements(interp, objv[1], &oc, &ov));
+
+	{
+		uint renderbuffers[oc];
+
+		for (i=0; i<oc; i++) {
+			int	tmp;
+			TEST_OK(Tcl_GetIntFromObj(interp, ov[i], &tmp));
+			renderbuffers[i] = tmp;
+		}
+
+		glDeleteRenderbuffers(oc, renderbuffers);
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_glBindRenderbuffer(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			renderbuffer, index;
+	static CONST char *targets[] = {
+		"GL_RENDERBUFFER",
+		(char *)NULL
+	};
+	GLenum target_map[] = {
+		GL_FRAMEBUFFER
+	};
+
+	CHECK_ARGS(2, "target renderbuffer");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
+				&index));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &renderbuffer));
+
+	glBindRenderbuffer(target_map[index], renderbuffer);
+
+	return TCL_OK;
+}
+
+
+static int glue_glIsRenderbuffer(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			renderbuffer;
+	int			isbuffer;
+
+	CHECK_ARGS(1, "renderbuffer");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &renderbuffer));
+
+	isbuffer = glIsRenderbuffer(renderbuffer);
+	fprintf(stderr, "Is %d a renderbuffer? %d\n", renderbuffer, isbuffer);
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(isbuffer));
+
+	return TCL_OK;
+}
+
+
+static int glue_glRenderbufferStorageMultisample(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			index;
+	static CONST char *targets[] = {
+		"GL_RENDERBUFFER",
+		(char *)NULL
+	};
+	GLenum target_map[] = {
+		GL_FRAMEBUFFER
+	};
+	GLenum	target;
+	static CONST char *internalformats[] = {
+		// Colour renderable
+		"GL_ALPHA",
+		"GL_LUMINANCE",
+		"GL_LUMINANCE_ALPHA",
+		"GL_INTENSITY",
+		"GL_RED",
+		"GL_RG",
+		"GL_RGB",
+		"GL_RGBA",
+		"GL_FLOAT_R_NV",
+		"GL_FLOAT_RG_NV",
+		"GL_FLOAT_RGB_NV",
+		"GL_FLOAT_RGBA_NV",
+		"GL_ALPHA4",
+		"GL_ALPHA8",
+		"GL_ALPHA12",
+		"GL_ALPHA16",
+		"GL_LUMINANCE4",
+		"GL_LUMINANCE8",
+		"GL_LUMINANCE12",
+		"GL_LUMINANCE16",
+		"GL_LUMINANCE4_ALPHA4",
+		"GL_LUMINANCE6_ALPHA2",
+		"GL_LUMINANCE8_ALPHA8",
+		"GL_LUMINANCE12_ALPHA4",
+		"GL_LUMINANCE12_ALPHA12",
+		"GL_LUMINANCE16_ALPHA16",
+		"GL_INTENSITY4",
+		"GL_INTENSITY8",
+		"GL_INTENSITY12",
+		"GL_INTENSITY16",
+		"GL_R3_G3_B2",
+		"GL_RGB4",
+		"GL_RGB5",
+		"GL_RGB8",
+		"GL_RGB10",
+		"GL_RGB12",
+		"GL_RGB16",
+		"GL_RGBA2",
+		"GL_RGBA4",
+		"GL_RGB5_A1",
+		"GL_RGBA8",
+		"GL_RGB10_A2",
+		"GL_RGBA12",
+		"GL_RGBA16",
+		"GL_SRGB8",
+		"GL_SRGB8_ALPHA8",
+		"GL_SLUMINANCE",
+#ifdef GL_SLUMINANCE_ALPHA8
+		"GL_SLUMINANCE_ALPHA8",
+#endif
+
+		// Depth renderable
+		"GL_DEPTH_COMPONENT16",
+		"GL_DEPTH_COMPONENT24",
+		"GL_DEPTH_COMPONENT32",
+		"GL_DEPTH_COMPONENT",
+		"GL_DEPTH24_STENCIL8",
+
+		// Stencil renderable
+		"GL_STENCIL_INDEX",
+		"GL_DEPTH_STENCIL",
+		"GL_STENCIL_INDEX1",
+		"GL_STENCIL_INDEX4",
+		"GL_STENCIL_INDEX8",
+		"GL_STENCIL_INDEX16",
+		(char *)NULL
+	};
+	GLenum internalformat_map[] = {
+		// Colour renderable
+		GL_ALPHA,
+		GL_LUMINANCE,
+		GL_LUMINANCE_ALPHA,
+		GL_INTENSITY,
+		GL_RED,
+		GL_RG,
+		GL_RGB,
+		GL_RGBA,
+		GL_FLOAT_R_NV,
+		GL_FLOAT_RG_NV,
+		GL_FLOAT_RGB_NV,
+		GL_FLOAT_RGBA_NV,
+		GL_ALPHA4,
+		GL_ALPHA8,
+		GL_ALPHA12,
+		GL_ALPHA16,
+		GL_LUMINANCE4,
+		GL_LUMINANCE8,
+		GL_LUMINANCE12,
+		GL_LUMINANCE16,
+		GL_LUMINANCE4_ALPHA4,
+		GL_LUMINANCE6_ALPHA2,
+		GL_LUMINANCE8_ALPHA8,
+		GL_LUMINANCE12_ALPHA4,
+		GL_LUMINANCE12_ALPHA12,
+		GL_LUMINANCE16_ALPHA16,
+		GL_INTENSITY4,
+		GL_INTENSITY8,
+		GL_INTENSITY12,
+		GL_INTENSITY16,
+		GL_R3_G3_B2,
+		GL_RGB4,
+		GL_RGB5,
+		GL_RGB8,
+		GL_RGB10,
+		GL_RGB12,
+		GL_RGB16,
+		GL_RGBA2,
+		GL_RGBA4,
+		GL_RGB5_A1,
+		GL_RGBA8,
+		GL_RGB10_A2,
+		GL_RGBA12,
+		GL_RGBA16,
+		GL_SRGB8,
+		GL_SRGB8_ALPHA8,
+		GL_SLUMINANCE,
+#ifdef GL_SLUMINANCE_ALPHA8
+		GL_SLUMINANCE_ALPHA8,
+#endif
+
+		// Depth renderable
+		GL_DEPTH_COMPONENT16,
+		GL_DEPTH_COMPONENT24,
+		GL_DEPTH_COMPONENT32,
+		GL_DEPTH_COMPONENT,
+		GL_DEPTH24_STENCIL8,
+
+		// Stencil renderable
+		GL_STENCIL_INDEX,
+		GL_DEPTH_STENCIL,
+		GL_STENCIL_INDEX1,
+		GL_STENCIL_INDEX4,
+		GL_STENCIL_INDEX8,
+		GL_STENCIL_INDEX16
+	};
+	GLenum	internalformat;
+	int		samples;
+	int		width;
+	int		height;
+
+
+	CHECK_ARGS(5, "target samples internalformat width height");
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
+				&index));
+	target = target_map[index];
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &samples));
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[3], internalformats, "internalformat", TCL_EXACT,
+				&index));
+	internalformat = internalformat_map[index];
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &width));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &height));
+
+	glRenderbufferStorageMultisample(target, samples, internalformat, width, height);
+
+	return TCL_OK;
+}
+
+
+static int glue_glGenFramebuffers(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			count, i;
+	Tcl_Obj*	res;
+
+	CHECK_ARGS(1, "count");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &count));
+	res = Tcl_NewListObj(0, NULL);
+
+	{
+		uint framebuffers[count];
+
+		glGenFramebuffers(count, framebuffers);
+		for (i=0; i<count; i++) {
+			TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(framebuffers[i])));
+		}
+	}
+
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+static int glue_glDeleteFramebuffers(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			oc, i;
+	Tcl_Obj**	ov;
+
+	CHECK_ARGS(1, "framebuffers");
+
+	TEST_OK(Tcl_ListObjGetElements(interp, objv[1], &oc, &ov));
+
+	{
+		uint framebuffers[oc];
+
+		for (i=0; i<oc; i++) {
+			int	tmp;
+			TEST_OK(Tcl_GetIntFromObj(interp, ov[i], &tmp));
+			framebuffers[i] = tmp;
+		}
+
+		glDeleteFramebuffers(oc, framebuffers);
+	}
+
+	return TCL_OK;
+}
+
+
+static int glue_glBindFramebuffer(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			framebuffer, index;
+	static CONST char *targets[] = {
+		"GL_FRAMEBUFFER",
+		"GL_READ_FRAMEBUFFER",
+		"GL_DRAW_FRAMEBUFFER",
+		(char *)NULL
+	};
+	GLenum target_map[] = {
+		GL_FRAMEBUFFER,
+		GL_READ_FRAMEBUFFER,
+		GL_DRAW_FRAMEBUFFER
+	};
+
+	CHECK_ARGS(2, "target framebuffer");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
+				&index));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &framebuffer));
+
+	glBindFramebuffer(target_map[index], framebuffer);
+
+	return TCL_OK;
+}
+
+
+static int glue_glIsFramebuffer(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			framebuffer;
+	int			isbuffer;
+
+	CHECK_ARGS(1, "framebuffer");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &framebuffer));
+
+	isbuffer = glIsFramebuffer(framebuffer);
+	fprintf(stderr, "Is %d a framebuffer? %d\n", framebuffer, isbuffer);
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(isbuffer));
+
+	return TCL_OK;
+}
+
+
+static int glue_glFramebufferTexture2D(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			index;
+	static CONST char *targets[] = {
+		"GL_FRAMEBUFFER",
+		"GL_READ_FRAMEBUFFER",
+		"GL_DRAW_FRAMEBUFFER",
+		(char *)NULL
+	};
+	GLenum target_map[] = {
+		GL_FRAMEBUFFER,
+		GL_READ_FRAMEBUFFER,
+		GL_DRAW_FRAMEBUFFER
+	};
+	GLenum target;
+	static CONST char *attachments[] = {
+		"GL_COLOR_ATTACHMENT0",
+		"GL_COLOR_ATTACHMENT1",
+		"GL_COLOR_ATTACHMENT2",
+		"GL_COLOR_ATTACHMENT3",
+		"GL_COLOR_ATTACHMENT4",
+		"GL_COLOR_ATTACHMENT5",
+		"GL_COLOR_ATTACHMENT6",
+		"GL_COLOR_ATTACHMENT7",
+		"GL_COLOR_ATTACHMENT8",
+		"GL_COLOR_ATTACHMENT9",
+		"GL_COLOR_ATTACHMENT10",
+		"GL_COLOR_ATTACHMENT11",
+		"GL_COLOR_ATTACHMENT12",
+		"GL_COLOR_ATTACHMENT13",
+		"GL_COLOR_ATTACHMENT14",
+		"GL_COLOR_ATTACHMENT15",
+		"GL_DEPTH_ATTACHMENT",
+		"GL_STENCIL_ATTACHMENT",
+		"GL_DEPTH_STENCIL_ATTACHMENT",
+		(char *)NULL
+	};
+	GLenum attachment_map[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_COLOR_ATTACHMENT1,
+		GL_COLOR_ATTACHMENT2,
+		GL_COLOR_ATTACHMENT3,
+		GL_COLOR_ATTACHMENT4,
+		GL_COLOR_ATTACHMENT5,
+		GL_COLOR_ATTACHMENT6,
+		GL_COLOR_ATTACHMENT7,
+		GL_COLOR_ATTACHMENT8,
+		GL_COLOR_ATTACHMENT9,
+		GL_COLOR_ATTACHMENT10,
+		GL_COLOR_ATTACHMENT11,
+		GL_COLOR_ATTACHMENT12,
+		GL_COLOR_ATTACHMENT13,
+		GL_COLOR_ATTACHMENT14,
+		GL_COLOR_ATTACHMENT15,
+		GL_DEPTH_ATTACHMENT,
+		GL_STENCIL_ATTACHMENT,
+		GL_DEPTH_STENCIL_ATTACHMENT
+	};
+	GLenum attachment;
+	static CONST char *textargets[] = {
+		"GL_TEXTURE_1D",
+		"GL_TEXTURE_2D",
+		"GL_TEXTURE_3D",
+		(char *)NULL
+	};
+	GLenum textarget_map[] = {
+		GL_TEXTURE_1D,
+		GL_TEXTURE_2D,
+		GL_TEXTURE_3D
+	};
+	GLenum textarget;
+	int		texture, level;
+
+	CHECK_ARGS(5, "target attachment textarget texture level");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], targets, "target", TCL_EXACT,
+				&index));
+	target = target_map[index];
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[2], attachments, "attachment",
+				TCL_EXACT, &index));
+	attachment = attachment_map[index];
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[3], textargets, "textarget",
+				TCL_EXACT, &index));
+	textarget = textarget_map[index];
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &texture));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &level));
+
+	glFramebufferTexture2D(target, attachment, textarget, texture, level);
+
+	return TCL_OK;
+}
+
+
+static int glue_GetModelviewMatrix(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	Tcl_Obj*	res;
+	GLfloat	m[16];
+
+	CHECK_ARGS(0, "");
+
+	glGetFloatv(GL_MODELVIEW_MATRIX, m);
+
+	/*
+	printf( "Read Modelview matrix:\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f\n",
+			m[0],	m[4],	m[8],	m[12],
+			m[1],	m[5],	m[9],	m[13],
+			m[2],	m[6],	m[10],	m[14],
+			m[3],	m[7],	m[11],	m[15]);
+			*/
+	res = Tcl_NewGlMatrixObj(m);
+	Tcl_SetObjResult(interp, res);
+
+	return TCL_OK;
+}
+
+
+static int glue_SetModelviewMatrixEntry(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	double		f;
+	int			index;
+	Tcl_Obj*	tmp;
+	Tcl_Obj*	obj;
+	GLfloat*	m;
+
+	CHECK_ARGS(3, "varname index newvalue");
+
+	tmp = Tcl_ObjGetVar2(interp, objv[1], NULL, TCL_LEAVE_ERR_MSG);
+	if (tmp == NULL)
+		return TCL_ERROR;
+
+	obj = Tcl_IsShared(tmp) ? Tcl_DuplicateObj(tmp) : tmp;
+
+	TEST_OK(Tcl_GetGlMatrixFromObj(interp, obj, &m));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &index));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &f));
+
+	if (index < 0 || index > 15)
+		THROW_ERROR("matrix index is out of range: ", Tcl_GetString(Tcl_NewIntObj(index)));
+
+	m[index] = f;
+
+	Tcl_InvalidateStringRep(obj);
+
+	tmp = Tcl_ObjSetVar2(interp, objv[1], NULL, obj, TCL_LEAVE_ERR_MSG);
+	Tcl_SetObjResult(interp, tmp);
+
+	return TCL_OK;
+}
+
+
+static int glue_Billboard(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	int			index;
+	static CONST char *types[] = {
+		"CHEAT_SPHERE",
+		"CHEAT_CYLINDER",
+		"TRUE_SPHERE",
+		"TRUE_CYLINDER",
+		(char *)NULL
+	};
+	enum typemap {
+		CHEAT_SPHERE,
+		CHEAT_CYLINDER,
+		TRUE_SPHERE,
+		TRUE_CYLINDER
+	};
+	GLfloat	m[16];
+
+	CHECK_ARGS(1, "type");
+
+	TEST_OK(Tcl_GetIndexFromObj(interp, objv[1], types, "type", TCL_EXACT,
+				&index));
+
+	glGetFloatv(GL_MODELVIEW_MATRIX, m);
+
+	switch (index) {
+		case CHEAT_SPHERE:
+			m[4] = 0;
+			m[5] = 1;
+			m[6] = 0;
+		case CHEAT_CYLINDER:
+			m[0] = 1;
+			m[1] = 0;
+			m[2] = 0;
+			m[8] = 0;
+			m[9] = 0;
+			m[10] = 1;
+			break;
+
+		case TRUE_SPHERE:
+		case TRUE_CYLINDER:
+			THROW_ERROR("Not supported yet");
+
+		default:
+			THROW_ERROR("Invalid index");
+	}
+
+	glLoadMatrixf(m);
+
+	return TCL_OK;
+}
+
+
+static int glue_glutSolidSphere(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	double		radius;
+	int			slices, stacks;
+
+	CHECK_ARGS(3, "radius slices stacks");
+
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &radius));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &slices));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &stacks));
+
+	glutSolidSphere(radius, slices, stacks);
+
+	return TCL_OK;
+}
+
+
 // Init {{{1
 int Pixel_gl_Init(Tcl_Interp *interp)
 {
@@ -2868,6 +3992,7 @@ int Pixel_gl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::gl::glColor3f", glue_glColor3f);
 	NEW_CMD("pixel::gl::glColor4f", glue_glColor4f);
 	NEW_CMD("pixel::gl::glPointSize", glue_glPointSize);
+	NEW_CMD("pixel::gl::glLineWidth", glue_glLineWidth);
 	NEW_CMD("pixel::gl::glVertex3f", glue_glVertex3f);
 	NEW_CMD("pixel::gl::glNormal3f", glue_glNormal3f);
 	NEW_CMD("pixel::gl::glClear", glue_glClear);
@@ -2876,6 +4001,7 @@ int Pixel_gl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::gl::glTranslatef", glue_glTranslatef);
 	NEW_CMD("pixel::gl::glRotatef", glue_glRotatef);
 	NEW_CMD("pixel::gl::glGenTextures", glue_glGenTextures);
+	NEW_CMD("pixel::gl::glDeleteTextures", glue_glDeleteTextures);
 	NEW_CMD("pixel::gl::glBindTexture", glue_glBindTexture);
 	NEW_CMD("pixel::gl::glTexParameter", glue_glTexParameter);
 	NEW_CMD("pixel::gl::glTexParameteri", glue_glTexParameter);
@@ -2911,6 +4037,8 @@ int Pixel_gl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::gl::glGetUniformLocation", glue_glGetUniformLocation);
 	NEW_CMD("pixel::gl::glUniform1f", glue_glUniform1f);
 	NEW_CMD("pixel::gl::glUniform1i", glue_glUniform1i);
+	NEW_CMD("pixel::gl::glUniformfv", glue_glUniformfv);
+	NEW_CMD("pixel::gl::glUniformiv", glue_glUniformiv);
 	NEW_CMD("pixel::gl::glOrtho", glue_glOrtho);
 	NEW_CMD("pixel::gl::glVertexList", glue_glVertexList);
 	NEW_CMD("pixel::gl::glActiveTexture", glue_glActiveTexture);
@@ -2930,16 +4058,40 @@ int Pixel_gl_Init(Tcl_Interp *interp)
 	NEW_CMD("pixel::gl::glReadPixels", glue_glReadPixels);
 	NEW_CMD("pixel::gl::glReadBuffer", glue_glReadBuffer);
 	NEW_CMD("pixel::gl::glDrawBuffer", glue_glDrawBuffer);
+	NEW_CMD("pixel::gl::glHint", glue_glHint);
+	NEW_CMD("pixel::gl::glMaterialf", glue_glMaterialf);
+	NEW_CMD("pixel::gl::glMaterialfv", glue_glMaterialfv);
+	NEW_CMD("pixel::gl::glLightf", glue_glLightf);
+	NEW_CMD("pixel::gl::glLightfv", glue_glLightfv);
+
+	// GL_ARB_framebuffer_object extension
+	NEW_CMD("pixel::gl::glGenRenderbuffers", glue_glGenRenderbuffers);
+	NEW_CMD("pixel::gl::glDeleteRenderbuffers", glue_glDeleteRenderbuffers);
+	NEW_CMD("pixel::gl::glBindRenderbuffer", glue_glBindRenderbuffer);
+	NEW_CMD("pixel::gl::glIsRenderbuffer", glue_glIsRenderbuffer);
+	NEW_CMD("pixel::gl::glRenderbufferStorageMultisample", glue_glRenderbufferStorageMultisample);
+	NEW_CMD("pixel::gl::glGenFramebuffers", glue_glGenFramebuffers);
+	NEW_CMD("pixel::gl::glDeleteFramebuffers", glue_glDeleteFramebuffers);
+	NEW_CMD("pixel::gl::glBindFramebuffer", glue_glBindFramebuffer);
+	NEW_CMD("pixel::gl::glIsFramebuffer", glue_glIsFramebuffer);
+	NEW_CMD("pixel::gl::glFramebufferTexture2D", glue_glFramebufferTexture2D);
 
 	// GLU
 	NEW_CMD("pixel::gl::gluPerspective", glue_gluPerspective);
+	NEW_CMD("pixel::gl::gluLookAt", glue_gluLookAt);
 	NEW_CMD("pixel::gl::gluOrtho2D", glue_gluOrtho2D);
 	NEW_CMD("pixel::gl::gluPickMatrix", glue_gluPickMatrix);
+
+	// glut
+	NEW_CMD("pixel::gl::glutSolidSphere", glue_glutSolidSphere);
 
 	// GLEW
 	init_glew(interp);
 
 	// Helpers
+	NEW_CMD("pixel::gl::GetModelviewMatrix", glue_GetModelviewMatrix);
+	NEW_CMD("pixel::gl::SetModelviewMatrixEntry", glue_SetModelviewMatrixEntry);
+	NEW_CMD("pixel::gl::Billboard", glue_Billboard);
 
 	TEST_OK(Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION));
 

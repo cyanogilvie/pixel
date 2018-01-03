@@ -4,6 +4,7 @@
 #include "tclstuff.h"
 #include "tcl_glmatrix.h"
 #include <string.h>
+#include <GL/gl.h>
 
 static void free_internal_rep(Tcl_Obj *obj);
 static void dup_internal_rep(Tcl_Obj *src, Tcl_Obj *dest);
@@ -28,11 +29,11 @@ static void free_internal_rep(Tcl_Obj *obj) //<<<
 //>>>
 static void dup_internal_rep(Tcl_Obj *src, Tcl_Obj *dest) //<<<
 {
-	float*		src_m = (float *)src->internalRep.otherValuePtr;
-	float*		dest_m;
+	GLfloat*		src_m = (GLfloat *)src->internalRep.otherValuePtr;
+	GLfloat*		dest_m;
 
-	dest_m = (float *)ckalloc(sizeof(float) * 16);
-	memcpy(dest_m, src_m, sizeof(float) * 16);
+	dest_m = (GLfloat *)ckalloc(sizeof(GLfloat) * 16);
+	memcpy(dest_m, src_m, sizeof(GLfloat) * 16);
 
 	dest->typePtr = &tcl_glMatrix;
 	dest->internalRep.otherValuePtr = dest_m;
@@ -41,7 +42,7 @@ static void dup_internal_rep(Tcl_Obj *src, Tcl_Obj *dest) //<<<
 //>>>
 static void update_string_rep(Tcl_Obj *obj) //<<<
 {
-	float*		m = (float *)obj->internalRep.otherValuePtr;
+	GLfloat*	m = (GLfloat *)obj->internalRep.otherValuePtr;
 	char*		strrep;
 	int			len;
 
@@ -54,28 +55,51 @@ static void update_string_rep(Tcl_Obj *obj) //<<<
 			m[4],	m[5],	m[6],	m[7],
 			m[8],	m[9],	m[10],	m[11],
 			m[12],	m[13],	m[14],	m[15]);
+	/*
+	len = asprintf(&strrep, 
+			"%f %f %f %f\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f",
+			m[0],	m[4],	m[8],	m[12],
+			m[1],	m[5],	m[9],	m[13],
+			m[2],	m[6],	m[10],	m[14],
+			m[3],	m[7],	m[11],	m[15]);
+			*/
 	strrep[len] = 0;
+	/*
+	printf( "Updating string rep (%s) (%p):\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f\n"
+			"%f %f %f %f\n", obj->typePtr->name, obj->internalRep.otherValuePtr,
+			m[0],	m[4],	m[8],	m[12],
+			m[1],	m[5],	m[9],	m[13],
+			m[2],	m[6],	m[10],	m[14],
+			m[3],	m[7],	m[11],	m[15]);
+			*/
 
 	if (len < 0) {
-		Tcl_Panic("Failed to produce string rep of glMatrix, perhaps becausememory could not be allocated");
+		Tcl_Panic("Failed to produce string rep of glMatrix, perhaps because memory could not be allocated");
 	}
 
 	// Mem must be allocated for obj->bytes by ckalloc or Tcl_Alloc, so we have
 	// to copy here :(
 	// Tcl guarantees that obj->bytes will be NULL when it calls us.
-	obj->bytes = ckalloc(len);
-	memcpy(obj->bytes, strrep, len);
+	obj->bytes = ckalloc(len+1);
+	obj->length = len;
+	memcpy(obj->bytes, strrep, len+1);
 	free(strrep);
 }
 
 //>>>
 static int set_glMatrix_from_any(Tcl_Interp *interp, Tcl_Obj *obj) //<<<
 {
-	Tcl_ObjType*	oldtype = obj->typePtr;
+	Tcl_ObjType const*	oldtype = obj->typePtr;
 	int				objc, i;
 	Tcl_Obj**		objv;
-	float			m[16];
-	float*			obj_m;
+	GLfloat			m[16];
+	GLfloat*		obj_m;
 	double			staging;
 
 	if (oldtype == &tcl_glMatrix)
@@ -91,8 +115,8 @@ static int set_glMatrix_from_any(Tcl_Interp *interp, Tcl_Obj *obj) //<<<
 		m[i] = staging;
 	}
 
-	obj_m = (float *)ckalloc(sizeof(float) * 16);
-	memcpy(obj_m, &m, sizeof(float) * 16);
+	obj_m = (GLfloat *)ckalloc(sizeof(GLfloat) * 16);
+	memcpy(obj_m, m, sizeof(GLfloat) * 16);
 
 	obj->typePtr = &tcl_glMatrix;
 	obj->internalRep.otherValuePtr = obj_m;
@@ -103,14 +127,31 @@ static int set_glMatrix_from_any(Tcl_Interp *interp, Tcl_Obj *obj) //<<<
 
 //>>>
 
-int Tcl_GetGlMatrixFromObj(Tcl_Interp* interp, Tcl_Obj* obj, float **m) //<<<
+int Tcl_GetGlMatrixFromObj(Tcl_Interp* interp, Tcl_Obj* obj, GLfloat** m) //<<<
 {
 	if (obj->typePtr != &tcl_glMatrix)
 		TEST_OK(set_glMatrix_from_any(interp, obj));
 
-	*m = (float *)obj->internalRep.otherValuePtr;
+	*m = (GLfloat*)obj->internalRep.otherValuePtr;
 
 	return TCL_OK;
+}
+
+//>>>
+Tcl_Obj* Tcl_NewGlMatrixObj(GLfloat* m) //<<<
+{
+	Tcl_Obj*	res = Tcl_NewObj();
+	GLfloat*	obj_m;
+
+	obj_m = (GLfloat *)ckalloc(sizeof(GLfloat) * 16);
+	memcpy(obj_m, m, sizeof(GLfloat) * 16);
+
+	res->typePtr = &tcl_glMatrix;
+	Tcl_InvalidateStringRep(res);
+	res->internalRep.otherValuePtr = obj_m;
+	//printf("Creating new glMatrix, internalRep: %p\n", res->internalRep.otherValuePtr);
+
+	return res;
 }
 
 //>>>
