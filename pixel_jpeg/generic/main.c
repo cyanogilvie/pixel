@@ -38,11 +38,8 @@ gimp_image_t *loadjpeg(char *filename) // {{{1
 	struct jpeg_error_mgr			jerr;
 	gimp_image_t	*dest = (gimp_image_t *)malloc(sizeof(gimp_image_t));
 	FILE			*fp;
-	JSAMPLE			*buffer;
-	int				row_stride, i;
 	_pel			*r;
-	JSAMPLE			*j;
-	
+	JSAMPROW		row_pointer[1];
 
 	if ((fp = fopen(filename, "rb")) == NULL)
 		return NULL;
@@ -54,32 +51,23 @@ gimp_image_t *loadjpeg(char *filename) // {{{1
 	(void)jpeg_read_header(&cinfo, TRUE);
 	(void)jpeg_start_decompress(&cinfo);
 
+	cinfo.output_components = 4;
+	cinfo.out_color_space = JCS_EXT_BGRA;
+
 	dest->width = cinfo.output_width;
 	dest->height = cinfo.output_height;
 	dest->bytes_per_pixel = 4;
 	r = dest->pixel_data = (_pel *)malloc(dest->width*dest->height*4);
-	
-	row_stride = cinfo.output_width * cinfo.output_components;
-
-	buffer = (JSAMPLE *)malloc(row_stride);
 
 	while (cinfo.output_scanline < cinfo.output_height) {
-		(void)jpeg_read_scanlines(&cinfo, &buffer, 1);
-		j = (JSAMPLE *)buffer;
-		for (i=0; i<dest->width; i++) {
-			r->ch.r = (uint8)*j++;
-			r->ch.g = (uint8)*j++;
-			r->ch.b = (uint8)*j++;
-			r->ch.a = 0xff;
-			r++;
-		}
+		row_pointer[0] = (JSAMPLE*)r;
+		(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
+		r += dest->width;
 	}
 
 	(void)jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 	fclose(fp);
-
-	free(buffer);
 
 	return dest;
 }
@@ -90,11 +78,8 @@ int savejpeg(char *filename, gimp_image_t *pmap, int quality) // {{{1
 	struct jpeg_compress_struct		cinfo;
 	struct jpeg_error_mgr			jerr;
 	FILE		*fp;
-	//JSAMPROW	row_pointer[1];
-	int			row_stride, i;
+	JSAMPROW	row_pointer[1];
 	_pel		*s;
-	JSAMPLE		*j;
-	JSAMPLE		*buffer;
 
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
@@ -106,32 +91,22 @@ int savejpeg(char *filename, gimp_image_t *pmap, int quality) // {{{1
 
 	cinfo.image_width = pmap->width;
 	cinfo.image_height = pmap->height;
-	cinfo.input_components = 3;
-	cinfo.in_color_space = JCS_RGB;
+	cinfo.input_components = 4;
+	cinfo.in_color_space = JCS_EXT_BGRA;
 
 	jpeg_set_defaults(&cinfo);
 	jpeg_set_quality(&cinfo, quality, TRUE);
 	jpeg_start_compress(&cinfo, TRUE);
 
-	row_stride = cinfo.image_width * cinfo.input_components;
-
-	buffer = (JSAMPLE *)malloc(row_stride);
-	
 	s = pmap->pixel_data;
 	
 	while (cinfo.next_scanline < cinfo.image_height) {
-		j = buffer;
-		for (i=0; i<cinfo.image_width; i++) {
-			*j++ = s->ch.r;
-			*j++ = s->ch.g;
-			*j++ = s->ch.b;
-			s++;
-		}
-		(void)jpeg_write_scanlines(&cinfo, &buffer, 1);
+		row_pointer[0] = (JSAMPLE*)s;
+		s += pmap->width;
+		(void)jpeg_write_scanlines(&cinfo, row_pointer, 1);
 	}
 
 	jpeg_finish_compress(&cinfo);
-	free(buffer);
 	fclose(fp);
 	jpeg_destroy_compress(&cinfo);
 
@@ -181,52 +156,40 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 {
 	struct jpeg_decompress_struct	cinfo;
 	struct custom_error_mgr			jerr;
-	struct jpeg_source_mgr			jsrc;
 	gimp_image_t	*dest = (gimp_image_t *)malloc(sizeof(gimp_image_t));
-	JSAMPLE			*buffer;
-	int				row_stride, i;
 	_pel			*r;
-	JSAMPLE			*j;
+	JSAMPROW		row_pointer[1];
 
 	jpeg_create_decompress(&cinfo);
 
 	jpeg_mem_src(&cinfo, jpeg_data, length);
-	
+
 	cinfo.err = jpeg_std_error(&jerr.pub);
 	jerr.pub.error_exit = custom_error_exit;
 	if (setjmp(jerr.setjmp_buffer)) {
 		jpeg_destroy_decompress(&cinfo);
 		return NULL;
 	}
-	
+
 	(void)jpeg_read_header(&cinfo, TRUE);
 	(void)jpeg_start_decompress(&cinfo);
+
+	cinfo.output_components = 4;
+	cinfo.out_color_space = JCS_EXT_BGRA;
 
 	dest->width = cinfo.output_width;
 	dest->height = cinfo.output_height;
 	dest->bytes_per_pixel = 4;
 	r = dest->pixel_data = (_pel *)malloc(dest->width*dest->height*4);
 	
-	row_stride = cinfo.output_width * cinfo.output_components;
-
-	buffer = (JSAMPLE *)malloc(row_stride);
-
 	while (cinfo.output_scanline < cinfo.output_height) {
-		(void)jpeg_read_scanlines(&cinfo, &buffer, 1);
-		j = (JSAMPLE *)buffer;
-		for (i=0; i<dest->width; i++) {
-			r->ch.r = (uint8)*j++;
-			r->ch.g = (uint8)*j++;
-			r->ch.b = (uint8)*j++;
-			r->ch.a = 0xff;
-			r++;
-		}
+		row_pointer[0] = (JSAMPLE*)r;
+		(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
+		r += dest->width;
 	}
 
 	(void)jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
-
-	free(buffer);
 
 	return dest;
 }
