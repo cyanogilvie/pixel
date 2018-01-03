@@ -7,8 +7,8 @@
 
 #include <stdio.h>
 #include <jpeglib.h>
-#include <tclstuff.h>
-#include <Pixel/pixel.h>
+#include "tclstuff.h"
+#include <pixel.h>
 #include <setjmp.h>
 
 
@@ -90,7 +90,7 @@ int savejpeg(char *filename, gimp_image_t *pmap, int quality) // {{{1
 	struct jpeg_compress_struct		cinfo;
 	struct jpeg_error_mgr			jerr;
 	FILE		*fp;
-	JSAMPROW	row_pointer[1];
+	//JSAMPROW	row_pointer[1];
 	int			row_stride, i;
 	_pel		*s;
 	JSAMPLE		*j;
@@ -150,7 +150,8 @@ static void init_dest(j_compress_ptr cinfo) //{{{1
 	cinfo->dest->next_output_byte = g_buf_start = \
 		(JOCTET *)malloc(JPEG_ENCODE_BUFSIZE);
 	cinfo->dest->free_in_buffer = JPEG_ENCODE_BUFSIZE;
-	g_buf_size = JPEG_ENCODE_BUFSIZE;
+	//g_buf_size = JPEG_ENCODE_BUFSIZE;
+	g_buf_size = 512000;
 	g_buf_tail = g_buf = (unsigned char *)malloc(g_buf_size);
 }
 
@@ -163,7 +164,7 @@ static void flush_remaining(j_compress_ptr cinfo) //{{{1
 
 	if (g_buf_tail - g_buf + avail > g_buf_size) {
 		g_buf_size += JPEG_ENCODE_BUFSIZE;
-		realloc(g_buf, g_buf_size);
+		g_buf = realloc(g_buf, g_buf_size);
 	}
 	memcpy(g_buf_tail, cinfo->dest->next_output_byte, avail);
 	cinfo->dest->free_in_buffer = JPEG_ENCODE_BUFSIZE;
@@ -179,7 +180,7 @@ static boolean empty_buffer(j_compress_ptr cinfo) //{{{1
 
 	if (g_buf_tail - g_buf + avail > g_buf_size) {
 		g_buf_size += JPEG_ENCODE_BUFSIZE;
-		realloc(g_buf, g_buf_size);
+		g_buf = realloc(g_buf, g_buf_size);
 	}
 	memcpy(g_buf_tail, cinfo->dest->next_output_byte, avail);
 	cinfo->dest->free_in_buffer = JPEG_ENCODE_BUFSIZE;
@@ -208,46 +209,35 @@ unsigned char *encodejpeg(gimp_image_t *pmap, int *length, int quality) //{{{1
 	struct jpeg_compress_struct		cinfo;
 	struct jpeg_error_mgr			jerr;
 	struct jpeg_destination_mgr		jdest;
-	FILE		*fp;
-	JSAMPROW	row_pointer[1];
-	int			row_stride, i;
 	_pel		*s;
-	JSAMPLE		*j;
-	JSAMPLE		*buffer;
+	JSAMPROW	row_pointer[1];
 	unsigned char	*odata;
-	
+
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
-	
+
 	jdest.init_destination = init_dest;
 	jdest.empty_output_buffer = empty_buffer;
 	jdest.term_destination = term_dest;
 
 	cinfo.dest = &jdest;
+
 	cinfo.image_width = pmap->width;
 	cinfo.image_height = pmap->height;
-	cinfo.input_components = 3;
-	cinfo.in_color_space = JCS_RGB;
+	cinfo.input_components = 4;
+	cinfo.in_color_space = JCS_EXT_BGRA;
 
 	jpeg_set_defaults(&cinfo);
 	jpeg_set_quality(&cinfo, quality, TRUE);
 	jpeg_start_compress(&cinfo, TRUE);
 
-	row_stride = cinfo.image_width * cinfo.input_components;
-
-	buffer = (JSAMPLE *)malloc(row_stride);
-	
 	s = pmap->pixel_data;
-	
+
 	while (cinfo.next_scanline < cinfo.image_height) {
-		j = buffer;
-		for (i=0; i<cinfo.image_width; i++) {
-			*j++ = s->ch.r;
-			*j++ = s->ch.g;
-			*j++ = s->ch.b;
-			s++;
-		}
-		(void)jpeg_write_scanlines(&cinfo, &buffer, 1);
+		row_pointer[0] = (JSAMPLE*)s;
+		//fprintf(stderr, "Writing scanline %d/%d: %p (%d)\n", cinfo.next_scanline, pmap->height, s, g_buf_size);
+		s += pmap->width;
+		(void)jpeg_write_scanlines(&cinfo, row_pointer, 1);
 	}
 
 	jpeg_finish_compress(&cinfo);
@@ -255,10 +245,8 @@ unsigned char *encodejpeg(gimp_image_t *pmap, int *length, int quality) //{{{1
 	*length = g_buf_tail - g_buf;
 	odata = (unsigned char *)malloc(*length);
 	memcpy(odata, g_buf, *length);
-
 	cleanup_dest();
-	
-	free(buffer);
+
 	jpeg_destroy_compress(&cinfo);
 
 	return odata;
@@ -301,7 +289,7 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int *length) // {{{1
 	struct custom_error_mgr			jerr;
 	struct jpeg_source_mgr			jsrc;
 	gimp_image_t	*dest = (gimp_image_t *)malloc(sizeof(gimp_image_t));
-	FILE			*fp;
+	//FILE			*fp;
 	JSAMPLE			*buffer;
 	int				row_stride, i;
 	_pel			*r;
@@ -586,7 +574,7 @@ static int glue_jpeg_info(ClientData foo, Tcl_Interp *interp,
 
 	Tcl_SetObjResult(interp, res);
 
-	jpeg_destroy(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
 
 	return TCL_OK;
 }
