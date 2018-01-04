@@ -3,9 +3,8 @@
 
 #include <stdio.h>
 #include <png.h>
-#include "2d.h"
-#include "tcl_pmap.h"
-#include <tclstuff.h>
+#include <pixel.h>
+#include "tclstuff.h"
 #include "pngstuff.h"
 
 #endif

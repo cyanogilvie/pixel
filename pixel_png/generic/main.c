@@ -7,8 +7,7 @@
 
 #include "all.h"
 
-// loadpng filename {{{1
-static int glue_loadpng(cdata, interp, objc, objv)
+static int glue_loadpng(cdata, interp, objc, objv) // loadpng filename {{{
 	ClientData		cdata;
 	Tcl_Interp		*interp;
 	int				objc;
@@ -27,9 +26,9 @@ static int glue_loadpng(cdata, interp, objc, objv)
 	return TCL_OK;
 }
 
-
-/*// savepng filename pmap {{{1
-static int glue_savepng(cdata, interp, objc, objv)
+//}}}
+/*
+static int glue_savepng(cdata, interp, objc, objv) // savepng filename pmap {{{
 	ClientData		cdata;
 	Tcl_Interp		*interp;
 	int				objc;
@@ -51,16 +50,16 @@ static int glue_savepng(cdata, interp, objc, objv)
 	return TCL_OK;
 }
 
+//}}}
 */
-// is_png filename {{{1
-static int glue_is_png(cdata, interp, objc, objv)
+static int glue_is_png(cdata, interp, objc, objv) // is_png filename {{{
 	ClientData		cdata;
 	Tcl_Interp		*interp;
 	int				objc;
 	Tcl_Obj *CONST	objv[];
 {
-	FILE		*fp;
-	char		buf[8];
+	FILE			*fp;
+	unsigned char	buf[8];
 
 	CHECK_ARGS(1, "filename");
 
@@ -72,23 +71,19 @@ static int glue_is_png(cdata, interp, objc, objv)
 		Tcl_SetObjResult(interp, Tcl_NewBooleanObj(0));
 		return TCL_OK;
 	}
-	
-	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(!png_sig_cmp(buf, (png_size_t)0,
-					8)));
+
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(!png_sig_cmp(buf, (png_size_t)0, 8)));
 
 	return TCL_OK;
 }
 
-
-// png_dimensions filename {{{1
-static int glue_png_dimensions(cdata, interp, objc, objv)
+//}}}
+static int glue_png_dimensions(cdata, interp, objc, objv) // png_dimensions filename {{{
 	ClientData		cdata;
 	Tcl_Interp		*interp;
 	int				objc;
 	Tcl_Obj *CONST	objv[];
 {
-	FILE		*fp;
-	char		buf[8];
 	int			x, y;
 	Tcl_Obj		*res;
 
@@ -106,16 +101,21 @@ static int glue_png_dimensions(cdata, interp, objc, objv)
 	return TCL_OK;
 }
 
-
-// Init {{{1
-int Pixel_png_Init(Tcl_Interp *interp)
+//}}}
+int Pixel_png_Init(Tcl_Interp *interp) // Init {{{
 {
+	if (Tcl_InitStubs(interp, "8.4", 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "3.3", 0) == NULL) return TCL_ERROR;
+
 	NEW_CMD("pixel::png::loadpng", glue_loadpng);
 	//NEW_CMD("pixel::png::savepng", glue_savepng);
 	NEW_CMD("pixel::png::is_png", glue_is_png);
 	NEW_CMD("pixel::png::png_dimensions", glue_png_dimensions);
-	
+
+	if (Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION) != TCL_OK)
+		return TCL_ERROR;
+
 	return TCL_OK;
 }
 
-
+//}}}
