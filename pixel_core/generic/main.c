@@ -952,6 +952,71 @@ static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
 }
 
 
+static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
+	ClientData		cdata;
+	Tcl_Interp		*interp;
+	int				objc;
+	Tcl_Obj *CONST	objv[];
+{
+	unsigned char*	bytes;
+	int				len;
+
+	CHECK_ARGS(1, "bytes");
+
+	bytes = Tcl_GetByteArrayFromObj(objv[1], &len);
+
+	if (len >= 4) {
+		// JPEG
+		if (bytes[0] == 0xff && bytes[1] == 0xd8 && bytes[len-2] == 0xff && bytes[len-1] == 0xd9) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/jpeg", 10));
+			return TCL_OK;
+		}
+	}
+
+	if (len >= 8) {
+		// PNG
+		if (
+				bytes[0] == 0x89 &&
+				bytes[1] == 'P' &&
+				bytes[2] == 'N' &&
+				bytes[3] == 'G' &&
+				bytes[4] == 0x0d &&
+				bytes[5] == 0x0a &&
+				bytes[6] == 0x1a &&
+				bytes[7] == 0x0a
+		   ) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/png", 9));
+			return TCL_OK;
+		}
+	}
+
+	if (len >= 12) {
+		// WEBP
+		if (
+				bytes[0]  == 'R' &&
+				bytes[1]  == 'I' &&
+				bytes[2]  == 'F' &&
+				bytes[3]  == 'F' &&
+				bytes[4]  == ((len-8)         & 0xff) &&
+				bytes[5]  == (((len-8) >>  8) & 0xff) &&
+				bytes[6]  == (((len-8) >> 16) & 0xff) &&
+				bytes[7]  == (((len-8) >> 24) & 0xff) &&
+				bytes[8]  == 'W' &&
+				bytes[9]  == 'E' &&
+				bytes[10] == 'B' &&
+				bytes[11] == 'P'
+		   ) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/webp", 10));
+			return TCL_OK;
+		}
+	}
+
+	Tcl_SetErrorCode(interp, "PIXEL", "CORE", "UNKNOWN_FILETYPE", NULL);
+	Tcl_SetObjResult(interp, Tcl_NewStringObj("unknown", 7));
+	return TCL_ERROR;
+}
+
+
 static int initvars(Tcl_Interp* interp) //{{{1
 {
 #define MIRROR_FLAG(name, value) \
@@ -1030,6 +1095,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::hsv2rgb", glue_hsv2rgb);
 	NEW_CMD("pixel::process_image_hsv", glue_process_image_hsv);
 	NEW_CMD("pixel::scale_pmap", glue_scale_pmap);
+	NEW_CMD("pixel::image_mimetype", glue_image_mimetype);
 
 	TEST_OK(initvars(interp));
 

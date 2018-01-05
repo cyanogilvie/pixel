@@ -1,0 +1,44 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel
+
+proc readbin fn {
+	set h	[open tests/$fn r]
+	try {
+		chan configure $h -translation binary -encoding binary
+		chan read $h
+	} finally {
+		close $h
+	}
+}
+
+test image_mimetype-1.1 {Guess JPEG} -body { #<<<
+	pixel::image_mimetype [readbin test.jpg]
+} -result image/jpeg
+#>>>
+test image_mimetype-2.1 {Guess PNG} -body { #<<<
+	pixel::image_mimetype [readbin test.png]
+} -result image/png
+#>>>
+test image_mimetype-3.1 {Guess WEBP} -body { #<<<
+	pixel::image_mimetype [readbin test.webp]
+} -result image/webp
+#>>>
+test image_mimetype-4.1 {Unknown} -body { #<<<
+	set code [catch {
+		pixel::image_mimetype [readbin not_an_image.data]
+	} r o]
+
+	list $code $r [dict get $o -errorcode]
+} -cleanup {
+	unset -nocomplain code r o
+} -result {1 unknown {PIXEL CORE UNKNOWN_FILETYPE}}
+#>>>
+
+::tcltest::cleanupTests
+return
