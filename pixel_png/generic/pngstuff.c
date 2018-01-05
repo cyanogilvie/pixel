@@ -1,6 +1,6 @@
 #include "all.h"
 
-int get_png_dimensions(char *filename, int *x, int *y) //{{{1
+int get_png_dimensions(char *filename, int *x, int *y) //{{{
 {
 	png_structp		png_ptr;
 	png_infop		info_ptr;
@@ -45,8 +45,8 @@ int get_png_dimensions(char *filename, int *x, int *y) //{{{1
 	return 0;
 }
 
-
-gimp_image_t *read_png(char *filename) //{{{1
+//}}}
+gimp_image_t *read_png(char *filename) //{{{
 {
 	png_structp		png_ptr;
 	png_infop		info_ptr;
@@ -120,4 +120,6 @@ gimp_image_t *read_png(char *filename) //{{{1
 	return res;
 }
 
+//}}}
 
+// vim: foldmethod=marker ts=4 shiftwidth=4
