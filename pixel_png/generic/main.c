@@ -102,10 +102,154 @@ static int glue_png_dimensions(cdata, interp, objc, objv) // png_dimensions file
 }
 
 //}}}
+
+void mem_write(png_structp png_ptr, png_bytep data, png_size_t length) //{{{
+{
+	struct write_buf*	write_buf = (struct write_buf*)png_get_io_ptr(png_ptr);
+
+	if (!write_buf->data) {
+		Tcl_IncrRefCount(write_buf->data = Tcl_NewByteArrayObj(data, length));
+		write_buf->ofs = length;
+	} else {
+		int				buflen;
+		unsigned char*	bytes;
+
+		if (Tcl_IsShared(write_buf->data)) { // Shouldn't be possible
+			Tcl_Obj* newdata = Tcl_DuplicateObj(write_buf->data);
+
+			Tcl_DecrRefCount(write_buf->data);
+			Tcl_IncrRefCount(write_buf->data = newdata);
+		}
+
+		bytes = Tcl_GetByteArrayFromObj(write_buf->data, &buflen);
+
+		if (write_buf->ofs + length > buflen) { // Grow buffer
+			int	newsize = buflen;
+
+			while (write_buf->ofs + length > newsize) {
+				if (newsize < 1048576) {
+					// Start with a 1MB allocation
+					newsize = 1048576;
+				} else {
+					if (newsize <= 5*1048576) {
+						// Up to 5MB, double the buffer size when we run out
+						newsize *= 2;
+					} else {
+						// Above that, add 5MB each time
+						newsize += 5*1048576;
+					}
+				}
+			}
+
+			bytes = Tcl_SetByteArrayLength(write_buf->data, newsize);
+		}
+
+		memcpy(bytes + write_buf->ofs, data, length);
+		write_buf->ofs += length;
+		Tcl_InvalidateStringRep(write_buf->data);
+	}
+}
+
+//}}}
+void mem_flush(png_structp png_ptr) //{{{
+{
+	// NOP
+}
+
+//}}}
 static int glue_encode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *const objv[]) //{{{
 {
-	CHECK_ARGS(1, "pmap");
+	png_structp			png_ptr = NULL;
+	png_infop			info_ptr = NULL;
+	png_color_8			sig_bit;
+	int					compression = 3;
+	struct write_buf	write_buf;
+	gimp_image_t*		pmap = NULL;
+	int					i;
+	png_bytep*			row_pointers = NULL;
+
+	write_buf.ofs = 0;
+	write_buf.data = NULL;
+
+	if (objc < 2 || objc > 3) {
+		CHECK_ARGS(1, "pmap compression");
+	}
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+
+	if (objc >= 3) {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &compression));
+	}
+
+	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png_ptr) {
+		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "CREATE_WRITE_STRUCT", NULL);
+		Tcl_SetObjResult(interp, Tcl_NewStringObj("Could not create PNG write struct", -1));
+		goto error;
+	}
+
+	info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr) {
+		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "CREATE_INFO_STRUCT", NULL);
+		Tcl_SetObjResult(interp, Tcl_NewStringObj("Could not create PNG info struct", -1));
+		goto error;
+	}
+
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "ENCODE", NULL);
+		Tcl_SetObjResult(interp, Tcl_NewStringObj("Error encoding PNG", -1));
+		goto error;
+	}
+
+	png_set_write_fn(png_ptr, &write_buf, mem_write, mem_flush);
+
+	png_set_IHDR(png_ptr, info_ptr, pmap->width, pmap->height, 8,
+			PNG_COLOR_TYPE_RGB_ALPHA, 0,
+			PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+
+	png_set_bgr(png_ptr);
+
+	sig_bit.red = 8;
+	sig_bit.green = 8;
+	sig_bit.blue = 8;
+	sig_bit.alpha = 8;
+	png_set_sBIT(png_ptr, info_ptr, &sig_bit);
+
+	png_set_compression_level(png_ptr, compression);
+	png_write_info(png_ptr, info_ptr);
+	png_set_shift(png_ptr, &sig_bit);
+	png_set_packing(png_ptr);
+
+	row_pointers = (png_bytep*)malloc(pmap->height * sizeof(png_bytep));
+	for (i=0; i<pmap->height; i++)
+		row_pointers[i] = (png_bytep)(pmap->pixel_data + (i * pmap->width));
+
+	png_write_image(png_ptr, row_pointers);
+
+	png_write_end(png_ptr, info_ptr);
+
+	free(row_pointers); row_pointers = NULL;
+	png_destroy_write_struct(&png_ptr, &info_ptr); png_ptr = NULL; info_ptr = NULL;
+
+	Tcl_SetByteArrayLength(write_buf.data, write_buf.ofs); // Trim the object to the actual length
+	Tcl_InvalidateStringRep(write_buf.data);
+	Tcl_SetObjResult(interp, write_buf.data);
+
+	if (write_buf.data) {
+		Tcl_DecrRefCount(write_buf.data); write_buf.data = NULL;
+	}
+
 	return TCL_OK;
+
+error:
+	free(row_pointers); row_pointers = NULL;
+	png_destroy_write_struct(&png_ptr, &info_ptr); png_ptr = NULL; info_ptr = NULL;
+
+	if (write_buf.data) {
+		Tcl_DecrRefCount(write_buf.data); write_buf.data = NULL;
+	}
+
+	return TCL_ERROR;
 }
 
 //}}}
@@ -139,11 +283,9 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	CHECK_ARGS(1, "pngdata");
 
-	//if (get_png_dimensions(filename, &width, &height) != 0) return NULL;
-
 	pngdata.ofs = 0;
 	pngdata.buf = Tcl_GetByteArrayFromObj(objv[1], &pngdata.len);
-	//fprintf(stderr, "pngdata.len: %d, pngdata.ofs: %d\n", pngdata.len, pngdata.ofs);
+
 	if (pngdata.len < PNG_SIG_LEN || !png_check_sig(pngdata.buf, PNG_SIG_LEN)) {
 		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "NOT_A_PNG", NULL);
 		THROW_ERROR("Not a PNG");

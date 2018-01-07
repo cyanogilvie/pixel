@@ -17,4 +17,9 @@ struct png_membuf {
 	uint8_t*	buf;
 };
 
+struct write_buf {
+	int			ofs;
+	Tcl_Obj*	data;
+};
+
 #endif
