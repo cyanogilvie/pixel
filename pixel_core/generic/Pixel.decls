@@ -146,3 +146,6 @@ declare 47 generic {
 declare 48 generic {
 	void pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, int yofs)
 }
+declare 49 generic {
+	void pmapf_clr(struct pmapf* dest, pelf colour)
+}

@@ -64,6 +64,24 @@ static int glue_pmap_clr(ClientData *foo, Tcl_Interp *interp,
 }
 
 
+// pmapf_clr dest colour {{{1
+static int glue_pmapf_clr(ClientData *foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *CONST objv[])
+{
+	pelf			colour;
+	struct pmapf*	dest;
+	
+	CHECK_ARGS(2, "dest colour");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &dest));
+	TEST_OK(Pixel_GetPELFFromObj(interp, objv[2], &colour));
+	
+	pmapf_clr(dest, colour);
+
+	return TCL_OK;
+}
+
+
 // pmap_cut src x1 y1 x2 y2 {{{1
 static int glue_pmap_cut(ClientData *foo, Tcl_Interp *interp, 
 		int objc, Tcl_Obj *CONST objv[])
@@ -261,6 +279,27 @@ static int glue_pmap_info(ClientData *foo, Tcl_Interp *interp,
 	res = Tcl_NewListObj(0, NULL);
 	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(pmap->width)));
 	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(pmap->height)));
+
+	Tcl_SetObjResult(interp, res);
+	
+	return TCL_OK;
+}
+
+
+// pmapf_info pmapf {{{1
+static int glue_pmapf_info(ClientData *foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *CONST objv[])
+{
+	Tcl_Obj*		res;
+	struct pmapf*	pmapf;
+	
+	CHECK_ARGS(1, "pmapf");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &pmapf));
+
+	res = Tcl_NewListObj(0, NULL);
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(pmapf->width)));
+	TEST_OK(Tcl_ListObjAppendElement(interp, res, Tcl_NewIntObj(pmapf->height)));
 
 	Tcl_SetObjResult(interp, res);
 	
@@ -2127,6 +2166,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	
 	NEW_CMD("pixel::pmap_new", glue_pmap_new);
 	NEW_CMD("pixel::pmap_clr", glue_pmap_clr);
+	NEW_CMD("pixel::pmapf_clr", glue_pmapf_clr);
 	NEW_CMD("pixel::pmap_cut", glue_pmap_cut);
 	NEW_CMD("pixel::pmap_paste", glue_pmap_paste);
 	NEW_CMD("pixel::pmap_paste_ref", glue_pmap_paste_ref);
@@ -2136,6 +2176,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::pmap_dropshadow", glue_pmap_dropshadow);
 	NEW_CMD("pixel::pmap_rotate", glue_pmap_rotate);
 	NEW_CMD("pixel::pmap_info", glue_pmap_info);
+	NEW_CMD("pixel::pmapf_info", glue_pmapf_info);
 	NEW_CMD("pixel::dup", glue_dup);
 	NEW_CMD("pixel::blend", glue_blend);
 	NEW_CMD("pixel::center", glue_center);

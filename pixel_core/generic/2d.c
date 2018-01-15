@@ -169,6 +169,16 @@ void pmap_clr(gimp_image_t *dest, _pel colour) //{{{1
 }
 
 
+void pmapf_clr(struct pmapf* dest, pelf colour) //{{{1
+{
+	int		i = dest->width * dest->height;
+	pelf*	d = dest->pixel_data;
+
+	for (; i; i--, d++)
+		*d = colour;
+}
+
+
 gimp_image_t *pmap_cut(gimp_image_t *src, int x1, int y1, int x2, int y2) //{{{1
 {
 	gimp_image_t	*new;

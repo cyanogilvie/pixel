@@ -300,6 +300,11 @@ EXTERN struct pmapf*	pmapf_gradient_linear_v (int width, int height,
 EXTERN void		pmapf_alpha_over (struct pmapf* dest, 
 				struct pmapf* src, int xofs, int yofs);
 #endif
+#ifndef pmapf_clr_TCL_DECLARED
+#define pmapf_clr_TCL_DECLARED
+/* 49 */
+EXTERN void		pmapf_clr (struct pmapf* dest, pelf colour);
+#endif
 
 typedef struct PixelStubs {
     int magic;
@@ -354,6 +359,7 @@ typedef struct PixelStubs {
     struct pmapf* (*pmapf_gradient_radial) (int width, int height, pelf* centre_colour, pelf* outer_colour); /* 46 */
     struct pmapf* (*pmapf_gradient_linear_v) (int width, int height, pelf* top_colour, pelf* bottom_colour); /* 47 */
     void (*pmapf_alpha_over) (struct pmapf* dest, struct pmapf* src, int xofs, int yofs); /* 48 */
+    void (*pmapf_clr) (struct pmapf* dest, pelf colour); /* 49 */
 } PixelStubs;
 
 #ifdef __cplusplus
@@ -562,6 +568,10 @@ extern PixelStubs *pixelStubsPtr;
 #ifndef pmapf_alpha_over
 #define pmapf_alpha_over \
 	(pixelStubsPtr->pmapf_alpha_over) /* 48 */
+#endif
+#ifndef pmapf_clr
+#define pmapf_clr \
+	(pixelStubsPtr->pmapf_clr) /* 49 */
 #endif
 
 #endif /* defined(USE_PIXEL_STUBS) && !defined(USE_PIXEL_STUB_PROCS) */
