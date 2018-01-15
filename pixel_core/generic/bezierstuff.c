@@ -73,7 +73,7 @@ static double Simpson (
 //
 double BezierArcLength(point2d p1, point2d p2, point2d p3, point2d p4)
 {
-	point2d k1, k2, k3, k4;
+	point2d k1, k2, k3/*, k4*/;
 
 	/*
 	k1 = -p1 + 3*(p2 - p3) + p4;
@@ -88,8 +88,8 @@ double BezierArcLength(point2d p1, point2d p2, point2d p3, point2d p4)
 	k2.y = 3*(p1.y + p3.y) - 6*p2.y;
 	k3.x = 3*(p2.x - p1.x);
 	k3.y = 3*(p2.y - p1.y);
-	k4.x = p1.x;
-	k4.y = p1.y;
+	//k4.x = p1.x;
+	//k4.y = p1.y;
 
 
 	q1 = 9.0*(sqr(k1.x) + sqr(k1.y));

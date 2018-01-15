@@ -13,7 +13,7 @@ PixelStubs *pixelStubsPtr;
 
 CONST char *Pixel_InitStubs(Tcl_Interp *interp, char *version, int exact)
 {
-	char	*actualVersion;
+	const char	*actualVersion;
 
 	actualVersion = Tcl_PkgRequireEx(interp, "Pixel", version, exact,
 			(ClientData *)&pixelStubsPtr);

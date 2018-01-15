@@ -2,17 +2,17 @@
 #include "2d_lookups.h"
 
 
-void box(dest, x, y, w, h, colour, flags)
+void box(dest, x, y, w, h, colour, flags) //{{{
 	gimp_image_t	*dest;
 	int				x, y, w, h;
 	_pel			colour;
 	int				flags;
 {
-	uint32		c;
+	//uint32		c;
 	int			l;
 	_pel		*p;
 	
-	c = colour.c;
+	//c = colour.c;
 	p = dest->pixel_data + y*dest->width + x;
 	
 	for (l=0; l<h; l++, p+=dest->width)
@@ -20,9 +20,10 @@ void box(dest, x, y, w, h, colour, flags)
 }
 
 
+//}}}
 /* Danger, Will Robinson!  We do no clipping here, so trying to draw outside
    the buffer will merrily segfault! */
-void line(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
+void line(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest) //{{{
 {
     int         l;
     int         hold;
@@ -92,10 +93,10 @@ void line(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
     }
 }
 
-
+//}}}
 /* Danger, Will Robinson!  We do no clipping here, so trying to draw outside
    the buffer will merrily segfault! */
-void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
+void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest) //{{{
 {
     int         l;
     int         hold;
@@ -104,6 +105,7 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
     int         delta_x, delta_y;
 	_pel		pel;
 
+	//fprintf(stderr, "line_aa (%d, %d) -> (%d, %d)\n", x1, y1, x2, y2);
     if ( abs(y2-y1) > abs(x2-x1) ) {
         if (y1 > y2) {
             hold = y1;
@@ -123,6 +125,7 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
             x2 = hold;
         }
     }
+	//fprintf(stderr, "\treordered (%d, %d) -> (%d, %d)\n", x1, y1, x2, y2);
 
     delta_x = x2-x1;
     delta_y = y2-y1;
@@ -138,8 +141,12 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
             }
         } else {
             // loop for every y
+			int x = x1;
             delta_inc = ((delta_x) * 0x10000) / delta_y;
+			//fprintf(stderr, "starting (%d, %d)\n", x, y1);
             for (l=y1; l<=y2; l++) {
+                p = dest->pixel_data + l * dest->width + x;
+				//fprintf(stderr, "(%d, %d, from p: (%d, %d))\n", x, l, (p-dest->pixel_data)%dest->width, (p-dest->pixel_data)/dest->width);
 				if (acc_inc < 0x7fff) {
 					pel = col;
 					pel.ch.a = fact[pel.ch.a][((0x7fff - acc_inc) * 0x7f)/0x7fff];
@@ -160,8 +167,9 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
 				}
 
                 acc_inc += delta_inc;
-                p += acc_inc >> 16;
-                p += dest->width;
+				x += acc_inc >> 16;
+                //p += acc_inc >> 16;
+                //p += dest->width;
                 acc_inc &= 0xffff;
             }
         }
@@ -172,7 +180,9 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
                 *p++ = col;
         } else {
             // Loop for every x
+			int y = y1;
             delta_inc = ((delta_y) * 0x10000) / delta_x;
+			//fprintf(stderr, "delta_inc: %f\n", (delta_inc - 0x7fff) / (double)(1LL<<16));
             for (l=x1; l<=x2; l++) {
 				if (acc_inc < 0x7fff) {
 					pel = col;
@@ -181,6 +191,8 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
 					P_ALPHA((p-dest->width), (&pel));
 				}
 
+				//fprintf(stderr, "(%d, %d, %.2f), from p: (%d, %d)\n", l, y, y+(acc_inc - 0x7fff)/(double)(1LL<<16),
+				//		(p-dest->pixel_data)%dest->width, (p-dest->pixel_data)/dest->width);
 				pel = col;
 				pel.ch.a = fact[pel.ch.a][((0x7fff-abs(0x7fff-acc_inc)) * 0x7f)/0x7fff + 0x80];
 				P_ALPHA((p), (&pel));
@@ -194,7 +206,9 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
 				}
 
                 acc_inc += delta_inc;
-                p += (acc_inc >> 16) * dest->width;
+				y += (acc_inc >> 16);
+                p = dest->pixel_data + y * dest->width + l;
+				//fprintf(stderr, "after acc_inc: %x, delta_inc: %d, (%d, %d)\n", acc_inc, delta_inc, (p-dest->pixel_data)%dest->width, (p-dest->pixel_data)/dest->width);
                 p++;
                 acc_inc &= 0xffff;
             }
@@ -202,12 +216,11 @@ void line_aa(int x1, int y1, int x2, int y2, _pel col, gimp_image_t *dest)
     }
 }
 
-
+//}}}
 /* Danger, Will Robinson!  We do no clipping here, so trying to draw outside
    the buffer will merrily segfault! */
 // Subpixel oversampled trishaded antialiased line routine
-void line_aa_osa(double x1, double y1, double x2, double y2,
-		_pel col, int osa, gimp_image_t *dest)
+void line_aa_osa(double x1, double y1, double x2, double y2, _pel col, int osa, gimp_image_t *dest) //{{{
 {
 	int			l;
 	double		hold;
@@ -317,14 +330,12 @@ void line_aa_osa(double x1, double y1, double x2, double y2,
 	}
 }
 
-
+//}}}
 
 // 4 point bezier curves:
 // B(u) = p * (1 - u)³ + p  * 3 * u * (1 - u)² + p * 3 * u² * (1 - u) + p
 //         0              1                       2                      3
-void bezier(double x1, double y1, double cpx1, double cpy1,
-		double cpx2, double cpy2, double x2, double y2, _pel colour,
-		int osa, gimp_image_t *dest)
+void bezier(double x1, double y1, double cpx1, double cpy1, double cpx2, double cpy2, double x2, double y2, _pel colour, int osa, gimp_image_t *dest) //{{{
 {
 	double mum1, mum13, mu3;
 	double px, py;
@@ -364,4 +375,67 @@ void bezier(double x1, double y1, double cpx1, double cpy1,
 	}
 }
 
+//}}}
 
+struct pmapf* pmapf_gradient_radial(int width, int height, pelf* centre_colour, pelf* outer_colour) //{{{
+{
+	int				x, y, c;
+	float			cx, cy, max_dist;
+	struct pmapf*	dest = NULL;
+	pelf*			d;
+	pelf			diff;
+
+	dest = pmapf_new(width, height);
+	d = dest->pixel_data;
+	cx = (dest->width-1) / 2.0;
+	cy = (dest->height-1) / 2.0;
+	max_dist = sqrtf(cx*cx + cy*cy);
+
+	for (c=0; c<4; c++)
+		diff.chan[c] = outer_colour->chan[c] - centre_colour->chan[c];
+
+	for (y=0; y<dest->height; y++) {
+		for (x=0; x<dest->width; x++, d++) {
+			int		dx = x - cx, dy = y - cy;
+			float	dist = sqrtf(dx*dx + dy*dy);
+			float	gf = dist / max_dist;
+			for (c=0; c<4; c++)
+				d->chan[c] = centre_colour->chan[c] + diff.chan[c]*gf;
+		}
+	}
+
+	return dest;
+}
+
+//}}}
+struct pmapf* pmapf_gradient_linear_v(int width, int height, pelf* top_colour, pelf* bottom_colour) //{{{
+{
+	int				x, y, c;
+	struct pmapf*	dest = NULL;
+	pelf*			d;
+	pelf			diff;
+
+	dest = pmapf_new(width, height);
+	d = dest->pixel_data;
+
+	for (c=0; c<4; c++)
+		diff.chan[c] = bottom_colour->chan[c] - top_colour->chan[c];
+
+	for (y=0; y<dest->height; y++) {
+		float gf = y/(float)(dest->height-1);
+		pelf	col;
+
+		for (c=0; c<4; c++)
+			col.chan[c] = top_colour->chan[c] + diff.chan[c]*gf;
+
+		for (x=0; x<dest->width; x++, d++)
+			for (c=0; c<4; c++)
+				*d = col;
+	}
+
+	return dest;
+}
+
+//}}}
+
+// vim: foldmethod=marker foldmarker={{{,}}} ts=4 shiftwidth=4

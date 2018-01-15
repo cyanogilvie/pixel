@@ -245,6 +245,61 @@ EXTERN unsigned char *	rle_encode (const gimp_image_t * pmap,
 /* 38 */
 EXTERN int		Tcl_IsPMAPObj (Tcl_Obj* obj);
 #endif
+#ifndef pmapf_new_TCL_DECLARED
+#define pmapf_new_TCL_DECLARED
+/* 39 */
+EXTERN struct pmapf*	pmapf_new (int width, int height);
+#endif
+#ifndef Pixel_NewPMAPFObj_TCL_DECLARED
+#define Pixel_NewPMAPFObj_TCL_DECLARED
+/* 40 */
+EXTERN Tcl_Obj*		Pixel_NewPMAPFObj (struct pmapf* pmapf);
+#endif
+#ifndef Pixel_GetPMAPFFromObj_TCL_DECLARED
+#define Pixel_GetPMAPFFromObj_TCL_DECLARED
+/* 41 */
+EXTERN int		Pixel_GetPMAPFFromObj (Tcl_Interp* interp, 
+				Tcl_Obj* obj, struct pmapf** pmapf);
+#endif
+#ifndef pmapf_free_TCL_DECLARED
+#define pmapf_free_TCL_DECLARED
+/* 42 */
+EXTERN void		pmapf_free (struct pmapf** pmapf);
+#endif
+#ifndef pmap_to_pmapf_TCL_DECLARED
+#define pmap_to_pmapf_TCL_DECLARED
+/* 43 */
+EXTERN struct pmapf*	pmap_to_pmapf (gimp_image_t* pmap);
+#endif
+#ifndef pmapf_to_pmap_TCL_DECLARED
+#define pmapf_to_pmap_TCL_DECLARED
+/* 44 */
+EXTERN gimp_image_t*	pmapf_to_pmap (struct pmapf* pmapf);
+#endif
+#ifndef Pixel_GetPELFFromObj_TCL_DECLARED
+#define Pixel_GetPELFFromObj_TCL_DECLARED
+/* 45 */
+EXTERN int		Pixel_GetPELFFromObj (Tcl_Interp* interp, 
+				Tcl_Obj* obj, pelf* out);
+#endif
+#ifndef pmapf_gradient_radial_TCL_DECLARED
+#define pmapf_gradient_radial_TCL_DECLARED
+/* 46 */
+EXTERN struct pmapf*	pmapf_gradient_radial (int width, int height, 
+				pelf* centre_colour, pelf* outer_colour);
+#endif
+#ifndef pmapf_gradient_linear_v_TCL_DECLARED
+#define pmapf_gradient_linear_v_TCL_DECLARED
+/* 47 */
+EXTERN struct pmapf*	pmapf_gradient_linear_v (int width, int height, 
+				pelf* top_colour, pelf* bottom_colour);
+#endif
+#ifndef pmapf_alpha_over_TCL_DECLARED
+#define pmapf_alpha_over_TCL_DECLARED
+/* 48 */
+EXTERN void		pmapf_alpha_over (struct pmapf* dest, 
+				struct pmapf* src, int xofs, int yofs);
+#endif
 
 typedef struct PixelStubs {
     int magic;
@@ -289,6 +344,16 @@ typedef struct PixelStubs {
     gimp_image_t * (*rle_decode) (const unsigned char * rle_data, unsigned int data_len, int * status); /* 36 */
     unsigned char * (*rle_encode) (const gimp_image_t * pmap, unsigned int * data_len, int * status); /* 37 */
     int (*tcl_IsPMAPObj) (Tcl_Obj* obj); /* 38 */
+    struct pmapf* (*pmapf_new) (int width, int height); /* 39 */
+    Tcl_Obj* (*pixel_NewPMAPFObj) (struct pmapf* pmapf); /* 40 */
+    int (*pixel_GetPMAPFFromObj) (Tcl_Interp* interp, Tcl_Obj* obj, struct pmapf** pmapf); /* 41 */
+    void (*pmapf_free) (struct pmapf** pmapf); /* 42 */
+    struct pmapf* (*pmap_to_pmapf) (gimp_image_t* pmap); /* 43 */
+    gimp_image_t* (*pmapf_to_pmap) (struct pmapf* pmapf); /* 44 */
+    int (*pixel_GetPELFFromObj) (Tcl_Interp* interp, Tcl_Obj* obj, pelf* out); /* 45 */
+    struct pmapf* (*pmapf_gradient_radial) (int width, int height, pelf* centre_colour, pelf* outer_colour); /* 46 */
+    struct pmapf* (*pmapf_gradient_linear_v) (int width, int height, pelf* top_colour, pelf* bottom_colour); /* 47 */
+    void (*pmapf_alpha_over) (struct pmapf* dest, struct pmapf* src, int xofs, int yofs); /* 48 */
 } PixelStubs;
 
 #ifdef __cplusplus
@@ -457,6 +522,46 @@ extern PixelStubs *pixelStubsPtr;
 #ifndef Tcl_IsPMAPObj
 #define Tcl_IsPMAPObj \
 	(pixelStubsPtr->tcl_IsPMAPObj) /* 38 */
+#endif
+#ifndef pmapf_new
+#define pmapf_new \
+	(pixelStubsPtr->pmapf_new) /* 39 */
+#endif
+#ifndef Pixel_NewPMAPFObj
+#define Pixel_NewPMAPFObj \
+	(pixelStubsPtr->pixel_NewPMAPFObj) /* 40 */
+#endif
+#ifndef Pixel_GetPMAPFFromObj
+#define Pixel_GetPMAPFFromObj \
+	(pixelStubsPtr->pixel_GetPMAPFFromObj) /* 41 */
+#endif
+#ifndef pmapf_free
+#define pmapf_free \
+	(pixelStubsPtr->pmapf_free) /* 42 */
+#endif
+#ifndef pmap_to_pmapf
+#define pmap_to_pmapf \
+	(pixelStubsPtr->pmap_to_pmapf) /* 43 */
+#endif
+#ifndef pmapf_to_pmap
+#define pmapf_to_pmap \
+	(pixelStubsPtr->pmapf_to_pmap) /* 44 */
+#endif
+#ifndef Pixel_GetPELFFromObj
+#define Pixel_GetPELFFromObj \
+	(pixelStubsPtr->pixel_GetPELFFromObj) /* 45 */
+#endif
+#ifndef pmapf_gradient_radial
+#define pmapf_gradient_radial \
+	(pixelStubsPtr->pmapf_gradient_radial) /* 46 */
+#endif
+#ifndef pmapf_gradient_linear_v
+#define pmapf_gradient_linear_v \
+	(pixelStubsPtr->pmapf_gradient_linear_v) /* 47 */
+#endif
+#ifndef pmapf_alpha_over
+#define pmapf_alpha_over \
+	(pixelStubsPtr->pmapf_alpha_over) /* 48 */
 #endif
 
 #endif /* defined(USE_PIXEL_STUBS) && !defined(USE_PIXEL_STUB_PROCS) */

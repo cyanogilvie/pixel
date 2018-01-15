@@ -1,7 +1,7 @@
 # vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
 
-#lappend auto_path	[file normalize [file join [info script] .. .. ..]]
-lappend auto_path	[file join $env(HOME) .tbuild repo pkg linux-glibc2.10-x86_64]
+lappend auto_path	[file normalize [file join [info script] .. .. ..]]
+#lappend auto_path	[file join $env(HOME) .tbuild repo pkg linux-glibc2.10-x86_64]
 
 package require Pixel_svg_cairo
 package require Pixel_sdl

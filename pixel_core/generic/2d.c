@@ -17,6 +17,9 @@ uint8	scale_lookup_linear[256][256];
 uint8	inv_scale_lookup_square[256][256];
 uint8	inv_scale_lookup_sine[256][256];
 uint8	inv_scale_lookup_linear[256][256];
+float	sRGB_to_linear_floats[256];
+#define L2SRGB	4096
+uint8_t	linear_floats_to_sRGB[L2SRGB];
 
 uint32	r_mask, g_mask, b_mask;
 uint32	r_size = 0;
@@ -464,8 +467,8 @@ void pmap_filter(gimp_image_t *dest, int flags, double factor) // {{{1
 	if (flags & MD_FILTER_ALPHA_Q) {
 		uint8	a = (uint8)(factor * 255.0);
 		e = dest->pixel_data;
-		for (l = 0; l < dest->width*dest->height; l++)
-			e++->ch.a = fact[e->ch.a][a];
+		for (l = 0; l < dest->width*dest->height; l++, e++)
+			e->ch.a = fact[e->ch.a][a];
 	}
 
 	if (flags & MD_FILTER_SMOOTH) {
@@ -644,7 +647,7 @@ gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) //{{{1
 {
 	_pel			*s, *d;
 	gimp_image_t	*new;
-	_pel			tmp;
+	//_pel			tmp;
 	int				sign;
 	int				littlejump, bigjump;
 	int				nx, ny;
@@ -658,7 +661,7 @@ gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) //{{{1
 		return pmap_dup(src);
 	
 //	fprintf(stderr, "quads2.1: (%d)\n", quads);
-	tmp.c = 0xffff00ff;
+	//tmp.c = 0xffff00ff;
 	
 //	fprintf(stderr, "quads2.2: (%d)\n", quads);
 //	new = pmap_new(src->height, src->width, tmp);
@@ -979,11 +982,37 @@ void hsv2rgb(h, s, v, r, g, b) //{{{1
 	}
 }
 
+//}}}1
 
+void pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, int yofs) //{{{
+{
+	int		x, y, c, to_x, to_y;	// dest coord space
+	pelf*	d;
+	pelf*	s;
+
+	to_x = xofs + src->width;
+	to_y = yofs + src->height;
+
+	if (to_x > dest->width) to_x = dest->width;
+	if (to_y > dest->height) to_y = dest->height;
+
+	for (y=yofs; y<to_y; y++) {
+		d = dest->pixel_data + y*dest->width + xofs;
+		s = src->pixel_data + (y-yofs)*src->width;
+		for (x=xofs; x<to_x; x++, d++, s++) {
+			for (c=0; c<3; c++)
+				d->chan[c] = s->ch.a*s->chan[c] + (1-s->ch.a)*d->chan[c];
+			d->ch.a = s->ch.a + (1-s->ch.a) * d->ch.a;
+		}
+	}
+}
+
+//}}}
 void do_dirty_tricks() // {{{1
 {
-	double		foo;
-	uint32		a,b,bar;
+	double			foo;
+	uint32_t		a,b,bar;
+	float			v, g;
 
 	for( a=0; a<=255; a++ )
 		for( b=0; b<=255; b++ ) {
@@ -1010,8 +1039,137 @@ void do_dirty_tricks() // {{{1
 			if( foo - scale_lookup_square[a][b] > 0.5 ) scale_lookup_square[a][b]++;
 			inv_scale_lookup_square[a][b] = b - scale_lookup_square[a][b];
 		}
+
+	// Precompute the lookup from sRGB 8bit samples to linear floats
+	for (a=0; a<256; a++) {
+		sRGB_to_linear_floats[a] = a < 10 ?
+			a / (255*12.92)  :
+			powf((a/255.0 + 0.055)/(1 + 0.055), 2.4);
+		//fprintf(stderr, "a: %d -> %.4f (%.2f)\n", a, sRGB_to_linear_floats[a], sRGB_to_linear_floats[a] * 255);
+	}
+
+	// Precompute the lookup from linear floats * (L2SRGB-1) to sRGB 8bit samples
+	for (a=0; a<L2SRGB; a++) {
+		v = a/(float)(L2SRGB-1);
+		g = v < 0.0031308 ?
+			0xff*(v*12.92)  :
+			0xff*((1+0.055)*powf(v, 1/2.4)-0.055);
+		linear_floats_to_sRGB[a] = .5 + g;
+		//fprintf(stderr, "a: %d (%.2f), g: %.2f, v: %.4f -> %d\n", a, a * 255.0/L2SRGB, g, v, linear_floats_to_sRGB[a]);
+	}
 }
 
+
+//}}}1
+
+struct pmapf* pmapf_new(int width, int height) //{{{
+{
+	struct pmapf*	out = NULL;
+
+	out = (struct pmapf*)malloc(sizeof(struct pmapf));
+	out->width = width;
+	out->height = height;
+	out->bytes_per_pixel = sizeof(pelf);	// Used to signal floating point pixel data
+	//out->pixel_data = (pelf*)malloc(sizeof(pelf) * out->width * out->height);
+	// Allocate memory aligned to 16 bytes (for SIMD)
+	if (0 != posix_memalign((void**)&out->pixel_data, 16, sizeof(pelf) * out->width * out->height))
+		Tcl_Panic("Could not allocate memory for pelf data");
+
+	return out;
+}
+
+//}}}
+void pmapf_free(struct pmapf** pmapf) //{{{
+{
+	if ((*pmapf)->pixel_data) {
+		free((*pmapf)->pixel_data);
+		(*pmapf)->pixel_data = NULL;
+	}
+	(*pmapf)->pixel_data = NULL;
+	free(*pmapf);
+	*pmapf = NULL;
+}
+
+//}}}
+inline pelf clamp_pelf(pelf in) //{{{
+{
+	pelf	out;
+	int		c;
+
+	for (c=0; c<4; c++)
+		out.chan[c] = in.chan[c] < 0.0 ? 0.0 :
+			in.chan[c] > 1.0 ? 1.0 : in.chan[c];
+
+	return out;
+}
+
+//}}}
+inline float clamp_chan(float in) //{{{
+{
+	return in < 0.0 ? 0.0 :
+		in > 1.0 ? 1.0 :
+		in;
+}
+
+//}}}
+inline int clamp_int(int in, int max) //{{{
+{
+	return in < 0.0 ? 0.0 :
+		in > max ? max :
+		in;
+}
+
+//}}}
+struct pmapf* pmap_to_pmapf(gimp_image_t* in) //{{{
+{
+	int				x, y, c;
+	struct pmapf*	out;
+	_pel*			s;
+	pelf*			d;
+
+	out = pmapf_new(in->width, in->height);
+
+	s = (_pel*)(in->pixel_data);
+	d = out->pixel_data;
+
+	for (y=0; y<in->height; y++) {
+		for (x=0; x<in->width; x++, s++, d++) {
+			for (c=0; c<3; c++)
+				d->chan[c] = sRGB_to_linear_floats[s->chan[c]];
+
+			d->chan[CHAN_A] = s->chan[CHAN_A] / 255.0;
+		}
+	}
+
+	return out;
+}
+
+//}}}
+gimp_image_t* pmapf_to_pmap(struct pmapf* in) //{{{
+{
+	int				x, y, c;
+	gimp_image_t*	out;
+	_pel*			d;
+	pelf*			s;
+
+	out = pmap_new(in->width, in->height, (_pel)(uint32_t)0);
+
+	s = in->pixel_data;
+	d = (_pel*)(out->pixel_data);
+
+	for (y=0; y<in->height; y++) {
+		for (x=0; x<in->width; x++, s++, d++) {
+			for (c=0; c<3; c++)
+				d->chan[c] = linear_floats_to_sRGB[(int)(clamp_chan(s->chan[c]) * (L2SRGB-1))];
+
+			d->chan[CHAN_A] = 0xff * clamp_chan(s->chan[CHAN_A]);
+		}
+	}
+
+	return out;
+}
+
+//}}}
 
 void init_2d () // {{{1
 {

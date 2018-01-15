@@ -47,6 +47,16 @@ PixelStubs pixelStubs = {
     rle_decode, /* 36 */
     rle_encode, /* 37 */
     Tcl_IsPMAPObj, /* 38 */
+    pmapf_new, /* 39 */
+    Pixel_NewPMAPFObj, /* 40 */
+    Pixel_GetPMAPFFromObj, /* 41 */
+    pmapf_free, /* 42 */
+    pmap_to_pmapf, /* 43 */
+    pmapf_to_pmap, /* 44 */
+    Pixel_GetPELFFromObj, /* 45 */
+    pmapf_gradient_radial, /* 46 */
+    pmapf_gradient_linear_v, /* 47 */
+    pmapf_alpha_over, /* 48 */
 };
 
 /* !END!: Do not edit above this line. */

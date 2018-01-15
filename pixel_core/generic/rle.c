@@ -190,7 +190,7 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 	int				test_map_count[4096];
 	int				max_map = 0;
 	int				map_size;
-	int				value;
+	int				value=0;
 	int				slot;
 	_pel			*map;
 	const _pel		*s;

@@ -213,6 +213,7 @@
 
 typedef union {
 	uint32	c;
+	uint8_t	chan[4];
 	struct {
 		uint8	b,g,r,a;
 	} ch;
@@ -231,5 +232,29 @@ typedef struct pmap_list {
 	void			*clientdata;
 	struct pmap_list		*next;
 } pmap_list;
+
+
+
+// pmapf
+
+#define CHAN_B	0
+#define CHAN_G	1
+#define CHAN_R	2
+#define CHAN_A	3
+
+typedef union {
+	float		chan[4];
+	struct {
+		float	b,g,r,a;
+	} ch;
+} pelf;
+
+struct pmapf {
+	uint32_t	width;
+	uint32_t	height;
+	uint32_t	bytes_per_pixel;
+	pelf*		pixel_data;
+};
+
 
 #endif

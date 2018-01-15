@@ -9,7 +9,7 @@
 #include <signal.h>
 #include <SDL/SDL.h>
 #include <tcl.h>
-#include <tclstuff.h>
+#include "tclstuff.h"
 #include <Pixel/pixel.h>
 
 typedef struct {

@@ -116,4 +116,33 @@ declare 37 generic {
 declare 38 generic {
 	int Tcl_IsPMAPObj(Tcl_Obj* obj)
 }
-
+declare 39 generic {
+	struct pmapf* pmapf_new(int width, int height)
+}
+declare 40 generic {
+	Tcl_Obj* Pixel_NewPMAPFObj(struct pmapf* pmapf)
+}
+declare 41 generic {
+	int Pixel_GetPMAPFFromObj(Tcl_Interp* interp, Tcl_Obj* obj, struct pmapf** pmapf)
+}
+declare 42 generic {
+	void pmapf_free(struct pmapf** pmapf)
+}
+declare 43 generic {
+	struct pmapf* pmap_to_pmapf(gimp_image_t* pmap)
+}
+declare 44 generic {
+	gimp_image_t* pmapf_to_pmap(struct pmapf* pmapf)
+}
+declare 45 generic {
+	int Pixel_GetPELFFromObj(Tcl_Interp* interp, Tcl_Obj* obj, pelf* out)
+}
+declare 46 generic {
+	struct pmapf* pmapf_gradient_radial(int width, int height, pelf* centre_colour, pelf* outer_colour)
+}
+declare 47 generic {
+	struct pmapf* pmapf_gradient_linear_v(int width, int height, pelf* top_colour, pelf* bottom_colour)
+}
+declare 48 generic {
+	void pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, int yofs)
+}

@@ -1,0 +1,19 @@
+if {"::tcltest" in [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel_fftw
+
+test basic-1.1 {Basic test} -body { #<<<
+	set p	[pixel::pmap_new 128 128 0]
+	set fft	[pixel::fftw::transform_pmap $p]
+	pixel::pmap_info $fft
+} -cleanup {
+	unset -nocomplain p fft
+} -result {128 128}
+#>>>
+
+::tcltest::cleanupTests
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
