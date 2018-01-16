@@ -1002,7 +1002,8 @@ struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, 
 	pelf*	o;
 	struct pmapf*	out = NULL;
 
-	out = pmapf_new(src->width, src->height);
+	out = pmapf_new(dest->width, dest->height);
+	memcpy(out->pixel_data, dest->pixel_data, dest->width*dest->height*dest->bytes_per_pixel);
 	o = out->pixel_data;
 
 	to_x = xofs + src->width;
