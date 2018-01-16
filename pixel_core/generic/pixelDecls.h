@@ -297,7 +297,7 @@ EXTERN struct pmapf*	pmapf_gradient_linear_v (int width, int height,
 #ifndef pmapf_alpha_over_TCL_DECLARED
 #define pmapf_alpha_over_TCL_DECLARED
 /* 48 */
-EXTERN void		pmapf_alpha_over (struct pmapf* dest, 
+EXTERN struct pmapf*	pmapf_alpha_over (struct pmapf* dest, 
 				struct pmapf* src, int xofs, int yofs);
 #endif
 #ifndef pmapf_clr_TCL_DECLARED
@@ -358,7 +358,7 @@ typedef struct PixelStubs {
     int (*pixel_GetPELFFromObj) (Tcl_Interp* interp, Tcl_Obj* obj, pelf* out); /* 45 */
     struct pmapf* (*pmapf_gradient_radial) (int width, int height, pelf* centre_colour, pelf* outer_colour); /* 46 */
     struct pmapf* (*pmapf_gradient_linear_v) (int width, int height, pelf* top_colour, pelf* bottom_colour); /* 47 */
-    void (*pmapf_alpha_over) (struct pmapf* dest, struct pmapf* src, int xofs, int yofs); /* 48 */
+    struct pmapf* (*pmapf_alpha_over) (struct pmapf* dest, struct pmapf* src, int xofs, int yofs); /* 48 */
     void (*pmapf_clr) (struct pmapf* dest, pelf colour); /* 49 */
 } PixelStubs;
 

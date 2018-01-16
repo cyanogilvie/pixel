@@ -994,11 +994,16 @@ void hsv2rgb(h, s, v, r, g, b) //{{{1
 
 //}}}1
 
-void pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, int yofs) //{{{
+struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, int yofs) //{{{
 {
 	int		x, y, c, to_x, to_y;	// dest coord space
 	pelf*	d;
 	pelf*	s;
+	pelf*	o;
+	struct pmapf*	out = NULL;
+
+	out = pmapf_new(src->width, src->height);
+	o = out->pixel_data;
 
 	to_x = xofs + src->width;
 	to_y = yofs + src->height;
@@ -1009,12 +1014,14 @@ void pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, int yofs)
 	for (y=yofs; y<to_y; y++) {
 		d = dest->pixel_data + y*dest->width + xofs;
 		s = src->pixel_data + (y-yofs)*src->width;
-		for (x=xofs; x<to_x; x++, d++, s++) {
+		for (x=xofs; x<to_x; x++, d++, s++, o++) {
 			for (c=0; c<3; c++)
-				d->chan[c] = s->ch.a*s->chan[c] + (1-s->ch.a)*d->chan[c];
-			d->ch.a = s->ch.a + (1-s->ch.a) * d->ch.a;
+				o->chan[c] = s->ch.a*s->chan[c] + (1-s->ch.a)*d->chan[c];
+			o->ch.a = s->ch.a + (1-s->ch.a) * d->ch.a;
 		}
 	}
+
+	return out;
 }
 
 //}}}

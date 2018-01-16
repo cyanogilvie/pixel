@@ -691,6 +691,7 @@ static int glue_pmapf_alpha_over(ClientData cdata, Tcl_Interp* interp, int objc,
 	int				x, y;
 	struct pmapf*	dest = NULL;
 	struct pmapf*	src = NULL;
+	struct pmapf*	out = NULL;
 
 	CHECK_ARGS(4, "dest src x y");
 
@@ -699,7 +700,8 @@ static int glue_pmapf_alpha_over(ClientData cdata, Tcl_Interp* interp, int objc,
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &x));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &y));
 
-	pmapf_alpha_over(dest, src, x, y);
+	out = pmapf_alpha_over(dest, src, x, y);
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
 
 	return TCL_OK;
 }
@@ -2156,6 +2158,166 @@ static int glue_dump_pmapf(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_O
 }
 
 //}}}
+static int glue_invert(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	in = NULL;
+	int				x, y, c;
+	struct pmapf*	out = NULL;
+	pelf*			i;
+	pelf*			o;
+
+	CHECK_ARGS(1, "pmapf");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
+	out = pmapf_new(in->width, in->height);
+
+	i = in->pixel_data;
+	o = out->pixel_data;
+
+	for (y=0; y<in->height; y++)
+		for (x=0; x<in->width; x++, i++, o++) {
+			for (c=0; c<3; c++)
+				o->chan[c] = 1.0 - i->chan[c];
+				//o->chan[c] = -i->chan[c];
+			o->ch.a = i->ch.a;
+		}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_neg(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	in = NULL;
+	int				x, y, c;
+	struct pmapf*	out = NULL;
+	pelf*			i;
+	pelf*			o;
+
+	CHECK_ARGS(1, "pmapf");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
+	out = pmapf_new(in->width, in->height);
+
+	i = in->pixel_data;
+	o = out->pixel_data;
+
+	for (y=0; y<in->height; y++)
+		for (x=0; x<in->width; x++, i++, o++) {
+			for (c=0; c<3; c++)
+				o->chan[c] = -i->chan[c];
+			o->ch.a = i->ch.a;
+		}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_mul(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	in = NULL;
+	int				x, y, c;
+	double			factor;
+	struct pmapf*	out = NULL;
+	pelf*			i;
+	pelf*			o;
+
+	CHECK_ARGS(2, "pmapf factor");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &factor));
+
+	out = pmapf_new(in->width, in->height);
+
+	i = in->pixel_data;
+	o = out->pixel_data;
+
+	for (y=0; y<in->height; y++)
+		for (x=0; x<in->width; x++, i++, o++) {
+			for (c=0; c<3; c++)
+				o->chan[c] = i->chan[c] * factor;
+			o->ch.a = i->ch.a;
+		}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_add(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	pmapf_a = NULL;
+	struct pmapf*	pmapf_b = NULL;
+	int				x, y, c;
+	struct pmapf*	out = NULL;
+	pelf*			a;
+	pelf*			b;
+	pelf*			o;
+
+	CHECK_ARGS(2, "pmapf_a pmapf_b");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &pmapf_a));
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[2], &pmapf_b));
+
+	if (pmapf_a->height != pmapf_b->height || pmapf_a->width != pmapf_b->width)
+		THROW_ERROR("Both input pmapfs must be the same dimensions");
+
+	out = pmapf_new(pmapf_a->width, pmapf_a->height);
+
+	a = pmapf_a->pixel_data;
+	b = pmapf_b->pixel_data;
+	o = out->pixel_data;
+
+	for (y=0; y<out->height; y++)
+		for (x=0; x<out->width; x++, a++, b++, o++) {
+			for (c=0; c<3; c++)
+				o->chan[c] = a->chan[c] + b->chan[c];
+			o->ch.a = a->ch.a * b->ch.a;
+		}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_fade(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	in = NULL;
+	int				x, y, c;
+	double			factor;
+	struct pmapf*	out = NULL;
+	pelf*			i;
+	pelf*			o;
+
+	CHECK_ARGS(2, "pmapf factor");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &factor));
+
+	out = pmapf_new(in->width, in->height);
+
+	i = in->pixel_data;
+	o = out->pixel_data;
+
+	for (y=0; y<in->height; y++)
+		for (x=0; x<in->width; x++, i++, o++) {
+			for (c=0; c<3; c++)
+				o->chan[c] = i->chan[c];
+			o->ch.a = i->ch.a * factor;
+		}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
 int Pixel_Init(Tcl_Interp *interp) // {{{1
 {
 	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
@@ -2166,7 +2328,6 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	
 	NEW_CMD("pixel::pmap_new", glue_pmap_new);
 	NEW_CMD("pixel::pmap_clr", glue_pmap_clr);
-	NEW_CMD("pixel::pmapf_clr", glue_pmapf_clr);
 	NEW_CMD("pixel::pmap_cut", glue_pmap_cut);
 	NEW_CMD("pixel::pmap_paste", glue_pmap_paste);
 	NEW_CMD("pixel::pmap_paste_ref", glue_pmap_paste_ref);
@@ -2176,7 +2337,6 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::pmap_dropshadow", glue_pmap_dropshadow);
 	NEW_CMD("pixel::pmap_rotate", glue_pmap_rotate);
 	NEW_CMD("pixel::pmap_info", glue_pmap_info);
-	NEW_CMD("pixel::pmapf_info", glue_pmapf_info);
 	NEW_CMD("pixel::dup", glue_dup);
 	NEW_CMD("pixel::blend", glue_blend);
 	NEW_CMD("pixel::center", glue_center);
@@ -2186,10 +2346,21 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 
 	// pmapf
 	NEW_CMD("pixel::pmapf_new", glue_pmapf_new);
+	NEW_CMD("pixel::pmapf_clr", glue_pmapf_clr);
+	NEW_CMD("pixel::pmapf_info", glue_pmapf_info);
 	NEW_CMD("pixel::pmap_to_pmapf", glue_pmap_to_pmapf);
 	NEW_CMD("pixel::pmapf_to_pmap", glue_pmapf_to_pmap);
 	NEW_CMD("pixel::scale_pmapf_lanczos", glue_scale_pmapf_lanczos3);
 	NEW_CMD("pixel::lowpass_pmapf_lanczos", glue_lowpass_pmapf_lanczos3);
+	NEW_CMD("pixel::gradient_radial", glue_gradient_radial);
+	NEW_CMD("pixel::gradient_linear_v", glue_gradient_linear_v);
+	NEW_CMD("pixel::pmapf_alpha_over", glue_pmapf_alpha_over);
+	NEW_CMD("pixel::dump_pmapf", glue_dump_pmapf);
+	NEW_CMD("pixel::invert", glue_invert);
+	NEW_CMD("pixel::neg", glue_neg);
+	NEW_CMD("pixel::mul", glue_mul);
+	NEW_CMD("pixel::add", glue_add);
+	NEW_CMD("pixel::fade", glue_fade);
 
 	// Primitives
 	NEW_CMD("pixel::box", glue_box);
@@ -2197,9 +2368,6 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::line_aa", glue_line_aa);
 	NEW_CMD("pixel::line_aa_osa", glue_line_aa_osa);
 	NEW_CMD("pixel::bezier", glue_bezier);
-	NEW_CMD("pixel::gradient_radial", glue_gradient_radial);
-	NEW_CMD("pixel::gradient_linear_v", glue_gradient_linear_v);
-	NEW_CMD("pixel::pmapf_alpha_over", glue_pmapf_alpha_over);
 
 	// Misc
 	NEW_CMD("pixel::rle_encode", glue_rle_encode);
@@ -2216,7 +2384,6 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::lowpass_pmap_lanczos", glue_lowpass_pmap_lanczos3);
 	NEW_CMD("pixel::kern_vis", glue_kern_vis);
 	NEW_CMD("pixel::image_mimetype", glue_image_mimetype);
-	NEW_CMD("pixel::dump_pmapf", glue_dump_pmapf);
 
 	TEST_OK(initvars(interp));
 
