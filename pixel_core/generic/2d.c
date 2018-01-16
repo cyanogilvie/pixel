@@ -1014,6 +1014,7 @@ struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, 
 
 	for (y=yofs; y<to_y; y++) {
 		d = dest->pixel_data + y*dest->width + xofs;
+		o = out->pixel_data + y*out->width + xofs;
 		s = src->pixel_data + (y-yofs)*src->width;
 		for (x=xofs; x<to_x; x++, d++, s++, o++) {
 			for (c=0; c<3; c++)
