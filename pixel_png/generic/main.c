@@ -7,6 +7,13 @@
 
 #include "all.h"
 
+typedef union {
+	uint8_t	chan[3];
+	struct {
+		uint8_t	b, g, r;
+	} ch;
+} rgb_pel;
+
 static int glue_loadpng(cdata, interp, objc, objv) // loadpng filename {{{
 	ClientData		cdata;
 	Tcl_Interp		*interp;
@@ -280,6 +287,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 	gimp_image_t*		pmap = NULL;
 	_pel				init;
 	struct png_membuf	pngdata;
+	rgb_pel*			rgb_buf = NULL;
 
 	CHECK_ARGS(1, "pngdata");
 
@@ -323,8 +331,22 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 		Tcl_SetObjResult(interp, Tcl_NewStringObj("Error reading PNG metadata", -1));
 		goto error;
 	}
-	//fprintf(stderr, "width: %ld, height: %ld, bitdepth: %d, colourtype: %d\n", width, height, bitdepth, colourtype);
+	if (bitdepth != 8) {
+		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "BITDEPTH", NULL);
+		Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported bit depth: %d", bitdepth));
+		goto error;
+	}
+
+	//fprintf(stderr, "width: %ld, height: %ld, bitdepth: %d, colourtype: %d, PNG_COLOR_TYPE_RGB_ALPHA: %d, PNG_COLOR_TYPE_RGB: %d\n", width, height, bitdepth, colourtype, PNG_COLOR_TYPE_RGB_ALPHA, PNG_COLOR_TYPE_RGB);
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
+	switch (colourtype) {
+		case PNG_COLOR_TYPE_RGB_ALPHA: break;
+		case PNG_COLOR_TYPE_RGB: break;
+		default:
+			Tcl_SetErrorCode(interp, "PIXEL", "PNG", "COLOURTYPE", NULL);
+			Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported colour type: %d", colourtype));
+			goto error;
+	}
 	// First pass: find the width and height }}}
 
 	// Have to re-init the context structs to use png_read_png for some reason {{{
@@ -358,8 +380,15 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 	pmap_clr(pmap, init);
 
 	row_pointers = (png_bytep*)malloc(height * sizeof(png_bytep));
-	for (i=0; i<height; i++)
-		row_pointers[i] = (png_bytep)(pmap->pixel_data + (i * width));
+
+	if (colourtype == PNG_COLOR_TYPE_RGB) {
+		rgb_buf = (rgb_pel*)malloc(sizeof(rgb_pel) * width * height);
+		for (i=0; i<height; i++)
+			row_pointers[i] = (png_bytep)(rgb_buf + (i * width));
+	} else {
+		for (i=0; i<height; i++)
+			row_pointers[i] = (png_bytep)(pmap->pixel_data + (i * width));
+	}
 
 	png_set_rows(png_ptr, info_ptr, row_pointers);
 
@@ -370,7 +399,25 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 			PNG_TRANSFORM_BGR |
 			PNG_TRANSFORM_EXPAND, NULL);
 
+	if (colourtype == PNG_COLOR_TYPE_RGB) {
+		rgb_pel*	s = rgb_buf;
+		_pel*		d = pmap->pixel_data;
+		int			i = width * height, c;
+
+		while (i--) {
+			for (c=0; c<3; c++)
+				d->chan[c] = s->chan[c];
+
+			d->ch.a = 0xff;
+			d++;
+			s++;
+		}
+	}
+
 	free(row_pointers);  row_pointers = NULL;
+
+	if (rgb_buf) { free(rgb_buf);  rgb_buf = NULL; }
+
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
 	return TCL_OK;
@@ -381,6 +428,9 @@ error:
 	}
 	if (pmap) {
 		free(pmap);  pmap = NULL;
+	}
+	if (rgb_buf) {
+		free(rgb_buf);  rgb_buf = NULL;
 	}
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
 	return TCL_ERROR;
