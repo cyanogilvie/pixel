@@ -996,7 +996,7 @@ void hsv2rgb(h, s, v, r, g, b) //{{{1
 
 struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, int yofs) //{{{
 {
-	int		x, y, c, to_x, to_y;	// dest coord space
+	int		x, y, c, to_x, to_y, yofs_src=0, xofs_src=0;	// dest coord space
 	pelf*	d;
 	pelf*	s;
 	pelf*	o;
@@ -1009,13 +1009,28 @@ struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, 
 	to_x = xofs + src->width;
 	to_y = yofs + src->height;
 
-	if (to_x > dest->width) to_x = dest->width;
+	if (to_x > dest->width)  to_x = dest->width;
 	if (to_y > dest->height) to_y = dest->height;
+
+	if (yofs < 0) {
+		yofs_src = -yofs;
+		yofs = 0;
+		fprintf(stderr, "Adjusting yofs: %d, yofs_src: %d\n", yofs, yofs_src);
+	}
+
+	if (xofs < 0) {
+		xofs_src = -xofs;
+		xofs = 0;
+		fprintf(stderr, "Adjusting xofs: %d, xofs_src: %d\n", xofs, xofs_src);
+	}
+
+	if (yofs+yofs_src > src->height) return out;
+	if (xofs+xofs_src > src->width)  return out;
 
 	for (y=yofs; y<to_y; y++) {
 		d = dest->pixel_data + y*dest->width + xofs;
 		o = out->pixel_data + y*out->width + xofs;
-		s = src->pixel_data + (y-yofs)*src->width;
+		s = src->pixel_data + (y-yofs+yofs_src)*src->width + xofs_src;
 		for (x=xofs; x<to_x; x++, d++, s++, o++) {
 			for (c=0; c<3; c++)
 				o->chan[c] = s->ch.a*s->chan[c] + (1-s->ch.a)*d->chan[c];
