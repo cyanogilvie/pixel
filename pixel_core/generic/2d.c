@@ -1123,7 +1123,7 @@ inline pelf clamp_pelf(pelf in) //{{{
 }
 
 //}}}
-inline float clamp_chan(float in) //{{{
+static inline float clamp_chan(float in) //{{{
 {
 	return in < 0.0 ? 0.0 :
 		in > 1.0 ? 1.0 :
@@ -1181,7 +1181,7 @@ gimp_image_t* pmapf_to_pmap(struct pmapf* in) //{{{
 			for (c=0; c<3; c++)
 				d->chan[c] = linear_floats_to_sRGB[(int)(clamp_chan(s->chan[c]) * (L2SRGB-1))];
 
-			d->chan[CHAN_A] = 0xff * clamp_chan(s->chan[CHAN_A]);
+			d->chan[CHAN_A] = 0xff * clamp_chan(s->chan[CHAN_A] + .5/256);
 		}
 	}
 
