@@ -14,6 +14,13 @@ typedef union {
 	} ch;
 } rgb_pel;
 
+typedef union {
+	uint8_t	chan[2];
+	struct {
+		uint8_t	v, a;
+	} ch;
+} ga_pel;
+
 static int glue_loadpng(cdata, interp, objc, objv) // loadpng filename {{{
 	ClientData		cdata;
 	Tcl_Interp		*interp;
@@ -288,6 +295,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 	_pel				init;
 	struct png_membuf	pngdata;
 	rgb_pel*			rgb_buf = NULL;
+	ga_pel*				ga_buf = NULL;
 
 	CHECK_ARGS(1, "pngdata");
 
@@ -342,6 +350,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 	switch (colourtype) {
 		case PNG_COLOR_TYPE_RGB_ALPHA: break;
 		case PNG_COLOR_TYPE_RGB: break;
+		case PNG_COLOR_TYPE_GA: break;
 		default:
 			Tcl_SetErrorCode(interp, "PIXEL", "PNG", "COLOURTYPE", NULL);
 			Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported colour type: %d", colourtype));
@@ -385,6 +394,10 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 		rgb_buf = (rgb_pel*)malloc(sizeof(rgb_pel) * width * height);
 		for (i=0; i<height; i++)
 			row_pointers[i] = (png_bytep)(rgb_buf + (i * width));
+	} else if (colourtype == PNG_COLOR_TYPE_GA) {
+		ga_buf = (ga_pel*)malloc(sizeof(ga_pel) * width * height);
+		for (i=0; i<height; i++)
+			row_pointers[i] = (png_bytep)(ga_buf + (i * width));
 	} else {
 		for (i=0; i<height; i++)
 			row_pointers[i] = (png_bytep)(pmap->pixel_data + (i * width));
@@ -399,39 +412,56 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 			PNG_TRANSFORM_BGR |
 			PNG_TRANSFORM_EXPAND, NULL);
 
-	if (colourtype == PNG_COLOR_TYPE_RGB) {
-		rgb_pel*	s = rgb_buf;
-		_pel*		d = pmap->pixel_data;
-		int			i = width * height, c;
+	switch (colourtype) {
+		case PNG_COLOR_TYPE_RGB: { //{{{
+				rgb_pel*	s = rgb_buf;
+				_pel*		d = pmap->pixel_data;
+				int			i = width * height, c;
 
-		while (i--) {
-			for (c=0; c<3; c++)
-				d->chan[c] = s->chan[c];
+				while (i--) {
+					for (c=0; c<3; c++)
+						d->chan[c] = s->chan[c];
 
-			d->ch.a = 0xff;
-			d++;
-			s++;
-		}
+					d->ch.a = 0xff;
+					d++;
+					s++;
+				}
+			}
+			break;
+			//}}}
+		case PNG_COLOR_TYPE_GA: { //{{{
+				ga_pel*		s = ga_buf;
+				_pel*		d = pmap->pixel_data;
+				int			i = width * height, c;
+
+				while (i--) {
+					for (c=0; c<3; c++)
+						d->chan[c] = s->chan[0];
+
+					d->ch.a = s->ch.a;
+					d++;
+					s++;
+				}
+			}
+			break;
+			//}}}
 	}
 
 	free(row_pointers);  row_pointers = NULL;
 
 	if (rgb_buf) { free(rgb_buf);  rgb_buf = NULL; }
+	if (ga_buf)  { free(ga_buf);   ga_buf = NULL;  }
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
 	return TCL_OK;
 
 error:
-	if (row_pointers) {
-		free(row_pointers);  row_pointers = NULL;
-	}
-	if (pmap) {
-		free(pmap);  pmap = NULL;
-	}
-	if (rgb_buf) {
-		free(rgb_buf);  rgb_buf = NULL;
-	}
+	if (row_pointers) { free(row_pointers);  row_pointers = NULL; }
+	if (pmap)         { free(pmap);          pmap = NULL;         }
+	if (rgb_buf)      { free(rgb_buf);       rgb_buf = NULL;      }
+	if (ga_buf)       { free(ga_buf);        ga_buf = NULL;       }
+
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
 	return TCL_ERROR;
 }
