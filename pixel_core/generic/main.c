@@ -1141,6 +1141,25 @@ static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
 		}
 	}
 
+	// Seems like these jpegs are encoded in an obsolete version of the JFIF standard from 1991
+	if (len >= 11) {
+		// JPEG/JFIF 1.01?
+		if (
+				bytes[0] == 0xFF &&
+				bytes[1] == 0xD8 &&
+				bytes[2] == 0xFF &&
+				bytes[3] == 0xE0 &&
+				bytes[6] == 'J' &&
+				bytes[7] == 'F' &&
+				bytes[8] == 'I' &&
+				bytes[9] == 'F' &&
+				bytes[10] == 0x00
+		   ) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/jpeg", 10));
+			return TCL_OK;
+		}
+	}
+
 	if (len >= 8) {
 		// PNG
 		if (
