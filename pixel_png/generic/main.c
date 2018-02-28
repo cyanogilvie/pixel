@@ -296,6 +296,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 	struct png_membuf	pngdata;
 	rgb_pel*			rgb_buf = NULL;
 	ga_pel*				ga_buf = NULL;
+	uint8_t*			gray_buf = NULL;
 
 	CHECK_ARGS(1, "pngdata");
 
@@ -339,21 +340,37 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 		Tcl_SetObjResult(interp, Tcl_NewStringObj("Error reading PNG metadata", -1));
 		goto error;
 	}
-	if (bitdepth != 8) {
-		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "BITDEPTH", NULL);
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported bit depth: %d", bitdepth));
-		goto error;
-	}
-
 	//fprintf(stderr, "width: %ld, height: %ld, bitdepth: %d, colourtype: %d, PNG_COLOR_TYPE_RGB_ALPHA: %d, PNG_COLOR_TYPE_RGB: %d\n", width, height, bitdepth, colourtype, PNG_COLOR_TYPE_RGB_ALPHA, PNG_COLOR_TYPE_RGB);
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
-	switch (colourtype) {
-		case PNG_COLOR_TYPE_RGB_ALPHA: break;
-		case PNG_COLOR_TYPE_RGB: break;
-		case PNG_COLOR_TYPE_GA: break;
+
+	switch (bitdepth) {
+		case 1:
+		case 2:  /* Cases 2 and 4 aren't tested (can't find any test files) */
+		case 4:  /* 1 bit is decoded to uint8_t samples though, so I'm assuming 2 and 4 are treated similarly */
+			if (colourtype != PNG_COLOR_TYPE_GRAY) {
+				Tcl_SetErrorCode(interp, "PIXEL", "PNG", "COLOURTYPE", NULL);
+				Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported colour type: %d / bitdepth: %d combination", colourtype, bitdepth));
+				goto error;
+			}
+			break;
+
+		case 8:
+		case 16:
+			switch (colourtype) {
+				case PNG_COLOR_TYPE_RGB_ALPHA: break;
+				case PNG_COLOR_TYPE_RGB: break;
+				case PNG_COLOR_TYPE_GA: break;
+				case PNG_COLOR_TYPE_GRAY: break;
+				default:
+					Tcl_SetErrorCode(interp, "PIXEL", "PNG", "COLOURTYPE", NULL);
+					Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported colour type: %d / bitdepth: %d combination", colourtype, bitdepth));
+					goto error;
+			}
+			break;
+
 		default:
 			Tcl_SetErrorCode(interp, "PIXEL", "PNG", "COLOURTYPE", NULL);
-			Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported colour type: %d", colourtype));
+			Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported colour type: %d / bitdepth: %d combination", colourtype, bitdepth));
 			goto error;
 	}
 	// First pass: find the width and height }}}
@@ -398,6 +415,10 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 		ga_buf = (ga_pel*)malloc(sizeof(ga_pel) * width * height);
 		for (i=0; i<height; i++)
 			row_pointers[i] = (png_bytep)(ga_buf + (i * width));
+	} else if (colourtype == PNG_COLOR_TYPE_GRAY) {
+		gray_buf = (uint8_t*)malloc(width*height);
+		for (i=0; i<height; i++)
+			row_pointers[i] = (png_bytep)(gray_buf + (i * width));
 	} else {
 		for (i=0; i<height; i++)
 			row_pointers[i] = (png_bytep)(pmap->pixel_data + (i * width));
@@ -405,7 +426,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	png_set_rows(png_ptr, info_ptr, row_pointers);
 
-	png_read_png(png_ptr, info_ptr, 
+	png_read_png(png_ptr, info_ptr,
 			PNG_TRANSFORM_STRIP_16 |
 			PNG_TRANSFORM_PACKING |
 			PNG_TRANSFORM_SHIFT |
@@ -445,12 +466,29 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 			}
 			break;
 			//}}}
+		case PNG_COLOR_TYPE_GRAY: { //{{{
+				uint8_t*	s = gray_buf;
+				_pel*		d = pmap->pixel_data;
+				int			i = width * height, c;
+
+				while (i--) {
+					for (c=0; c<3; c++)
+						d->chan[c] = *s;
+
+					d->ch.a = 0xff;
+					d++;
+					s++;
+				}
+			}
+			break;
+			//}}}
 	}
 
 	free(row_pointers);  row_pointers = NULL;
 
-	if (rgb_buf) { free(rgb_buf);  rgb_buf = NULL; }
-	if (ga_buf)  { free(ga_buf);   ga_buf = NULL;  }
+	if (rgb_buf)    { free(rgb_buf);    rgb_buf = NULL;    }
+	if (ga_buf)     { free(ga_buf);     ga_buf = NULL;     }
+	if (gray_buf)   { free(gray_buf);   gray_buf = NULL;   }
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
@@ -461,6 +499,7 @@ error:
 	if (pmap)         { free(pmap);          pmap = NULL;         }
 	if (rgb_buf)      { free(rgb_buf);       rgb_buf = NULL;      }
 	if (ga_buf)       { free(ga_buf);        ga_buf = NULL;       }
+	if (gray_buf)     { free(gray_buf);      gray_buf = NULL;     }
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);  png_ptr = NULL; info_ptr = NULL;
 	return TCL_ERROR;
