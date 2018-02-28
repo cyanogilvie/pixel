@@ -174,18 +174,47 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 	(void)jpeg_read_header(&cinfo, TRUE);
 	(void)jpeg_start_decompress(&cinfo);
 
-	cinfo.output_components = 4;
-	cinfo.out_color_space = JCS_EXT_BGRA;
+	if (cinfo.out_color_space == JCS_GRAYSCALE) {
+		// Have to handle this manually.  According to the documentation,
+		// changing out_color_space, out_color_components and output_components
+		// to what we need should work, but doesn't.
+	} else {
+		cinfo.output_components = 4;
+		cinfo.out_color_components = 4;
+		cinfo.out_color_space = JCS_EXT_BGRA;
+	}
 
 	dest->width = cinfo.output_width;
 	dest->height = cinfo.output_height;
 	dest->bytes_per_pixel = 4;
 	r = dest->pixel_data = (_pel *)malloc(dest->width*dest->height*4);
-	
-	while (cinfo.output_scanline < cinfo.output_height) {
-		row_pointer[0] = (JSAMPLE*)r;
-		(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
-		r += dest->width;
+
+	if (cinfo.out_color_space == JCS_GRAYSCALE) {
+		JSAMPLE*	scanline = NULL;
+
+		scanline = (JSAMPLE*)malloc(sizeof(JSAMPLE) * dest->width);
+
+		while (cinfo.output_scanline < cinfo.output_height) {
+			int	c, i=dest->width;
+
+			row_pointer[0] = scanline;
+			(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
+			while (i--) {
+				for (c=0; c<3; c++)
+					r->chan[c] = scanline[i];
+
+				r->ch.a = 0xff;
+				r++;
+			}
+		}
+
+		free(scanline);  scanline = NULL;
+	} else {
+		while (cinfo.output_scanline < cinfo.output_height) {
+			row_pointer[0] = (JSAMPLE*)r;
+			(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
+			r += dest->width;
+		}
 	}
 
 	(void)jpeg_finish_decompress(&cinfo);
