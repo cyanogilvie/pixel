@@ -361,6 +361,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 				case PNG_COLOR_TYPE_RGB: break;
 				case PNG_COLOR_TYPE_GA: break;
 				case PNG_COLOR_TYPE_GRAY: break;
+				case PNG_COLOR_TYPE_PALETTE: break;
 				default:
 					Tcl_SetErrorCode(interp, "PIXEL", "PNG", "COLOURTYPE", NULL);
 					Tcl_SetObjResult(interp, Tcl_ObjPrintf("Unsupported colour type: %d / bitdepth: %d combination", colourtype, bitdepth));
@@ -407,21 +408,29 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	row_pointers = (png_bytep*)malloc(height * sizeof(png_bytep));
 
-	if (colourtype == PNG_COLOR_TYPE_RGB) {
-		rgb_buf = (rgb_pel*)malloc(sizeof(rgb_pel) * width * height);
-		for (i=0; i<height; i++)
-			row_pointers[i] = (png_bytep)(rgb_buf + (i * width));
-	} else if (colourtype == PNG_COLOR_TYPE_GA) {
-		ga_buf = (ga_pel*)malloc(sizeof(ga_pel) * width * height);
-		for (i=0; i<height; i++)
-			row_pointers[i] = (png_bytep)(ga_buf + (i * width));
-	} else if (colourtype == PNG_COLOR_TYPE_GRAY) {
-		gray_buf = (uint8_t*)malloc(width*height);
-		for (i=0; i<height; i++)
-			row_pointers[i] = (png_bytep)(gray_buf + (i * width));
-	} else {
-		for (i=0; i<height; i++)
-			row_pointers[i] = (png_bytep)(pmap->pixel_data + (i * width));
+	switch (colourtype) {
+		case PNG_COLOR_TYPE_RGB:
+		case PNG_COLOR_TYPE_PALETTE:
+			rgb_buf = (rgb_pel*)malloc(sizeof(rgb_pel) * width * height);
+			for (i=0; i<height; i++)
+				row_pointers[i] = (png_bytep)(rgb_buf + (i * width));
+			break;
+
+		case PNG_COLOR_TYPE_GA:
+			ga_buf = (ga_pel*)malloc(sizeof(ga_pel) * width * height);
+			for (i=0; i<height; i++)
+				row_pointers[i] = (png_bytep)(ga_buf + (i * width));
+			break;
+
+		case PNG_COLOR_TYPE_GRAY:
+			gray_buf = (uint8_t*)malloc(width*height);
+			for (i=0; i<height; i++)
+				row_pointers[i] = (png_bytep)(gray_buf + (i * width));
+			break;
+
+		default:
+			for (i=0; i<height; i++)
+				row_pointers[i] = (png_bytep)(pmap->pixel_data + (i * width));
 	}
 
 	png_set_rows(png_ptr, info_ptr, row_pointers);
@@ -434,7 +443,8 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 			PNG_TRANSFORM_EXPAND, NULL);
 
 	switch (colourtype) {
-		case PNG_COLOR_TYPE_RGB: { //{{{
+		case PNG_COLOR_TYPE_RGB:
+		case PNG_COLOR_TYPE_PALETTE: { //{{{
 				rgb_pel*	s = rgb_buf;
 				_pel*		d = pmap->pixel_data;
 				int			i = width * height, c;
