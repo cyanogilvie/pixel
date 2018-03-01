@@ -191,6 +191,7 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 
 	if (cinfo.out_color_space == JCS_GRAYSCALE) {
 		JSAMPLE*	scanline = NULL;
+		JSAMPLE*	s = NULL;
 
 		scanline = (JSAMPLE*)malloc(sizeof(JSAMPLE) * dest->width);
 
@@ -198,17 +199,19 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 			int	c, i=dest->width;
 
 			row_pointer[0] = scanline;
+			s = scanline;
 			(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
 			while (i--) {
 				for (c=0; c<3; c++)
-					r->chan[c] = scanline[i];
+					r->chan[c] = *s;
 
 				r->ch.a = 0xff;
+				s++;
 				r++;
 			}
 		}
 
-		free(scanline);  scanline = NULL;
+		free(scanline);  scanline=NULL; s=NULL;
 	} else {
 		while (cinfo.output_scanline < cinfo.output_height) {
 			row_pointer[0] = (JSAMPLE*)r;
