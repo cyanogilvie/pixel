@@ -1015,17 +1015,18 @@ struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, 
 	if (yofs < 0) {
 		yofs_src = -yofs;
 		yofs = 0;
-		fprintf(stderr, "Adjusting yofs: %d, yofs_src: %d\n", yofs, yofs_src);
+		//fprintf(stderr, "Adjusting yofs: %d, yofs_src: %d\n", yofs, yofs_src);
 	}
 
 	if (xofs < 0) {
 		xofs_src = -xofs;
 		xofs = 0;
-		fprintf(stderr, "Adjusting xofs: %d, xofs_src: %d\n", xofs, xofs_src);
+		//fprintf(stderr, "Adjusting xofs: %d, xofs_src: %d\n", xofs, xofs_src);
 	}
 
-	if (yofs+yofs_src > src->height) return out;
-	if (xofs+xofs_src > src->width)  return out;
+	//fprintf(stderr, "yofs: %d, yofs_src: %d, src->height: %d, to_y: %d\n", yofs, yofs_src, src->height, to_y);
+	if (yofs_src >= src->height) return out;
+	if (xofs_src >= src->width)  return out;
 
 	for (y=yofs; y<to_y; y++) {
 		d = dest->pixel_data + y*dest->width + xofs;
