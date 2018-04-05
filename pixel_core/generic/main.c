@@ -1158,6 +1158,21 @@ static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
 			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/jpeg", 10));
 			return TCL_OK;
 		}
+		// JPEG/Exif 1.02?
+		if (
+				bytes[0] == 0xFF &&
+				bytes[1] == 0xD8 &&
+				bytes[2] == 0xFF &&
+				bytes[3] == 0xE1 &&
+				bytes[6] == 'E' &&
+				bytes[7] == 'x' &&
+				bytes[8] == 'i' &&
+				bytes[9] == 'f' &&
+				bytes[10] == 0x00
+		   ) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/jpeg", 10));
+			return TCL_OK;
+		}
 	}
 
 	if (len >= 8) {
