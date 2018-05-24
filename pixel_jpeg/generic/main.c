@@ -160,6 +160,9 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 	_pel			*r;
 	JSAMPROW		row_pointer[1];
 
+	if (length == 0)
+		return NULL;
+
 	jpeg_create_decompress(&cinfo);
 
 	jpeg_mem_src(&cinfo, jpeg_data, length);

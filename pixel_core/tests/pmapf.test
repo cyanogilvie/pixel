@@ -18,17 +18,17 @@ proc readfile fn { #<<<
 
 #>>>
 
-test pmap-1.1 {Construct and free a pmap} -body { #<<<
-	set pmap	[pixel::pmap_new 320 200 0x0]
-	lassign [pixel::pmap_info $pmap] width height
-	unset pmap
-	list $width $height
+test pmapf-1.1 {Construct and free a pmapf} -body { #<<<
+	set pmapf	[pixel::pmapf_new 320 200]
+	pixel::pmapf_info $pmapf
+} -cleanup {
+	unset -nocomplain pmapf
 } -result {320 200}
 #>>>
-test pmap-2.1 {Memory leak with string rep} -body { #<<<
+test pmapf-2.1 {Memory leak with string rep} -body { #<<<
 	set mem_start	[expr {[lindex [readfile /proc/self/statm] 1] * 4 * 1024}]
 	for {set i 0} {$i < 100} {incr i} {
-		string length [pixel::pmap_new 320 200 0x0]
+		string length [pixel::pmapf_new 320 200]
 	}
 	set mem_used	[expr {[lindex [readfile /proc/self/statm] 1] * 4 * 1024 - $mem_start}]
 	if {$mem_used > 10e6} {
@@ -43,3 +43,4 @@ test pmap-2.1 {Memory leak with string rep} -body { #<<<
 
 ::tcltest::cleanupTests
 return
+

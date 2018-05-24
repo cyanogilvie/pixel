@@ -54,7 +54,7 @@ static void update_string_rep(Tcl_Obj* obj) //<<<
 {
 	struct pmapf*	pmapf = (struct pmapf*)obj->internalRep.twoPtrValue.ptr1;
 	Tcl_Obj*		objv[4];
-	Tcl_Obj*		list;
+	Tcl_Obj*		list = NULL;
 	char*			str;
 	int				length;
 
@@ -69,14 +69,17 @@ static void update_string_rep(Tcl_Obj* obj) //<<<
 			pmapf->height *
 			pmapf->bytes_per_pixel);
 
-	list = Tcl_NewListObj(4, objv);
+	Tcl_IncrRefCount(list = Tcl_NewListObj(4, objv));
 	
 	str = Tcl_GetStringFromObj(list, &length);
 	
-	obj->bytes = Tcl_Alloc(length + 1);
+	obj->bytes = ckalloc(length + 1);
 	memcpy(obj->bytes, str, length);
 	obj->bytes[length] = 0;
 	obj->length = length;
+
+	Tcl_InvalidateStringRep(list);
+	Tcl_DecrRefCount(list); list = NULL;
 
 	//fprintf(stderr, "rep: (%s)\n", Tcl_GetString(obj));
 }
