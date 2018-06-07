@@ -10,6 +10,9 @@
 #include "tclstuff.h"
 #include <pixel.h>
 #include <setjmp.h>
+#include <libexif/exif-loader.h>
+#include <libexif/exif-data.h>
+#include <libexif/exif-utils.h>
 
 
 #define JPEG_ENCODE_BUFSIZE		65520
@@ -152,6 +155,42 @@ unsigned char *encodejpeg(gimp_image_t *pmap, unsigned long *length, int quality
 }
 
 
+static long get_exif_int(ExifData* exif_data, ExifEntry* exif_entry) //{{{1
+{
+	long	value = 0;
+
+	ExifByteOrder	byte_order = exif_data_get_byte_order(exif_data);
+
+	switch (exif_entry->format) {
+		case EXIF_FORMAT_SSHORT:
+			value = exif_get_sshort(exif_entry->data, byte_order);
+			break;
+		case EXIF_FORMAT_SHORT:
+			value = exif_get_short(exif_entry->data, byte_order);
+			break;
+		case EXIF_FORMAT_LONG:
+			value = exif_get_long(exif_entry->data, byte_order);
+			break;
+		case EXIF_FORMAT_SLONG:
+			value = exif_get_slong(exif_entry->data, byte_order);
+			break;
+
+		case EXIF_FORMAT_BYTE:
+		case EXIF_FORMAT_ASCII:
+		case EXIF_FORMAT_RATIONAL:
+		case EXIF_FORMAT_SBYTE:
+		case EXIF_FORMAT_UNDEFINED:
+		case EXIF_FORMAT_SRATIONAL:
+		case EXIF_FORMAT_FLOAT:
+		case EXIF_FORMAT_DOUBLE:
+			// TODO: what?
+			break;
+	}
+
+	return value;
+}
+
+
 gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 {
 	struct jpeg_decompress_struct	cinfo;
@@ -159,9 +198,33 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 	gimp_image_t	*dest = (gimp_image_t *)malloc(sizeof(gimp_image_t));
 	_pel			*r;
 	JSAMPROW		row_pointer[1];
+	ExifLoader*		exif_loader = NULL;
+	ExifData*		exif_data = NULL;
+	ExifEntry*		exif_entry = NULL;
+	int				orientation = 1;
 
 	if (length == 0)
 		return NULL;
+
+	// Look for an orientation tag in the EXIF tags (if any) {{{
+	exif_loader = exif_loader_new();
+	exif_loader_write(exif_loader, jpeg_data, length);
+	exif_data = exif_loader_get_data(exif_loader);
+	if (exif_data) {
+		exif_entry = exif_content_get_entry(exif_data->ifd[EXIF_IFD_0], EXIF_TAG_ORIENTATION);
+		orientation = (exif_entry == NULL) ? 1 : get_exif_int(exif_data, exif_entry);
+	}
+
+	if (exif_data) {
+		exif_data_unref(exif_data);
+		exif_data = NULL;
+	}
+
+	if (exif_loader) {
+		exif_loader_unref(exif_loader);
+		exif_loader = NULL;
+	}
+	//}}}
 
 	jpeg_create_decompress(&cinfo);
 
@@ -225,6 +288,98 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 
 	(void)jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
+
+	// TODO: factor the transformation handlers out into pixel_core?
+	if (orientation != 1) { // Transform the image based on the orientation from EXIF tag.  It is possible to do this directly on the jpeg data, but the complexity cost is way out of proportion to the benefit {{{
+		gimp_image_t*	orig = dest;
+		int				sx, sy;
+		_pel*			s;
+		_pel*			d;
+		_pel*			d_start;
+
+		dest = (gimp_image_t *)malloc(sizeof(gimp_image_t));
+		dest->bytes_per_pixel = orig->bytes_per_pixel;
+
+		if (orientation > 4) {
+			dest->width  = orig->height;
+			dest->height = orig->width;
+		} else {
+			dest->width  = orig->width;
+			dest->height = orig->height;
+		}
+
+		dest->pixel_data = (_pel*)malloc(sizeof(_pel) * dest->width * dest->height);
+
+		// Point s at top left
+		s = orig->pixel_data;
+
+		switch (orientation) {
+			case 2: // flip x
+				// Point d at top right, walk left and down through d
+				d = d_start = dest->pixel_data + dest->width - 1;
+
+				for (sy = 0; sy < orig->height; sy++, d = (d_start += dest->width))
+					for (sx = 0; sx < orig->width; sx++)
+						*d-- = *s++;
+				break;
+
+			case 3: // rotate 180
+				// Point d at bottom right, walk left and up through d
+				d = dest->pixel_data + dest->width*dest->height - 1;
+
+				for (sx = orig->width * orig->height -1; sx >= 0; sx--)
+					*d-- = *s++;
+				break;
+
+			case 4: // flip y
+				// Point d at bottom left, copy lines upwards through d
+				d = dest->pixel_data + dest->width*(dest->height-1);
+
+				for (sy = 0; sy < orig->height; sy++, s += orig->width, d -= dest->width)
+					memcpy(d, s, orig->width*orig->bytes_per_pixel);
+				break;
+
+			case 5: // flip y + rotate 90 cw  or  flip x + rotate 90 ccw
+				// Point d at top left, walk down and right through d
+				d = d_start = dest->pixel_data;
+
+				for (sy = 0; sy < orig->height; sy++, d = ++d_start)
+					for (sx = 0; sx < orig->width; sx++, d += dest->width)
+						*d = *s++;
+				break;
+
+			case 6: // rotate 90 cw
+				// Point d at top right, down and left through d
+				d = d_start = dest->pixel_data + dest->width - 1;
+
+				for (sy = 0; sy < orig->height; sy++, d = --d_start)
+					for (sx = 0; sx < orig->width; sx++, d += dest->width)
+						*d = *s++;
+				break;
+
+			case 7: // flip y + rotate 90 ccw  or  flip x + rotate 90 cw
+				// Point d at bottom right, walk up and left through d
+				d = d_start = dest->pixel_data + dest->width*dest->height - 1;
+
+				for (sy = 0; sy < orig->height; sy++, d = --d_start)
+					for (sx = 0; sx < orig->width; sx++, d -= dest->width)
+						*d = *s++;
+				break;
+
+			case 8: // rotate 90 ccw
+				// Point d at bottom left, walk up and right through d
+				d = d_start = dest->pixel_data + dest->width*(dest->height-1);
+
+				for (sy = 0; sy < orig->height; sy++, d = ++d_start)
+					for (sx = 0; sx < orig->width; sx++, d -= dest->width)
+						*d = *s++;
+				break;
+		}
+
+		free(orig->pixel_data); orig->pixel_data = NULL;
+		free(orig); orig = NULL;
+	}
+	//}}}
 
 	return dest;
 }
