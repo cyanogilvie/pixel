@@ -1227,6 +1227,16 @@ static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
 		}
 	}
 
+	if (len >= 2) {
+		if (
+				bytes[0] == 'B' &&
+				bytes[1] == 'M'
+		   ) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/bmp", 9));
+			return TCL_OK;
+		}
+	}
+
 	Tcl_SetErrorCode(interp, "PIXEL", "CORE", "UNKNOWN_FILETYPE", NULL);
 	Tcl_SetObjResult(interp, Tcl_NewStringObj("unknown", 7));
 	return TCL_ERROR;
