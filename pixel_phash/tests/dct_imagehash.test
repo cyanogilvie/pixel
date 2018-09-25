@@ -1,0 +1,32 @@
+if {"::tcltest" in [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel_phash
+
+test dct_imagehash-1.1 {lenna} -body { #<<<
+	pixel::phash::dct_imagehash tests/lenna.png
+} -result -3955090236759173711
+#>>>
+test dct_imagehash-1.2 {lenna_flip_x} -body { #<<<
+	pixel::phash::dct_imagehash tests/lenna_flip_x.png
+} -result -2564246714352934684
+#>>>
+test dct_imagehash-1.3 {lenna_600_lanczos} -body { #<<<
+	pixel::phash::dct_imagehash tests/lenna_600_lanczos.png
+} -result -3955090236759173711
+#>>>
+test dct_imagehash-1.4 {lenna_600_lanczos_crop} -body { #<<<
+	pixel::phash::dct_imagehash tests/lenna_600_lanczos_crop.png
+} -result 5556410476638491217
+#>>>
+test dct_imagehash-1.5 {lenna_200_linear} -body { #<<<
+	pixel::phash::dct_imagehash tests/lenna_200_linear.png
+} -result -3813226848497003087
+#>>>
+
+::tcltest::cleanupTests
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+

@@ -1,0 +1,44 @@
+if {"::tcltest" in [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel_phash
+package require Pixel_png
+
+proc readbin fn {
+	set h	[open $fn rb]
+	try {read $h} finally {close $h}
+}
+
+test mh_imagehash-1.1 {lenna} -body { #<<<
+	binary encode hex [pixel::phash::mh_imagehash \
+		tests/lenna.png 2 1]
+} -result 2536ef9f8a5b6d187aa4b6f5c6d4426c50f5a4b6dabc20347364f4b6b6e552e725ad5bb9b4a6c76557b2d8a7e1a4b68566fc2da640d736ced29f1169d8eda42db6ea495b31231b5d
+#>>>
+test mh_imagehash-1.2 {lenna_200_linear.png} -body { #<<<
+	binary encode hex [pixel::phash::mh_imagehash \
+		tests/lenna_200_linear.png 2 1]
+} -result 25b6ef1f835b6d187aa4b6f5c6d4426c50f5a4b6d9b820347764f4b6b6e597e7a5bd5b3934a68d6545b2d8b7e1a4b68544fcedad48d736ced29b5569d8edf52db6ca495b31231b59
+#>>>
+test mh_imagehash-1.3 {lenna_600_lanczos.png} -body { #<<<
+	binary encode hex [pixel::phash::mh_imagehash \
+		tests/lenna_600_lanczos.png 2 1]
+} -result 2536ef9f8a436d187aa4b6f5c6d4426c50f5a4b6dabc20347764f4b6b6e552e725ad5bb9b6a6cf6557b2d8a7e1a4b68566fc2da640d736ced29f1179d8eda42db6ea495b11231b5d
+#>>>
+test mh_imagehash-1.4 {lenna_600_lanczos_crop.png} -body { #<<<
+	binary encode hex [pixel::phash::mh_imagehash \
+		tests/lenna_600_lanczos_crop.png 2 1]
+} -result d936953f8551b4672adb7fa2f6d48535b3a5db32514e303a2904d5db6d9b92e6927708cedb15d2a551fcd64908db31e2c6df3654b7b6471eb43f52bc6537c1db2c5c4b19932eca74
+#>>>
+test mh_imagehash-1.5 {lenna_flip_x.png} -body { #<<<
+	binary encode hex [pixel::phash::mh_imagehash \
+		tests/lenna_flip_x.png 2 1]
+} -result cc95096b3fc662db2537442b754cb556d7b664126181172a9a41b63f59b26c00ae45bfb6732264b2c5726eabb6355873746d8c451bb6772371b349653233b6c55c9b7a1a52259db5
+#>>>
+
+::tcltest::cleanupTests
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+

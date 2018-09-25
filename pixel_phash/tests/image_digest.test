@@ -1,0 +1,35 @@
+if {"::tcltest" in [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel_phash
+package require Pixel_png
+
+proc readbin fn {
+	set h	[open $fn rb]
+	try {read $h} finally {close $h}
+}
+
+test image_digest-1.1 {lenna} -constraints knownBug -body { #<<<
+	lindex [pixel::phash::image_digest \
+		[pixel::png::decode [readbin tests/lenna.png]] \
+		1 \
+		1 \
+		180] 1
+} -result {132 0 255 248 54 127 137 143 63 77 159 159 112 147 101 143 138 156 141 88 130 125 124 180 107 138 135 122 146 126 134 130 118 147 134 129 125 133 132 134}
+#>>>
+test image_digest_filename-1.1 {lenna} -body { #<<<
+	lindex [pixel::phash::image_digest_filename \
+		tests/lenna.png \
+		1 \
+		1 \
+		180] 1
+} -result {132 0 255 248 54 127 137 143 63 77 159 159 112 147 101 143 138 156 141 88 130 125 124 180 107 138 135 122 146 126 134 130 118 147 134 129 125 133 132 134}
+#>>>
+
+::tcltest::cleanupTests
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+

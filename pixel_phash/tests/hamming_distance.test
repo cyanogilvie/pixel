@@ -1,0 +1,28 @@
+if {"::tcltest" in [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel_phash
+
+test hamming_distance-1.1 {lenna hash vs lenna_flip_x hash} -body { #<<<
+	pixel::phash::hamming_distance -3955090236759173711 -2564246714352934684
+} -result 34
+#>>>
+test hamming_distance-1.2 {lenna hash vs lenna_600_lanczos hash} -body { #<<<
+	pixel::phash::hamming_distance -3955090236759173711 -3955090236759173711
+} -result 0
+#>>>
+test hamming_distance-1.3 {lenna hash vs lenna_600_lanczos_crop hash} -body { #<<<
+	pixel::phash::hamming_distance -3955090236759173711 5556410476638491217
+} -result 24
+#>>>
+test hamming_distance-1.4 {lenna hash vs lenna_200_linear hash} -body { #<<<
+	pixel::phash::hamming_distance -3955090236759173711 -3813226848497003087
+} -result 2
+#>>>
+
+::tcltest::cleanupTests
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
