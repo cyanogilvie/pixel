@@ -1228,11 +1228,36 @@ static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
 	}
 
 	if (len >= 2) {
+		// BMP
 		if (
 				bytes[0] == 'B' &&
 				bytes[1] == 'M'
 		   ) {
 			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/bmp", 9));
+			return TCL_OK;
+		}
+	}
+
+	if (len >= 4) {
+		// TIFF
+		if (
+				bytes[0] == 'I' &&
+				bytes[1] == 'I' &&
+				bytes[2] == '*' &&
+				bytes[3] == 0
+		   ) {
+			// little endian
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/tiff", 10));
+			return TCL_OK;
+		}
+		if (
+				bytes[0] == 'M' &&
+				bytes[1] == 'M' &&
+				bytes[2] == 0 &&
+				bytes[3] == '*'
+		   ) {
+			// big endian
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/tiff", 10));
 			return TCL_OK;
 		}
 	}
