@@ -1262,6 +1262,19 @@ static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
 		}
 	}
 
+	if (len >= 4) {
+		// PSD
+		if (
+				bytes[0] == '8' &&
+				bytes[1] == 'B' &&
+				bytes[2] == 'P' &&
+				bytes[3] == 'S'
+		   ) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/vnd.adobe.photoshop", 25));
+			return TCL_OK;
+		}
+	}
+
 	Tcl_SetErrorCode(interp, "PIXEL", "CORE", "UNKNOWN_FILETYPE", NULL);
 	Tcl_SetObjResult(interp, Tcl_NewStringObj("unknown", 7));
 	return TCL_ERROR;
