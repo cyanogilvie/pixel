@@ -410,8 +410,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	switch (colourtype) {
 		case PNG_COLOR_TYPE_RGB:
-		case PNG_COLOR_TYPE_PALETTE:
-			rgb_buf = (rgb_pel*)malloc(sizeof(rgb_pel) * width * height);
+			rgb_buf = (rgb_pel*)malloc((sizeof(rgb_pel)+1) * width * height);
 			for (i=0; i<height; i++)
 				row_pointers[i] = (png_bytep)(rgb_buf + (i * width));
 			break;
@@ -443,8 +442,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 			PNG_TRANSFORM_EXPAND, NULL);
 
 	switch (colourtype) {
-		case PNG_COLOR_TYPE_RGB:
-		case PNG_COLOR_TYPE_PALETTE: { //{{{
+		case PNG_COLOR_TYPE_RGB: { //{{{
 				rgb_pel*	s = rgb_buf;
 				_pel*		d = pmap->pixel_data;
 				int			i = width * height, c;
