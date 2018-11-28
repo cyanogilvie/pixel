@@ -410,7 +410,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	switch (colourtype) {
 		case PNG_COLOR_TYPE_RGB:
-			rgb_buf = (rgb_pel*)malloc((sizeof(rgb_pel)+1) * width * height);
+			rgb_buf = (rgb_pel*)malloc(sizeof(rgb_pel) * width * height);
 			for (i=0; i<height; i++)
 				row_pointers[i] = (png_bytep)(rgb_buf + (i * width));
 			break;
