@@ -4817,7 +4817,7 @@ done
 
 
 
-    vars="-L../pixel_core -lPixelstub3.4.2 -lwebp"
+    vars="-L../pixel_core -lPixelstub3.5 -lwebp"
     for i in $vars; do
 	if test "${TEA_PLATFORM}" = "windows" -a "$GCC" = "yes" ; then
 	    # Convert foo.lib to -lfoo for GCC.  No-op if not *.lib

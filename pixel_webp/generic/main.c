@@ -27,6 +27,28 @@ static int glue_encodewebp(ClientData* cdata, Tcl_Interp* interp, int objc, Tcl_
 }
 
 //}}}
+static int glue_encodewebp_noalpha(ClientData* cdata, Tcl_Interp* interp, int objc, Tcl_Obj *const objv[]) //{{{
+{
+	gimp_image_t*	pmap;
+	int				quality;
+	size_t			length;
+	uint8_t*		webp_data;
+	
+	CHECK_ARGS(2, "pmap quality");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quality));
+
+	length = WebPEncodeBGR((uint8_t*)pmap->pixel_data, pmap->width, pmap->height, pmap->width*4, quality, &webp_data);
+
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj(webp_data, length));
+
+	free(webp_data);
+	
+	return TCL_OK;
+}
+
+//}}}
 static int glue_decodewebp(ClientData* cdata, Tcl_Interp* interp, int objc, Tcl_Obj *const objv[]) //{{{
 {
 	uint8_t*		webp_data;
@@ -55,6 +77,7 @@ int Pixel_webp_Init(Tcl_Interp* interp) //{{{
 	if (Pixel_InitStubs(interp, "3.3", 0) == NULL) return TCL_ERROR;
 
 	NEW_CMD("pixel::webp::encode", glue_encodewebp);
+	NEW_CMD("pixel::webp::encode_noalpha", glue_encodewebp_noalpha);
 	NEW_CMD("pixel::webp::decode", glue_decodewebp);
 
 	if (Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION) != TCL_OK)
