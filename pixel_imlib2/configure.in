@@ -19,7 +19,7 @@ dnl	to configure the system for the local environment.
 # so you can encode the package version directly into the source files.
 #-----------------------------------------------------------------------
 
-AC_INIT([Pixel_imlib2], [1.1.0])
+AC_INIT([Pixel_imlib2], [1.2.0])
 
 #--------------------------------------------------------------------
 # Call TEA_INIT as the first TEA_ macro to set up initial vars.
@@ -82,7 +82,7 @@ TEA_ADD_LIBS([`imlib2-config --libs` ${pixel_STUB_LIB_SPEC} -lm])
 TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 #TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])
 TEA_ADD_STUB_SOURCES([])
-TEA_ADD_TCL_SOURCES([])
+TEA_ADD_TCL_SOURCES([library/utils.tcl])
 
 #--------------------------------------------------------------------
 # __CHANGE__

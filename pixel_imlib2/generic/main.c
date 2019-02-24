@@ -9,7 +9,7 @@
 #include <strings.h>
 #include <string.h>
 
-#include <Pixel/pixel.h>
+#include <pixel.h>
 
 static Tcl_Interp *g_interp;
 static Tcl_Obj *g_progress_cb = NULL;
