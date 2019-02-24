@@ -77,7 +77,7 @@ TEA_SETUP_COMPILER
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
 TEA_ADD_INCLUDES([`imlib2-config --cflags` ${pixel_INCLUDE_LIB_SPEC}])
-TEA_ADD_LIBS([`imlib2-config --libs` ${pixel_STUB_LIB_SPEC} -lm])
+TEA_ADD_LIBS([`imlib2-config --libs` ${pixel_STUB_LIB_SPEC}])
 #TEA_ADD_LIBS([`imlib2-config --libs` -L/usr/lib/Pixel -lPixel3 -lm -lgcov])
 TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 #TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])

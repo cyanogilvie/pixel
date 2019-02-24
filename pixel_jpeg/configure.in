@@ -45,6 +45,9 @@ TEA_LOAD_TCLCONFIG
 #TEA_PATH_TKCONFIG
 #TEA_LOAD_TKCONFIG
 
+TEA_PATH_CONFIG(pixel)
+TEA_LOAD_CONFIG(pixel)
+
 #-----------------------------------------------------------------------
 # Handle the --prefix=... option by defaulting to what Tcl gave.
 # Must be called after TEA_LOAD_TCLCONFIG and before TEA_SETUP_COMPILER.
@@ -73,9 +76,9 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([`pkg-config --cflags libexif`])
-TEA_ADD_LIBS([-L../pixel_core -lPixelstub3.5 -ljpeg `pkg-config --libs libexif`])
-TEA_ADD_CFLAGS([-DUSE_PIXEL_STUBS])
+TEA_ADD_INCLUDES([`pkg-config --cflags libjpeg` `pkg-config --cflags libexif` ${pixel_INCLUDE_LIB_SPEC}])
+TEA_ADD_LIBS([`pkg-config --libs libjpeg` `pkg-config --libs libexif` ${pixel_STUB_LIB_SPEC}])
+TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 TEA_ADD_STUB_SOURCES([])
 TEA_ADD_TCL_SOURCES([])
 
