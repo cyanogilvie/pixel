@@ -10,7 +10,7 @@
 #include <SDL/SDL.h>
 #include <tcl.h>
 #include "tclstuff.h"
-#include <Pixel/pixel.h>
+#include <pixel.h>
 
 typedef struct {
 	SDL_Surface		*console;

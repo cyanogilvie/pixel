@@ -45,6 +45,9 @@ TEA_LOAD_TCLCONFIG
 #TEA_PATH_TKCONFIG
 #TEA_LOAD_TKCONFIG
 
+TEA_PATH_CONFIG(pixel)
+TEA_LOAD_CONFIG(pixel)
+
 #-----------------------------------------------------------------------
 # Handle the --prefix=... option by defaulting to what Tcl gave.
 # Must be called after TEA_LOAD_TCLCONFIG and before TEA_SETUP_COMPILER.
@@ -73,11 +76,11 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c sdl_timestuff.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([-I/home/cyan/git/cfkit/out/linux/include/Pixel])
+TEA_ADD_INCLUDES([${pixel_INCLUDE_LIB_SPEC}])
 #TEA_ADD_LIBS([-L/home/cyan/git/cfkit/out/linux/lib -lPixel3 -lSDL])
-TEA_ADD_LIBS([-lSDL -L/home/cyan/.tbuild/repo/pkg/linux-glibc2.8-x86_64/Pixel-3.4.0 -lPixelstub3.4.0])
+TEA_ADD_LIBS([-lSDL ${pixel_STUB_LIB_SPEC}])
 #TEA_ADD_LIBS([-lSDL -L/home/cyan/.tbuild/repo/pkg/linux-glibc2.8-x86_64/Pixel-3.4.0 -lPixel3])
-TEA_ADD_CFLAGS([-DUSE_PIXEL_STUBS])
+TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 #TEA_ADD_CFLAGS([])
 TEA_ADD_STUB_SOURCES([])
 TEA_ADD_TCL_SOURCES([])

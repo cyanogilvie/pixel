@@ -311,7 +311,7 @@ static int glue_do_frame(ClientData foo, Tcl_Interp *interp,
 	sdl_console_inf *	ci;
 	int					rectsc = 0;
 	Tcl_Obj				**rectsv;
-	SDL_Rect			*rect;
+	SDL_Rect			*rect = NULL;
 	int					i;
 	Tcl_Obj				**c;
 	int					l;
@@ -1044,7 +1044,7 @@ static int glue_gl_swapbuffers(cdata, interp, objc, objv) //{{{1
 }
 
 
-static int cleanup(ClientData cdata) //{{{1
+static void cleanup(ClientData cdata) //{{{1
 {
 	SDL_Quit();
 }
