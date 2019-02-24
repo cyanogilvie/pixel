@@ -130,103 +130,39 @@ static int *CalcApoints(int s, int d, int b1, int b2, int up) //<<<
 }
 
 //>>>
-static DATA32 **CalcYPoints(DATA32 *src, int sw, int sh, int dh, int b1, int b2) //<<<
+static DATA32 **CalcYPoints(DATA32 *src, int sw, int sh, int dh) // Return an array of dh+1 pointers to rows whose y is interpolated across sh.  Last row is 1 pixel below the bottom of the source <<<
 {
 	DATA32	**p;
-	int		i, j = 0;
-	int		val, inc, rv = 0;
+	int		i, j=0, val, inc;
 
-	if (dh < 0) {
-		dh = -dh;
-		rv = 1;
-	}
-	p = malloc((dh + 1) * sizeof(DATA32 *));
-	if (dh < (b1 + b2)) {
-		if (dh < b1) {
-			b1 = dh;
-			b2 = 0;
-		} else {
-			b2 = dh - b1;
-		}
-	}
+	p = malloc((dh + 1) * sizeof(DATA32*));
+
 	val = 0;
-	inc = 1 << 16;
-	for (i = 0; i < b1; i++) {
+	inc = (sh << 16) / dh;
+	for (i = 0; i < dh; i++) {
 		p[j++] = src + ((val >> 16) * sw);
 		val += inc;
 	}
-	if (dh > (b1 + b2)) {
-		val = (b1 << 16);
-		inc = ((sh - b1 - b2) << 16) / (dh - b1 - b2);
-		for (i = 0; i < (dh - b1 - b2); i++) {
-			p[j++] = src + ((val >> 16) * sw);
-			val += inc;
-		}
-	}
-	val = (sh - b2) << 16;
-	inc = 1 << 16;
-	for (i = 0; i <= b2; i++) {
-		p[j++] = src + ((val >> 16) * sw);
-		val += inc;
-	}
-	if (rv) {
-		for (i = dh / 2; --i >= 0;) {
-			DATA32	*tmp = p[i];
-
-			p[i] = p[dh - i - 1];
-			p[dh - i - 1] = tmp;
-		}
-	}
+	p[j++] = src + (sh * sw);
 	return p;
 }
 
 //>>>
-static int *CalcXPoints(int sw, int dw, int b1, int b2) //<<<
+static int *CalcXPoints(int sw, int dw) // Return an array of dw+1 coords interpolated across sw.  Last element is 1 pixel beyond the edge of the source <<<
 {
 	int                *p, i, j = 0;
-	int                 val, inc, rv = 0;
+	int                 val, inc;
 
-	if (dw < 0) {
-		dw = -dw;
-		rv = 1;
-	}
 	p = malloc((dw + 1) * sizeof(int));
-	if (dw < (b1 + b2)) {
-		if (dw < b1) {
-			b1 = dw;
-			b2 = 0;
-		} else {
-			b2 = dw - b1;
-		}
-	}
-	val = 0;
-	inc = 1 << 16;
-	for (i = 0; i < b1; i++) {
-		p[j++] = (val >> 16);
-		val += inc;
-	}
-	if (dw > (b1 + b2)) {
-		val = (b1 << 16);
-		inc = ((sw - b1 - b2) << 16) / (dw - b1 - b2);
-		for (i = 0; i < (dw - b1 - b2); i++) {
-			p[j++] = (val >> 16);
-			val += inc;
-		}
-	}
-	val = (sw - b2) << 16;
-	inc = 1 << 16;
-	for (i = 0; i <= b2; i++) {
-		p[j++] = (val >> 16);
-		val += inc;
-	}
-	if (rv) {
-		for (i = dw / 2; --i >= 0;) {
-			int	tmp = p[i];
 
-			p[i] = p[dw - i - 1];
-			p[dw - i - 1] = tmp;
-		}
+	val = 0;
+	inc = (sw << 16) / dw;
+	for (i = 0; i < dw; i++) {
+		p[j++] = (val >> 16);
+		val += inc;
 	}
+
+	p[j++] = sw;
 	return p;
 }
 
@@ -246,11 +182,11 @@ static ScaleInfo *CalcScaleInfo(gimp_image_t *im, int sw, int sh, int dw, int dh
 
 	isi->xup_yup = (abs(dw) >= sw) + ((abs(dh) >= sh) << 1);
 
-	isi->xpoints = CalcXPoints(im->width, scw, 0, 0);
+	isi->xpoints = CalcXPoints(im->width, scw);
 	if (!isi->xpoints)
 		return FreeScaleInfo(isi);
 	isi->ypoints = CalcYPoints((DATA32 *)im->pixel_data, im->width, im->height,
-			sch, 0, 0);
+			sch);
 	if (!isi->ypoints)
 		return FreeScaleInfo(isi);
 
@@ -266,7 +202,7 @@ static ScaleInfo *CalcScaleInfo(gimp_image_t *im, int sw, int sh, int dw, int dh
 }
 
 //>>>
-static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, int dy, int dw, int dh, int dow, int sow) //<<<
+static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dy, int dw, int dh, int dow, int sow) //<<<
 {
    DATA32	*sptr, *dptr;
    int		x, y, end;
@@ -281,7 +217,7 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   /* calculate the source line we'll scan from */
-		   dptr = dest + dx + ((y + dy) * dow);
+		   dptr = dest + ((y + dy) * dow);
 		   sptr = ypoints[dyy + y];
 		   if (YAP > 0) {
 			   for (x = dxx; x < end; x++) {
@@ -367,7 +303,7 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 		   int                 yap;
 
 		   /* calculate the source line we'll scan from */
-		   dptr = dest + dx + ((y + dy) * dow);
+		   dptr = dest + ((y + dy) * dow);
 		   sptr = ypoints[dyy + y];
 
 		   yap = (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
@@ -448,7 +384,7 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 	   /* go through every scanline in the output buffer */
 	   for (y = 0; y < dh; y++) {
 		   /* calculate the source line we'll scan from */
-		   dptr = dest + dx + ((y + dy) * dow);
+		   dptr = dest + ((y + dy) * dow);
 		   sptr = ypoints[dyy + y];
 		   if (YAP > 0) {
 			   for (x = dxx; x < end; x++) {
@@ -538,7 +474,7 @@ static void ScaleAARGBA(ScaleInfo *isi, DATA32 *dest, int dxx, int dyy, int dx, 
 	   for (y = 0; y < dh; y++) {
 		   int		yap = (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
 		   /* calculate the source line we'll scan from */
-		   dptr = dest + dx + ((y + dy) * dow);
+		   dptr = dest + ((y + dy) * dow);
 		   sptr = ypoints[dyy + y];
 		   for (x = dxx; x < end; x++) {
 			   int		xap = xpoints[x + 1] - xpoints[x];
@@ -654,6 +590,7 @@ gimp_image_t *scale_pmap( //<<<
 	/* if the input rect size < 0 don't render either */
 	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
 		return NULL;
+
 	scaleinfo = CalcScaleInfo(src, ssw, ssh, ddw, ddh);
 	if (!scaleinfo)
 		return NULL;
@@ -673,7 +610,7 @@ gimp_image_t *scale_pmap( //<<<
 			hh = h;
 		/* scale the imagedata for this LINESIZE lines chunk of image */
 		ScaleAARGBA(scaleinfo, (DATA32 *)dst->pixel_data, dxx, dyy + y,
-				0, y, dw, hh, dw, src->width);
+				y, dw, hh, dw, src->width);
 
 		h -= LINESIZE;
 	}

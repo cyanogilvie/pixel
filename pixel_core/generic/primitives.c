@@ -360,8 +360,7 @@ void bezier(double x1, double y1, double cpx1, double cpy1, double cpx2, double 
 
 //	lacc = bezier_arc_length(x1, y1, cpx1, cpy1, cpx2, cpx2, x2, y2);
 
-//	fprintf(stderr, "bezier length: (%f)", lacc);
-	muacc = 1.0 / lacc * osa;
+	muacc = 1.0 / (lacc * osa);
 	
 	for (mu=0; mu<=1.0; mu+=muacc) {
 		mum1 = 1 - mu;

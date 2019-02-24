@@ -149,3 +149,6 @@ declare 48 generic {
 declare 49 generic {
 	void pmapf_clr(struct pmapf* dest, pelf colour)
 }
+declare 50 generic {
+	struct pmapf* scale_perceptual(struct pmapf* in, int factor, int patch_size)
+}

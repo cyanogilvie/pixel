@@ -80,7 +80,7 @@ SETUP_ASSEMBLER
 # and PKG_TCL_SOURCES.
 #-----------------------------------------------------------------------
 
-TEA_ADD_SOURCES([2d.c bezierstuff.c main.c primitives.c rle.c shaders.c tcl_pmap.c pmapf.c tcl_utils.c misc.asm scale_pmap.c PixelStubInit.c])
+TEA_ADD_SOURCES([2d.c bezierstuff.c main.c primitives.c rle.c shaders.c tcl_pmap.c pmapf.c tcl_utils.c misc.asm scale_pmap.c PixelStubInit.c perceptual_scaling.c])
 # misc.c
 TEA_ADD_HEADERS([generic/pixel.h generic/2d.h generic/2d_types.h generic/2d_lookups.h generic/bezierstuff.h generic/misc.h generic/primitives.h generic/rle.h generic/shaders.h generic/tcl_pmap.h generic/tcl_utils.h generic/pixelDecls.h])
 #TEA_ADD_HEADERS([generic/pixel.h])

@@ -2414,6 +2414,160 @@ static int glue_fade(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* co
 }
 
 //}}}
+static inline float clamp_chan(float in) //{{{
+{
+	return in < 0.0 ? 0.0 :
+		in > 1.0 ? 1.0 :
+		in;
+}
+
+//}}}
+static int glue_clamp(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	in = NULL;
+	struct pmapf*	out = NULL;
+	int				x, y, c;
+	pelf*			i;
+	pelf*			o;
+
+	CHECK_ARGS(1, "pmapf");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
+
+	out = pmapf_new(in->width, in->height);
+
+	i = in->pixel_data;
+	o = out->pixel_data;
+
+	for (y=0; y<in->height; y++)
+		for (x=0; x<in->width; x++, i++, o++)
+			for (c=0; c<4; c++)
+				o->chan[c] = clamp_chan(o->chan[c]);
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_depixelize(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	int		x, y, run, sx=0, sy=0;
+	_pel*	i;
+	_pel*	o;
+	_pel	last;
+	int*	samp_x = NULL;
+	int*	samp_y = NULL;
+
+	gimp_image_t*	in = NULL;
+	gimp_image_t*	out = NULL;
+
+	CHECK_ARGS(1, "pmap");
+
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &in));
+
+	samp_x = (int*)malloc(in->width * sizeof(int));
+	samp_y = (int*)malloc(in->height * sizeof(int));
+	memset(samp_x, 0, in->width * sizeof(int));
+	memset(samp_y, 0, in->height * sizeof(int));
+
+	// Find sample intervals across x
+	for (y=0; y<in->height; y++) {
+		last = in->pixel_data[y*in->width];
+		i = in->pixel_data + y*in->width + 1;
+		run = 1;
+		for (x=1, sx=0; x<in->width; x++, i++) {
+			if (i->c == last.c && (samp_x[sx] == 0 || run < samp_x[sx])) {
+				run++;
+			} else {
+				if (samp_x[sx] == 0) {
+					samp_x[sx] = run;
+				} else if (run < samp_x[sx]) {
+					memmove(samp_x+sx+1, samp_x+sx, in->width-sx-1);
+					samp_x[sx] = run;
+					samp_x[sx+1] -= run;
+				}
+				run = 1;
+				last = *i;
+				sx++;
+			}
+		}
+
+		if (samp_x[sx] == 0) {
+			samp_x[sx] = run;
+		} else if (run < samp_x[sx]) {
+			memmove(samp_x+sx+1, samp_x+sx, in->width-sx-1);
+			samp_x[sx] = run;
+		}
+		sx++;
+	}
+
+	/*
+	{
+		int t;
+		fprintf(stderr, "Samp_x[%d]:\n", sx);
+		for (t=0; samp_x[t]>0; t++)
+			fprintf(stderr, " %d\n", samp_x[t]);
+	}
+	*/
+
+	// Find sample intervals across y
+	for (x=0; x<in->width; x++) {
+		i = in->pixel_data + in->width;
+		last = *i;
+		run = 1;
+		for (y=1, sy=0; y<in->height; y++, i+=in->width) {
+			if (i->c == last.c && (samp_y[sy] == 0 || run < samp_y[sy])) {
+				run++;
+			} else {
+				if (samp_y[sy] == 0) {
+					samp_y[sy] = run;
+				} else if (run < samp_y[sy]) {
+					memmove(samp_y+sy+1, samp_y+sy, in->width-sy-1);
+					samp_y[sy] = run;
+					samp_y[sy+1] -= run;
+				}
+				run = 1;
+				last = *i;
+				sy++;
+			}
+		}
+
+		if (samp_y[sy] == 0) {
+			samp_y[sy] = run;
+		} else if (run < samp_y[sy]) {
+			memmove(samp_y+sy+1, samp_y+sy, in->width-sy-1);
+			samp_y[sy] = run;
+		}
+		sy++;
+	}
+
+	/*
+	{
+		int t;
+		fprintf(stderr, "Samp_y[%d]:\n", sy);
+		for (t=0; samp_y[t]>0; t++)
+			fprintf(stderr, " %d\n", samp_y[t]);
+	}
+	*/
+
+	out = pmap_new(sx, sy, (_pel)(uint32_t)0);
+	o = out->pixel_data;
+	for (sy=0, y=0; sy<out->height; y+=samp_y[sy], sy++) {
+		i = in->pixel_data + y*in->width;
+		for (sx=0, x=0; sx<out->width; x+=samp_x[sx], i+=samp_x[sx], sx++, o++)
+			*o = *i;
+	}
+
+	free(samp_x); samp_x=NULL;
+	free(samp_y); samp_y=NULL;
+
+	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
 int Pixel_Init(Tcl_Interp *interp) // {{{1
 {
 	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
@@ -2457,6 +2611,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::mul", glue_mul);
 	NEW_CMD("pixel::add", glue_add);
 	NEW_CMD("pixel::fade", glue_fade);
+	NEW_CMD("pixel::clamp", glue_clamp);
 
 	// Primitives
 	NEW_CMD("pixel::box", glue_box);
@@ -2480,6 +2635,9 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::lowpass_pmap_lanczos", glue_lowpass_pmap_lanczos3);
 	NEW_CMD("pixel::kern_vis", glue_kern_vis);
 	NEW_CMD("pixel::image_mimetype", glue_image_mimetype);
+	NEW_CMD("pixel::depixelize", glue_depixelize);
+
+	TEST_OK(perceptual_scaling_init(interp));
 
 	TEST_OK(initvars(interp));
 

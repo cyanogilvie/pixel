@@ -26,6 +26,7 @@
 #include "tclstuff.h"
 #include "2d_types.h"
 #include "pmapf.h"
+#include "perceptual_scaling.h"
 
 
 

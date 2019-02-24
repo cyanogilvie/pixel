@@ -58,6 +58,7 @@ PixelStubs pixelStubs = {
     pmapf_gradient_linear_v, /* 47 */
     pmapf_alpha_over, /* 48 */
     pmapf_clr, /* 49 */
+    scale_perceptual, /* 50 */
 };
 
 /* !END!: Do not edit above this line. */

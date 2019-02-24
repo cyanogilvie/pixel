@@ -305,6 +305,12 @@ EXTERN struct pmapf*	pmapf_alpha_over (struct pmapf* dest,
 /* 49 */
 EXTERN void		pmapf_clr (struct pmapf* dest, pelf colour);
 #endif
+#ifndef scale_perceptual_TCL_DECLARED
+#define scale_perceptual_TCL_DECLARED
+/* 50 */
+EXTERN struct pmapf*	scale_perceptual (struct pmapf* in, int factor, 
+				int patch_size);
+#endif
 
 typedef struct PixelStubs {
     int magic;
@@ -360,6 +366,7 @@ typedef struct PixelStubs {
     struct pmapf* (*pmapf_gradient_linear_v) (int width, int height, pelf* top_colour, pelf* bottom_colour); /* 47 */
     struct pmapf* (*pmapf_alpha_over) (struct pmapf* dest, struct pmapf* src, int xofs, int yofs); /* 48 */
     void (*pmapf_clr) (struct pmapf* dest, pelf colour); /* 49 */
+    struct pmapf* (*scale_perceptual) (struct pmapf* in, int factor, int patch_size); /* 50 */
 } PixelStubs;
 
 #ifdef __cplusplus
@@ -572,6 +579,10 @@ extern PixelStubs *pixelStubsPtr;
 #ifndef pmapf_clr
 #define pmapf_clr \
 	(pixelStubsPtr->pmapf_clr) /* 49 */
+#endif
+#ifndef scale_perceptual
+#define scale_perceptual \
+	(pixelStubsPtr->scale_perceptual) /* 50 */
 #endif
 
 #endif /* defined(USE_PIXEL_STUBS) && !defined(USE_PIXEL_STUB_PROCS) */
