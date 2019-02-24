@@ -9,3 +9,12 @@ tclIndex
 *.dsc
 *.changes
 *.tar.gz
+Makefile
+autom4te.cache
+config.log
+config.status
+configure
+pixelConfig.sh
+pkgIndex.tcl
+*.swp
+*.swo
