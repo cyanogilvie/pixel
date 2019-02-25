@@ -48,7 +48,10 @@ gimp_image_t *pmap_new(int x, int y, _pel colour) //{{{1
 	new->width = x;
 	new->height = y;
 	new->bytes_per_pixel = 4;
-	new->pixel_data = (_pel *)malloc(x*y*4);
+	//out->pixel_data = (_pel*)malloc(sizeof(_pel) * x * y);
+	// Allocate memory aligned to 32 bytes (for SIMD)
+	if (0 != posix_memalign((void**)&new->pixel_data, 32, sizeof(_pel) * x * y))
+		Tcl_Panic("Could not allocate memory for pelf data");
 //	asm_pelset(new->pixel_data, colour, x*y);
 
 //	g_total_pmaps++;
@@ -1106,8 +1109,8 @@ struct pmapf* pmapf_new(int width, int height) //{{{
 	out->height = height;
 	out->bytes_per_pixel = sizeof(pelf);	// Used to signal floating point pixel data
 	//out->pixel_data = (pelf*)malloc(sizeof(pelf) * out->width * out->height);
-	// Allocate memory aligned to 16 bytes (for SIMD)
-	if (0 != posix_memalign((void**)&out->pixel_data, 16, sizeof(pelf) * out->width * out->height))
+	// Allocate memory aligned to 32 bytes (for SIMD)
+	if (0 != posix_memalign((void**)&out->pixel_data, 32, sizeof(pelf) * out->width * out->height))
 		Tcl_Panic("Could not allocate memory for pelf data");
 
 	return out;

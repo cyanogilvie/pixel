@@ -1153,7 +1153,7 @@ AC_DEFUN([TEA_CONFIG_CFLAGS], [
     CFLAGS_OPTIMIZE=-O
     AS_IF([test "$GCC" = yes], [
 	# TEA specific:
-	CFLAGS_OPTIMIZE=-O2
+	CFLAGS_OPTIMIZE=-O3
 	CFLAGS_WARNING="-Wall"
     ], [CFLAGS_WARNING=""])
     TCL_NEEDS_EXP_FILE=0
@@ -1274,7 +1274,7 @@ dnl AC_CHECK_TOOL(AR, ar)
 		    lflags="-nologo -MACHINE:${MACHINE} -LIBPATH:\"${MSSDK}/Lib/${MACHINE}\""
 		    LINKBIN="\"${PATH64}/link.exe\""
 		    CFLAGS_DEBUG="-nologo -Zi -Od -W3 ${runtime}d"
-		    CFLAGS_OPTIMIZE="-nologo -O2 -W2 ${runtime}"
+		    CFLAGS_OPTIMIZE="-nologo -O3 -W2 ${runtime}"
 		    # Avoid 'unresolved external symbol __security_cookie'
 		    # errors, c.f. http://support.microsoft.com/?id=894573
 		    TEA_ADD_LIBS([bufferoverflowU.lib])
@@ -1309,7 +1309,7 @@ dnl AC_CHECK_TOOL(AR, ar)
 		    lflags="-nologo"
     		    LINKBIN="link"
 		    CFLAGS_DEBUG="-nologo -Z7 -Od -W3 -WX ${runtime}d"
-		    CFLAGS_OPTIMIZE="-nologo -O2 -W2 ${runtime}"
+		    CFLAGS_OPTIMIZE="-nologo -O3 -W2 ${runtime}"
 		fi
 	    fi
 
@@ -1317,7 +1317,7 @@ dnl AC_CHECK_TOOL(AR, ar)
 		# mingw gcc mode
 		RC="windres"
 		CFLAGS_DEBUG="-g"
-		CFLAGS_OPTIMIZE="-O2 -fomit-frame-pointer"
+		CFLAGS_OPTIMIZE="-O3 -fomit-frame-pointer"
 		SHLIB_LD="$CC -shared"
 		UNSHARED_LIB_SUFFIX='${TCL_TRIM_DOTS}.a'
 		LDFLAGS_CONSOLE="-wl,--subsystem,console ${lflags}"
@@ -1644,7 +1644,7 @@ dnl AC_CHECK_TOOL(AR, ar)
 	    SHLIB_SUFFIX=".so"
 
 	    # TEA specific:
-	    CFLAGS_OPTIMIZE="-O2 -fomit-frame-pointer"
+	    CFLAGS_OPTIMIZE="-O3 -fomit-frame-pointer"
 	    # egcs-2.91.66 on Redhat Linux 6.0 generates lots of warnings
 	    # when you inline the string and math operations.  Turn this off to
 	    # get rid of the warnings.
@@ -3375,7 +3375,7 @@ AC_DEFUN([TEA_SETUP_COMPILER_CC], [
     # in this macro, they need to go into TEA_SETUP_COMPILER instead.
 
     # If the user did not set CFLAGS, set it now to keep
-    # the AC_PROG_CC macro from adding "-g -O2".
+    # the AC_PROG_CC macro from adding "-g -O3".
     if test "${CFLAGS+set}" != "set" ; then
 	CFLAGS=""
     fi
