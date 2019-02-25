@@ -10,3 +10,4 @@ configure
 build-stamp
 config.guess
 config.sub
+report.vec
