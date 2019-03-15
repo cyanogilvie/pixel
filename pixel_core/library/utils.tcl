@@ -47,6 +47,14 @@ namespace eval ::pixel {
 	}
 
 	#>>>
+	proc unsharp {p blur_w blur_f s} { #<<<
+		set blurred			[pixel::lowpass_pmapf_lanczos $p $blur_w [expr {.5 * $blur_f}]]
+		set inverted_mul	[pixel::fade [pixel::neg $blurred] $s]
+		set combined		[pixel::pmapf_alpha_over $p $inverted_mul 0 0]
+		pixel::mul $combined [expr {1.0 / (1-$s*2)}]
+	}
+
+	#>>>
 }
 
 # vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4

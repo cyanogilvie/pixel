@@ -1498,8 +1498,8 @@ static int glue_neg(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* con
 	struct pmapf*	in = NULL;
 	int				x, y, c;
 	struct pmapf*	out = NULL;
-	pelf*			i;
-	pelf*			o;
+	pelf* restrict	i;
+	pelf* restrict	o;
 
 	CHECK_ARGS(1, "pmapf");
 
@@ -1524,31 +1524,31 @@ static int glue_neg(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* con
 //}}}
 static int glue_mul(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
-	struct pmapf*	in = NULL;
-	int				x, y, c;
+	struct pmapf*	src = NULL;
+	struct pmapf*	dst = NULL;
 	double			factor;
-	struct pmapf*	out = NULL;
-	pelf*			i;
-	pelf*			o;
 
 	CHECK_ARGS(2, "pmapf factor");
 
-	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &factor));
 
-	out = pmapf_new(in->width, in->height);
+	dst = pmapf_new(src->width, src->height);
 
-	i = in->pixel_data;
-	o = out->pixel_data;
+	{
+		pelf* restrict	s = src->pixel_data;
+		pelf* restrict	d = dst->pixel_data;
+		const int len = src->height * src->width;
+		int i, c;
 
-	for (y=0; y<in->height; y++)
-		for (x=0; x<in->width; x++, i++, o++) {
+		for (i=0; i<len; i++, d++, s++) {
 			for (c=0; c<3; c++)
-				o->chan[c] = i->chan[c] * factor;
-			o->ch.a = i->ch.a;
+				d->chan[c] = s->chan[c] * factor;
+			d->chan[c] = s->chan[c];
 		}
+	}
 
-	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
 
 	return TCL_OK;
 }
@@ -1977,7 +1977,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	Tcl_RegisterObjType(&tcl_pmap);
 
 	init_2d();
-	
+
 	NEW_CMD("pixel::pmap_new", glue_pmap_new);
 	NEW_CMD("pixel::pmap_clr", glue_pmap_clr);
 	NEW_CMD("pixel::pmap_cut", glue_pmap_cut);
