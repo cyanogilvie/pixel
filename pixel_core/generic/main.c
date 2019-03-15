@@ -1659,6 +1659,79 @@ static int glue_clamp(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* c
 }
 
 //}}}
+static int glue_mirror_x(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	in = NULL;
+	struct pmapf*	out = NULL;
+	int				x, y, c;
+	pelf* restrict	i;
+	pelf* restrict	o;
+
+	CHECK_ARGS(1, "pmapf");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
+
+	out = pmapf_new(in->width, in->height);
+
+	i = in->pixel_data;
+	o = out->pixel_data;
+
+	for (y=0; y<in->height; y++) {
+		i = in->pixel_data + y*in->width;
+		o = out->pixel_data + y*out->width + out->width - 1;
+		for (x=0; x<in->width; x++, i++, o--) {
+			float* restrict	op = o->chan;
+			float* restrict	ip = i->chan;
+
+			for (c=0; c<4; c++)
+				op[c] = ip[c];
+		}
+	}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_mirror_y(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	src = NULL;
+	struct pmapf*	dst = NULL;
+	int				y, i;
+	pelf* restrict	s;
+	pelf* restrict	d;
+
+	CHECK_ARGS(1, "pmapf");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
+
+	dst = pmapf_new(src->width, src->height);
+
+	{
+		const int h = dst->height;
+		const int w = dst->width;
+		const int len = w * 4;
+
+		for (y=0; y<h; y++) {
+			s = src->pixel_data + y*w;
+			d = dst->pixel_data + (h-y-1)*w;
+			{
+				float* restrict	dp = d->chan;
+				float* restrict	sp = s->chan;
+
+				for (i=0; i<len; i++)
+					*dp++ = *sp++;
+			}
+		}
+	}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
+
+	return TCL_OK;
+}
+
+//}}}
 static int glue_depixelize(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	int		x, y, run, sx=0, sy=0;
@@ -1940,6 +2013,8 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::add", glue_add);
 	NEW_CMD("pixel::fade", glue_fade);
 	NEW_CMD("pixel::clamp", glue_clamp);
+	NEW_CMD("pixel::mirror_x", glue_mirror_x);
+	NEW_CMD("pixel::mirror_y", glue_mirror_y);
 
 	// Primitives
 	NEW_CMD("pixel::box", glue_box);
