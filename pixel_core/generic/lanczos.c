@@ -6,15 +6,19 @@
 #define W			(Wt*2+1)
 #define FIXED_BITS	22		// Max is min(fixedpoint's bits-10, uint64_t's bits/2-1)
 #define FIXED_TO_DOUBLE(f) ((f) / (double)(1LL<<FIXED_BITS))
+
+static inline int max(const int i1, const int i2) { return i1 > i2 ? i1 : i2; }
+static inline int min(const int i1, const int i2) { return i1 < i2 ? i1 : i2; }
+
 typedef int32_t fixedpoint;
 
-static float w1(float fc, float x) //{{{
+static float w1(const float fc, const float x) //{{{
 {
 	return x==0 ? 2*fc : sinf(2*PI*fc*x) / (PI*x);
 }
 
 //}}}
-static float w2(int wt, float x) //{{{
+static float w2(const int wt, const float x) //{{{
 {
 	if (x < -wt || x > wt) {
 		return 0.0;
@@ -27,7 +31,7 @@ static float w2(int wt, float x) //{{{
 }
 
 //}}}
-static float h(int wt, float fc, float x) //{{{
+static float h(const int wt, const float fc, const float x) //{{{
 {
 	return w1(fc, x) * w2(wt, x);
 }
@@ -48,7 +52,7 @@ static void make_kern(fixedpoint* kern, int wt, const float f, const float frac,
 }
 
 //}}}
-static void make_kern_float(float* kern, int wt, const float f, const float frac, const int kstart, const int kend) //{{{
+static void make_kern_float(float* restrict kern, const int wt, const float f, const float frac, const int kstart, const int kend) //{{{
 {
 	int			k;
 	float		acc = 0;
@@ -56,6 +60,21 @@ static void make_kern_float(float* kern, int wt, const float f, const float frac
 	// Calculate the kernel weights for this fractional v
 	for (k=kstart; k<kend; k++)
 		acc += (kern[k] = h(wt, f, -wt+k-frac));
+
+	// Normalize the kernel to eliminate bias
+	for (k=kstart; k<kend; k++)
+		kern[k] /= acc;
+}
+
+//}}}
+static void make_kern_float2(float* restrict kern, const int wt, const float f, const float frac, const int kstart, const int kend) //{{{
+{
+	int			k;
+	float		acc = 0;
+
+	// Calculate the kernel weights for this fractional v
+	for (k=kstart; k<kend; k++)
+		acc += (kern[k] = h(wt, f, -wt+k+frac));
 
 	// Normalize the kernel to eliminate bias
 	for (k=kstart; k<kend; k++)
@@ -474,7 +493,7 @@ static void lanczos_half_scale_float(pelf* restrict in, pelf* restrict out, cons
 
 
 //}}}
-void lanczos_half_scale_f(_pel* in, _pel* out, int orig_dim, int new_dim, int wt, float f, int dsinc, int iiend, int dinc, int sinc, int sif) //{{{
+void lanczos_half_scale_f(_pel* in, _pel* out, const int orig_dim, const int new_dim, const int wt, const float f, const int dsinc, const int iiend, const int dinc, const int sinc, const int sif) //{{{
 {
 	const int		w = wt*2+1;
 	fixedpoint		kern[w];
@@ -777,6 +796,330 @@ static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int o
 }
 
 //}}}
+static int glue_shear_pmapf_lanczos_x(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	src = NULL;
+	struct pmapf*	dst = NULL;
+	double			shear;
+	const int		wt=4;
+	const int		w=wt*2+1;
+	float			kern_norm[w];
+	int				xs, xd, y, skip_start=0, skip_end=0;
+
+	if (objc<3 || objc>5) {
+		CHECK_ARGS(2, "pmapf shear ?skip_start? ?skip_end?");
+	}
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &shear));
+	if (objc > 3) TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &skip_start));
+	if (objc > 4) TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &skip_end));
+
+	dst = pmapf_new(src->width + (int)(ceil(fabs(shear*src->height))) - skip_start - skip_end, src->height);
+
+	{
+		const int	src_w = src->width;
+		const int	src_h = src->height;
+		const int	dst_w = dst->width;
+
+		for (y=0; y<src_h; y++) {
+			const float xf = shear < 0 ? (src_h-y-1)*shear*-1 : y*shear;
+			//const int xdstart = (int)floor(xf);				// [xdstart, xdend] - range of dst pixels that take input from src
+			//const int xdend   = src_w + (int)ceil(xf);
+			pelf* restrict	d = dst->pixel_data + y*dst_w - skip_start;
+			pelf* restrict	s = src->pixel_data + y*src_w;
+			int				c;
+			const int		xi = xf;
+			const float		frac = (xf-xi);
+
+			make_kern_float2(kern_norm, wt, .5, frac, 0, w);
+
+			// empty area (might actually have to process samples that are within wt of the src edge) {{{
+			xd = -skip_start;
+			xs = -xi;
+			if (xs<-wt && xd<0) {
+				const int adj = min(-wt-xs, -xd);
+				xd += adj;
+				xs += adj;
+				d += adj;
+			}
+			for (; xs<-wt && xd<dst_w; xd++, xs++, d++) {
+				float* restrict dp = d->chan;
+				for (c=0; c<4; c++)
+					dp[c] = 0.0;
+			}
+			//}}}
+
+			// first section: kern out of bounds on left in src (also maybe right if src->width < w) {{{
+			{
+				int			kstart;
+
+				s = src->pixel_data + y*src_w + xs;
+
+				kstart = wt - xs;
+				if (xs<wt && xd<0) {
+					const int adj = min(wt-xs, -xd);
+					xd += adj;
+					xs += adj;
+					d += adj;
+					s += adj;
+					kstart -= adj;
+				}
+				for (
+						;
+						xs<wt && xd<dst_w;
+						xd++, xs++, d++, s++, kstart--
+				) {
+					const int kend = min(w, (src_w-xs)+wt);		// +wt - account for the ofs kend is relative to: xs-wt
+					float* restrict dp = d->chan;
+					pelf* restrict	ss = s-wt+kstart;
+
+					for (c=0; c<4; c++)
+						dp[c] = 0;
+
+					// Accumulate samples from "in", scaled by the kernel weights
+					_acc_from_in(kern_norm, kstart, kend, ss, dp, 1);
+				}
+			}
+			//}}}
+
+			// inner section: full coverage in src for kern {{{
+			{
+				const int	kstart=0;
+				const int	kend=w;
+
+				if (xs<src_w-wt-1 && xd<0) {
+					const int adj = min((src_w-wt-1) - xs, -xd);
+					xd += adj;
+					xs += adj;
+					s += adj;
+					d += adj;
+				}
+				for (; xs<src_w-wt-1 && xd<dst_w; xd++, xs++, s++, d++) {
+					float* restrict	dp = d->chan;
+					pelf* restrict	ss = s-wt;
+
+					for (c=0; c<4; c++)
+						dp[c] = 0;
+
+					// Accumulate samples from "in", scaled by the kernel weights
+					_acc_from_in(kern_norm, kstart, kend, ss, dp, 1);
+				}
+			}
+			//}}}
+
+			// third section: kern out of bounds on right in src (also maybe left if src->width < w) {{{
+			{
+				int			kend = w;
+
+				if (xs<src_w+wt && xd<0) {
+					const int adj = min (src_w+wt-xs, -xd);
+					xd += adj;
+					xs += adj;
+					s += adj;
+					d += adj;
+					kend -= adj;
+				}
+				for (
+						;
+						xs<src_w+wt && xd<dst_w;
+						xd++, xs++, s++, d++, kend--
+				) {
+					const int kstart = -min(0, xs-wt);
+					float* restrict dp = d->chan;
+					pelf* restrict	ss = s-(wt-kstart);
+
+					for (c=0; c<4; c++)
+						dp[c] = 0;
+
+					// Accumulate samples from "in", scaled by the kernel weights
+					_acc_from_in(kern_norm, kstart, kend, ss, dp, 1);
+				}
+			}
+			//}}}
+
+			// empty area {{{
+			if (xd < 0) {
+				const int adj = -xd;
+				xd += adj;
+				d += adj;
+			}
+			for (; xd<dst_w; xd++, d++) {
+				float* restrict dp = d->chan;
+				for (c=0; c<4; c++)
+					dp[c] = 0.0;
+			}
+			//}}}
+		}
+	}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
+	return TCL_OK;
+}
+
+//}}}
+static int glue_shear_pmapf_lanczos_y(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	struct pmapf*	src = NULL;
+	struct pmapf*	dst = NULL;
+	double			shear;
+	const int		wt=4;
+	const int		w=wt*2+1;
+	float			kern_norm[w];
+	int				ys, yd, x, skip_start=0, skip_end=0;
+
+	if (objc<3 || objc>5) {
+		CHECK_ARGS(2, "pmapf shear ?skip_start? ?skip_end?");
+	}
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &shear));
+	if (objc > 3) TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &skip_start));
+	if (objc > 4) TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &skip_end));
+
+	dst = pmapf_new(src->width, src->height + (int)(ceil(fabs(shear*src->width))) - skip_start - skip_end);
+
+	{
+		const int	src_w = src->width;
+		const int	src_h = src->height;
+		const int	dst_w = dst->width;
+		const int	dst_h = dst->height;
+
+		for (x=0; x<src_w; x++) {
+			const float yf = shear < 0 ? (src_w-x-1)*shear*-1 : x*shear;
+			//const int ydstart = (int)floor(yf);				// [ydstart, ydend] - range of dst pixels that take input from src
+			//const int ydend   = src_h + (int)ceil(yf);
+			pelf* restrict	d = dst->pixel_data + x - skip_start*dst_w;
+			pelf* restrict	s = src->pixel_data + x;
+			int				c;
+			const int		yi = yf;
+			const float		frac = (yf-yi);
+
+			make_kern_float2(kern_norm, wt, .5, frac, 0, w);
+
+			// empty area (might actually have to process samples that are within wt of the src edge) {{{
+			yd = -skip_start;
+			ys = -yi;
+			if (yd < 0) {
+				yd += skip_start;
+				ys += skip_start;
+				d += dst_w * skip_start;
+			}
+			for (; ys<-wt && yd<dst_h; yd++, ys++, d+=dst_w) {
+				float* restrict dp = d->chan;
+				for (c=0; c<4; c++)
+					dp[c] = 0.0;
+			}
+			//}}}
+
+			// first section: kern out of bounds on left in src (also maybe right if src->width < w) {{{
+			{
+				int			kstart;
+
+				s = src->pixel_data + ys*src_w + x;
+
+				kstart = wt - ys;
+				if (yd < 0 && ys<wt) {
+					const int adj = min(-yd, wt-ys);
+					yd += adj;
+					ys += adj;
+					d += dst_w*adj;
+					s += src_w*adj;
+					kstart -= adj;
+				}
+				for (
+						;
+						ys<wt && yd<dst_h;
+						yd++, ys++, d+=dst_w, s+=src_w, kstart--
+				) {
+					const int kend = min(w, (src_h-ys)+wt);		// +wt - account for the ofs kend is relative to: ys-wt
+					float* restrict dp = d->chan;
+					pelf* restrict	ss = s+((-wt+kstart)*src_w);
+
+					for (c=0; c<4; c++)
+						dp[c] = 0;
+
+					// Accumulate samples from "in", scaled by the kernel weights
+					_acc_from_in(kern_norm, kstart, kend, ss, dp, src_w);
+				}
+			}
+			//}}}
+
+			// inner section: full coverage in src for kern {{{
+			{
+				const int	kstart=0;
+				const int	kend=w;
+
+				if (yd < 0 && ys < src_h-wt-1) {
+					const int adj = min(-yd, (src_h-wt-1) - ys);
+					yd += adj;
+					ys += adj;
+					s += src_w*adj;
+					d += dst_w*adj;
+				}
+				for (; ys<src_h-wt-1 && yd<dst_h; yd++, ys++, s+=src_w, d+=dst_w) {
+					float* restrict	dp = d->chan;
+					pelf* restrict	ss = s-(wt*src_w);
+
+					for (c=0; c<4; c++)
+						dp[c] = 0;
+
+					// Accumulate samples from "in", scaled by the kernel weights
+					_acc_from_in(kern_norm, kstart, kend, ss, dp, src_w);
+				}
+			}
+			//}}}
+
+			// third section: kern out of bounds on right in src (also maybe left if src->width < w) {{{
+			{
+				int			kend = w;
+
+				if (yd < 0 && ys<src_h+wt) {
+					const int adj = min(-yd, src_h+wt - ys);
+					yd += adj;
+					ys += adj;
+					s += src_w*adj;
+					d += dst_w*adj;
+					kend -= adj;
+				}
+				for (
+						;
+						ys<src_h+wt && yd<dst_h;
+						yd++, ys++, s+=src_w, d+=dst_w, kend--
+				) {
+					const int kstart = -min(0, ys-wt);
+					float* restrict dp = d->chan;
+					pelf* restrict	ss = s-((wt-kstart)*src_w);
+
+					for (c=0; c<4; c++)
+						dp[c] = 0;
+
+					// Accumulate samples from "in", scaled by the kernel weights
+					_acc_from_in(kern_norm, kstart, kend, ss, dp, src_w);
+				}
+			}
+			//}}}
+
+			// empty area {{{
+			if (yd<0) {
+				const int adj = -yd;
+				yd += adj;
+				d += adj*dst_w;
+			}
+			for (; yd<dst_h; yd++, d+=dst_w) {
+				float* restrict dp = d->chan;
+				for (c=0; c<4; c++)
+					dp[c] = 0.0;
+			}
+			//}}}
+		}
+	}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
+	return TCL_OK;
+}
+
+//}}}
 static int glue_lowpass_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	struct pmapf*	src = NULL;
@@ -837,6 +1180,9 @@ int lanczos_init(Tcl_Interp *interp) // {{{1
 {
 	NEW_CMD("pixel::scale_pmapf_lanczos", glue_scale_pmapf_lanczos3);
 	NEW_CMD("pixel::lowpass_pmapf_lanczos", glue_lowpass_pmapf_lanczos3);
+	NEW_CMD("pixel::shear_pmapf_lanczos_x", glue_shear_pmapf_lanczos_x);
+	NEW_CMD("pixel::shear_pmapf_lanczos_y", glue_shear_pmapf_lanczos_y);
+
 	NEW_CMD("pixel::scale_pmap_lanczos", glue_scale_pmap_lanczos3);
 	NEW_CMD("pixel::lowpass_pmap_lanczos", glue_lowpass_pmap_lanczos3);
 	NEW_CMD("pixel::kern_vis", glue_kern_vis);

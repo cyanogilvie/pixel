@@ -152,3 +152,6 @@ declare 49 generic {
 declare 50 generic {
 	struct pmapf* scale_perceptual(struct pmapf* in, int factor, int patch_size)
 }
+declare 51 generic {
+	struct pmapf* pmapf_rotate_90(struct pmapf* src, int quads)
+}

@@ -1046,6 +1046,116 @@ struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, 
 }
 
 //}}}
+struct pmapf* pmapf_rotate_90(struct pmapf* restrict src, int quads) //{{{1
+{
+	pelf*			s;
+	pelf*			d;
+	struct pmapf*	new = NULL;
+	int				sign;
+	int				littlejump, bigjump;
+	int				nx, ny;
+	
+	sign = (quads < 0) ? -1 : 1;
+	quads = abs(quads) % 4;
+
+	if (quads == 3) {
+		quads = 1;
+		sign = sign * -1;
+	}
+
+	switch (quads) {
+		case 1:
+		case -1:
+			new = pmapf_new(src->height, src->width);
+			break;
+
+		case 0:
+		case 2:
+			new = pmapf_new(src->width, src->height);
+			break;
+	}
+
+	d = new->pixel_data;
+
+	quads = quads * sign;
+
+	switch (quads) {
+		case 0:
+			s = src->pixel_data;
+			{
+				const int		len = new->width * new->height * 4;
+				float* restrict	sp = s->chan;
+				float* restrict	dp = d->chan;
+				int				i;
+
+				for (i=0; i<len; i++)
+					*dp++ = *sp++;
+
+				return new;
+			}
+
+		case 1:
+			s = src->pixel_data + (src->width * src->height) - src->width;
+			littlejump = -src->width;
+			bigjump = (src->width * src->height) - src->width + 1;
+			break;
+
+		case -1:
+			s = src->pixel_data + (src->width - 1);
+			littlejump = src->width;
+			bigjump = -((src->width * src->height) - src->width + 1);
+			break;
+
+		case -2:
+		case 2:
+			s = src->pixel_data;
+			d = new->pixel_data + new->height*new->width -1;
+			{
+				const int		len = new->width * new->height;
+				int				i;
+
+				for (i=0; i<len; i++) {
+					float* restrict dp = d->chan;
+					float* restrict sp = s->chan;
+					int c;
+
+					for (c=0; c<4; c++)
+						dp[c] = sp[c];
+
+					d--;
+					s++;
+				}
+
+				return new;
+			}
+
+		default:
+			fprintf(stderr, "Bogus quads value in pmap_rotate: (%d)\n", quads);
+			s = src->pixel_data;		// Shouldn't ever get here
+			littlejump = 0;
+			bigjump = 0;
+			break;
+	}
+
+	{
+		const int	big = bigjump;
+		const int	little = littlejump;
+		int			c;
+
+		for (ny=0; ny<new->height; ny++, s+=big, s-=little) {
+			for (nx=0; nx<new->width; nx++, d++, s+=little) {
+				float* restrict sp = s->chan;
+				float* restrict dp = d->chan;
+				for (c=0; c<4; c++)
+					dp[c] = sp[c];
+			}
+		}
+	}
+
+	return new;
+}
+
+
 void do_dirty_tricks() // {{{1
 {
 	double			foo;

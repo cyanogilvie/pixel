@@ -311,6 +311,11 @@ EXTERN void		pmapf_clr (struct pmapf* dest, pelf colour);
 EXTERN struct pmapf*	scale_perceptual (struct pmapf* in, int factor, 
 				int patch_size);
 #endif
+#ifndef pmapf_rotate_90_TCL_DECLARED
+#define pmapf_rotate_90_TCL_DECLARED
+/* 51 */
+EXTERN struct pmapf*	pmapf_rotate_90 (struct pmapf* src, int quads);
+#endif
 
 typedef struct PixelStubs {
     int magic;
@@ -367,6 +372,7 @@ typedef struct PixelStubs {
     struct pmapf* (*pmapf_alpha_over) (struct pmapf* dest, struct pmapf* src, int xofs, int yofs); /* 48 */
     void (*pmapf_clr) (struct pmapf* dest, pelf colour); /* 49 */
     struct pmapf* (*scale_perceptual) (struct pmapf* in, int factor, int patch_size); /* 50 */
+    struct pmapf* (*pmapf_rotate_90) (struct pmapf* src, int quads); /* 51 */
 } PixelStubs;
 
 #ifdef __cplusplus
@@ -583,6 +589,10 @@ extern PixelStubs *pixelStubsPtr;
 #ifndef scale_perceptual
 #define scale_perceptual \
 	(pixelStubsPtr->scale_perceptual) /* 50 */
+#endif
+#ifndef pmapf_rotate_90
+#define pmapf_rotate_90 \
+	(pixelStubsPtr->pmapf_rotate_90) /* 51 */
 #endif
 
 #endif /* defined(USE_PIXEL_STUBS) && !defined(USE_PIXEL_STUB_PROCS) */

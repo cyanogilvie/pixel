@@ -708,6 +708,24 @@ static int glue_pmapf_alpha_over(ClientData cdata, Tcl_Interp* interp, int objc,
 }
 
 
+static int glue_pmapf_rotate_90(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{1
+{
+	int				quads;
+	struct pmapf*	src = NULL;
+	struct pmapf*	out = NULL;
+
+	CHECK_ARGS(2, "src quads");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quads));
+
+	out = pmapf_rotate_90(src, quads);
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(out));
+
+	return TCL_OK;
+}
+
+
 static int glue_rle_encode(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
@@ -1759,6 +1777,126 @@ static int glue_depixelize(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_O
 }
 
 //}}}
+static int glue_closeup(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	int		x, y, c, factor;
+
+	struct pmapf*	src = NULL;
+	struct pmapf*	dst = NULL;
+
+	CHECK_ARGS(2, "pmapf factor");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &factor));
+
+	{
+		const int new_w = src->width * factor;
+		const int new_h = src->height * factor;
+		float* restrict dp;
+
+		dst = pmapf_new(new_w, new_h);
+		dp = (float*)(dst->pixel_data);
+
+		for (y=0; y<new_h; y++) {
+			const int old_y = y/factor;
+			for (x=0; x<new_w; x++) {
+				const int old_x = x/factor;
+				pelf* restrict s = src->pixel_data + old_y*src->width + old_x;
+				float* restrict sp = s->chan;
+				for (c=0; c<4; c++)
+					*dp++ = sp[c];
+			}
+		}
+	}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_closeup_grid(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	int		x, y, c, factor;
+
+	struct pmapf*	src = NULL;
+	struct pmapf*	dst = NULL;
+
+	CHECK_ARGS(2, "pmapf factor");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &factor));
+
+	{
+		const int new_w = src->width * factor;
+		const int new_h = src->height * factor;
+		float* restrict dp;
+
+		dst = pmapf_new(new_w, new_h);
+		dp = (float*)(dst->pixel_data);
+
+		for (y=0; y<new_h; y++) {
+			const int old_y = y/factor;
+			for (x=0; x<new_w; x++) {
+				const int old_x = x/factor;
+				pelf* restrict s = src->pixel_data + old_y*src->width + old_x;
+				float* restrict sp = s->chan;
+				if (x%factor == 0 || y%factor == 0) {
+					for (c=0; c<3; c++)
+						*dp++ = 1.0-sp[c];
+					*dp++ = (old_x%10 == 0 || old_y%10 == 0) ? 1.0 : .5;
+				} else {
+					for (c=0; c<4; c++)
+						*dp++ = sp[c];
+				}
+			}
+		}
+	}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
+
+	return TCL_OK;
+}
+
+//}}}
+static int glue_checkerboard(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+{
+	int		x, y, c, new_w, new_h, size;
+	pelf	col[2];
+
+	struct pmapf*	dst = NULL;
+
+	CHECK_ARGS(5, "width height size col1 col1");
+
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &new_w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_h));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &size));
+	TEST_OK(Pixel_GetPELFFromObj(interp, objv[4], &col[0]));
+	TEST_OK(Pixel_GetPELFFromObj(interp, objv[5], &col[1]));
+
+	{
+		float* restrict dp;
+
+		dst = pmapf_new(new_w, new_h);
+		dp = (float*)(dst->pixel_data);
+
+		for (y=0; y<new_h; y++) {
+			const int old_y = y/size;
+			for (x=0; x<new_w; x++) {
+				const int old_x = x/size;
+				float* restrict sp = col[(old_x+old_y)%2].chan;
+				for (c=0; c<4; c++)
+					*dp++ = sp[c];
+			}
+		}
+	}
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
+
+	return TCL_OK;
+}
+
+//}}}
 int Pixel_Init(Tcl_Interp *interp) // {{{1
 {
 	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
@@ -1794,6 +1932,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::gradient_radial", glue_gradient_radial);
 	NEW_CMD("pixel::gradient_linear_v", glue_gradient_linear_v);
 	NEW_CMD("pixel::pmapf_alpha_over", glue_pmapf_alpha_over);
+	NEW_CMD("pixel::pmapf_rotate_90", glue_pmapf_rotate_90);
 	NEW_CMD("pixel::dump_pmapf", glue_dump_pmapf);
 	NEW_CMD("pixel::invert", glue_invert);
 	NEW_CMD("pixel::neg", glue_neg);
@@ -1822,6 +1961,9 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::scale_pmap", glue_scale_pmap);
 	NEW_CMD("pixel::image_mimetype", glue_image_mimetype);
 	NEW_CMD("pixel::depixelize", glue_depixelize);
+	NEW_CMD("pixel::closeup", glue_closeup);
+	NEW_CMD("pixel::closeup_grid", glue_closeup_grid);
+	NEW_CMD("pixel::checkerboard", glue_checkerboard);
 
 	TEST_OK(lanczos_init(interp));
 	TEST_OK(perceptual_scaling_init(interp));
