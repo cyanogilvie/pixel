@@ -726,6 +726,28 @@ static int glue_pmapf_rotate_90(ClientData cdata, Tcl_Interp* interp, int objc, 
 }
 
 
+static int glue_pmapf_cut(ClientData cdata, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) //{{{1
+{
+	struct pmapf*			src = NULL;
+	struct pmapf* restrict	new = NULL;
+	int						x1, y1, x2, y2;
+	
+	CHECK_ARGS(5, "src x1 y1 x2 y2");
+
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x1));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &y1));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &x2));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &y2));
+
+	new = pmapf_cut(src, x1, y1, x2, y2);
+
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(new));
+
+	return TCL_OK;
+}
+
+
 static int glue_rle_encode(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
@@ -2006,6 +2028,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 	NEW_CMD("pixel::gradient_linear_v", glue_gradient_linear_v);
 	NEW_CMD("pixel::pmapf_alpha_over", glue_pmapf_alpha_over);
 	NEW_CMD("pixel::pmapf_rotate_90", glue_pmapf_rotate_90);
+	NEW_CMD("pixel::pmapf_cut", glue_pmapf_cut);
 	NEW_CMD("pixel::dump_pmapf", glue_dump_pmapf);
 	NEW_CMD("pixel::invert", glue_invert);
 	NEW_CMD("pixel::neg", glue_neg);

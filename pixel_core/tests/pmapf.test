@@ -40,6 +40,62 @@ test pmapf-2.1 {Memory leak with string rep} -body { #<<<
 	unset -nocomplain mem_start mem_used
 } -match glob -result {Memory usage ok: *}
 #>>>
+test pmapf-10.1 {pmapf_cut} -body { #<<<
+	set p	[pixel pmapf_new 320 200]
+	set p	[pixel pmapf_cut $p 20 10 190 20]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {171 11}
+#>>>
+test pmapf-10.2 {pmapf_cut, swap x bounds} -body { #<<<
+	set p	[pixel pmapf_new 320 200]
+	set p	[pixel pmapf_cut $p 190 10 20 20]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {171 11}
+#>>>
+test pmapf-10.3 {pmapf_cut, swap y bounds} -body { #<<<
+	set p	[pixel pmapf_new 320 200]
+	set p	[pixel pmapf_cut $p 20 20 190 10]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {171 11}
+#>>>
+test pmapf-10.4 {pmapf_cut, swap both bounds} -body { #<<<
+	set p	[pixel pmapf_new 320 200]
+	set p	[pixel pmapf_cut $p 190 20 20 10]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {171 11}
+#>>>
+test pmapf-10.5 {pmapf_cut, clip top left bounds} -body { #<<<
+	set p	[pixel pmapf_new 320 200]
+	set p	[pixel pmapf_cut $p -10 -20 190 10]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {191 11}
+#>>>
+test pmapf-10.6 {pmapf_cut, clip bottom right bounds} -body { #<<<
+	set p	[pixel pmapf_new 320 200]
+	set p	[pixel pmapf_cut $p 10 20 330 210]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {310 180}
+#>>>
+test pmapf-10.7 {pmapf_cut, clip both bounds} -body { #<<<
+	set p	[pixel pmapf_new 320 200]
+	set p	[pixel pmapf_cut $p -10 -20 330 210]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {320 200}
+#>>>
 
 ::tcltest::cleanupTests
 return

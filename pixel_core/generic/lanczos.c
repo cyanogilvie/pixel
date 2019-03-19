@@ -756,6 +756,10 @@ static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int o
 		}
 	}
 
+
+
+
+#if 0
 	dst = pmapf_new(new_w, new_h);
 	t = pmapf_new(src->width, dst->height);
 
@@ -793,6 +797,87 @@ static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int o
 	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
 
 	return TCL_OK;
+
+#else
+
+
+
+	// Scale to the smallest output dimension first (reduces the peak memory requirements)
+	if (new_w > new_h) {
+		t = pmapf_new(src->width, new_h);
+
+		// first: scale height
+		lanczos_half_scale_float(
+				src->pixel_data,	// in
+				t->pixel_data,		// out
+				src->height,		// orig_dim
+				new_h,				// new_dim
+				wt,
+				fminf(.5, new_h/(2.0*src->height)),	// f
+				t->width,			// dsinc
+				t->width,			// iiend
+				1,					// dinc
+				src->width,			// sinc
+				1					// sif
+				);
+
+		dst = pmapf_new(new_w, new_h);
+
+		// second: scale width
+		lanczos_half_scale_float(
+				t->pixel_data,		// in
+				dst->pixel_data,	// out
+				t->width,			// orig_dim
+				dst->width,			// new_dim
+				wt,
+				fminf(.5, dst->width/(2.0*t->width)),	// f
+				1,					// dsinc
+				t->height,			// iiend
+				dst->width,			// dinc
+				1,					// sinc
+				t->width			// sif
+				);
+	} else {
+		t = pmapf_new(new_w, src->height);
+
+		// first: scale width
+		lanczos_half_scale_float(
+				src->pixel_data,	// in
+				t->pixel_data,		// out
+				src->width,			// orig_dim
+				new_w,				// new_dim
+				wt,
+				fminf(.5, new_w/(2.0*src->width)),	// f
+				1,					// dsinc
+				t->height,			// iiend
+				new_w,				// dinc
+				1,					// sinc
+				src->width			// sif
+				);
+
+		dst = pmapf_new(new_w, new_h);
+
+		// second: scale height
+		lanczos_half_scale_float(
+				t->pixel_data,		// in
+				dst->pixel_data,	// out
+				t->height,			// orig_dim
+				dst->height,		// new_dim
+				wt,
+				fminf(.5, dst->height/(2.0*t->height)),	// f
+				dst->width,			// dsinc
+				t->width,			// iiend
+				1,					// dinc
+				t->width,			// sinc
+				1					// sif
+				);
+	}
+
+	pmapf_free(&t);
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
+
+	return TCL_OK;
+#endif
 }
 
 //}}}

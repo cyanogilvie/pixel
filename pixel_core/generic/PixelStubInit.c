@@ -60,6 +60,7 @@ PixelStubs pixelStubs = {
     pmapf_clr, /* 49 */
     scale_perceptual, /* 50 */
     pmapf_rotate_90, /* 51 */
+    pmapf_cut, /* 52 */
 };
 
 /* !END!: Do not edit above this line. */

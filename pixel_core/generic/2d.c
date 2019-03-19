@@ -1156,6 +1156,43 @@ struct pmapf* pmapf_rotate_90(struct pmapf* restrict src, int quads) //{{{1
 }
 
 
+struct pmapf* pmapf_cut(struct pmapf* restrict src, int x1, int y1, int x2, int y2) //{{{1
+{
+	struct pmapf* restrict	dst = NULL;
+	
+	if (x2 < x1) SWAP_INT(x1, x2);
+	if (y2 < y1) SWAP_INT(y1, y2);
+	
+	if (x1 < 0) x1 = 0;
+	if (y1 < 0) y1 = 0;
+
+	if (x2 > src->width)  x2 = src->width-1;
+	if (y2 > src->height) y2 = src->height-1;
+	
+	{
+		const int				src_width  = src->width;
+		const int				dst_width  = x2 - x1 + 1;
+		const int				dst_height = y2 - y1 + 1;
+		const int				end_y = y2;
+		int						y;
+		pelf* restrict			s = src->pixel_data + y1*src->width + x1;
+		pelf* restrict			d = NULL;
+
+		dst = pmapf_new(dst_width, dst_height);
+		d = dst->pixel_data;
+
+		for (y=y1; y<=end_y; y++) {
+			memcpy(d, s, dst_width*16);
+			d += dst_width;
+			s += src_width;
+		}
+	}
+
+	return dst;
+}
+
+
+
 void do_dirty_tricks() // {{{1
 {
 	double			foo;

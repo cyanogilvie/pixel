@@ -155,3 +155,6 @@ declare 50 generic {
 declare 51 generic {
 	struct pmapf* pmapf_rotate_90(struct pmapf* src, int quads)
 }
+declare 52 generic {
+	struct pmapf* pmapf_cut(struct pmapf* restrict src, int x1, int y1, int x2, int y2)
+}

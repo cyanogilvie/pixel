@@ -1,0 +1,41 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require Pixel
+package require Pixel_jpeg
+
+proc readbin fn { #<<<
+	set h	[open $fn rb]
+	try {
+		read $h
+	} finally {
+		close $h
+	}
+}
+
+#>>>
+
+test scale_lanczos-1.1 {scale down, landscape} -body { #<<<
+	set p	[pixel::pmap_to_pmapf [pixel::jpeg::decodejpeg [readbin tests/test.jpg]]]
+	set p	[pixel scale_pmapf_lanczos $p 180 20]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {180 20}
+#>>>
+test scale_lanczos-2.1 {scale down, portrait} -body { #<<<
+	set p	[pixel pmapf_rotate_90 [pixel pmap_to_pmapf [pixel::jpeg::decodejpeg [readbin tests/test.jpg]]] 1]
+	set p	[pixel scale_pmapf_lanczos $p 20 180]
+	pixel pmapf_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {20 180}
+#>>>
+
+::tcltest::cleanupTests
+return
+
