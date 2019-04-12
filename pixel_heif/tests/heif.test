@@ -1,0 +1,26 @@
+if {[lsearch [namespace children] ::tcltest] == -1} {
+    package require tcltest
+    namespace import ::tcltest::*
+}
+
+proc readbin fn { #<<<
+	set h	[open $fn rb]
+	try {read $h} finally {close $h}
+}
+
+#>>>
+
+test heif-1.0 {Load package} -body { #<<<
+	package require Pixel_heif
+} -result 0.1
+#>>>
+test heif-2.0 {Mime type magic numbers} -body { #<<<
+	package require Pixel
+	pixel::image_mimetype [readbin tests/sample.heic]
+} -result {image/heic}
+
+# cleanup
+::tcltest::cleanupTests
+return
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4

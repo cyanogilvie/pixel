@@ -1316,6 +1316,23 @@ static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
 		}
 	}
 
+	if (len >= 12) {
+		// HEIC
+		if (
+				bytes[4]  == 'f' &&
+				bytes[5]  == 't' &&
+				bytes[6]  == 'y' &&
+				bytes[7]  == 'p' &&
+				bytes[8]  == 'h' &&
+				bytes[9]  == 'e' &&
+				bytes[10] == 'i' &&
+				bytes[11] == 'c'
+		   ) {
+			Tcl_SetObjResult(interp, Tcl_NewStringObj("image/heic", 10));
+			return TCL_OK;
+		}
+	}
+
 	Tcl_SetErrorCode(interp, "PIXEL", "CORE", "UNKNOWN_FILETYPE", NULL);
 	Tcl_SetObjResult(interp, Tcl_NewStringObj("unknown", 7));
 	return TCL_ERROR;
