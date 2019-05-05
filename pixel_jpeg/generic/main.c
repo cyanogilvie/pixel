@@ -290,7 +290,7 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 	jpeg_destroy_decompress(&cinfo);
 
 	// TODO: factor the transformation handlers out into pixel_core?
-	if (orientation != 1) { // Transform the image based on the orientation from EXIF tag.  It is possible to do this directly on the jpeg data, but the complexity cost is way out of proportion to the benefit {{{
+	if (orientation != 1 && orientation != 0) { // Transform the image based on the orientation from EXIF tag.  It is possible to do this directly on the jpeg data, but the complexity cost is way out of proportion to the benefit {{{
 		gimp_image_t*	orig = dest;
 		int				sx, sy;
 		_pel*			s;
