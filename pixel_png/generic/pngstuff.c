@@ -25,7 +25,7 @@ int get_png_dimensions(char *filename, int *x, int *y) //{{{
 		return -1;
 	}
 
-	if (setjmp(png_ptr->jmpbuf)) {
+	if (setjmp(png_jmpbuf(png_ptr))) {
 		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
 		fclose(fp);
 		return -1;
@@ -76,7 +76,7 @@ gimp_image_t *read_png(char *filename) //{{{
 		return NULL;
 	}
 
-	if (setjmp(png_ptr->jmpbuf)) {
+	if (setjmp(png_jmpbuf(png_ptr))) {
 		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
 		fclose(fp);
 		return NULL;

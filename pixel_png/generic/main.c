@@ -323,7 +323,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	png_set_read_fn(png_ptr, &pngdata, mem_read);
 
-	if (setjmp(png_ptr->jmpbuf)) {
+	if (setjmp(png_jmpbuf(png_ptr))) {
 		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "READ", NULL);
 		Tcl_SetObjResult(interp, Tcl_NewStringObj("Error reading PNG", -1));
 		goto error;
@@ -404,7 +404,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	png_set_read_fn(png_ptr, &pngdata, mem_read);
 
-	if (setjmp(png_ptr->jmpbuf)) {
+	if (setjmp(png_jmpbuf(png_ptr))) {
 		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "READ", NULL);
 		Tcl_SetObjResult(interp, Tcl_NewStringObj("Error reading PNG", -1));
 		goto error;
@@ -450,6 +450,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 
 	png_set_rows(png_ptr, info_ptr, row_pointers);
 
+	//fprintf(stderr, "width: %ld, rowbytes: %d\n", width, rowbytes);
 	png_read_png(png_ptr, info_ptr,
 			PNG_TRANSFORM_STRIP_16 |
 			PNG_TRANSFORM_PACKING |
