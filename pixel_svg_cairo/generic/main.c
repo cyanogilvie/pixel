@@ -26,7 +26,7 @@ static int glue_load_svg(cdata, interp, objc, objv)
 	gsize					datalen;
 	GError*					gerror = NULL;
 	RsvgHandle*				rsvg_handle = NULL;
-	RsvgDimensionData		dimensions;
+	gdouble					intrinsic_w = 1.0, intrinsic_h = 1.0;
 	int						stride;
 
 	if (objc != 2 && objc != 4)
@@ -45,11 +45,16 @@ static int glue_load_svg(cdata, interp, objc, objv)
 		THROW_ERROR("Error loading svg data: ", gerror->message);
 	}
 
-	rsvg_handle_get_dimensions(rsvg_handle, &dimensions);
+	if (!rsvg_handle_get_intrinsic_size_in_pixels(rsvg_handle, &intrinsic_w, &intrinsic_h)) {
+		// Intrinsic size was not defined, what to do?
+		//fprintf(stderr, "No intrinsic size in SVG\n");
+		intrinsic_w = 1.0;
+		intrinsic_h = 1.0;
+	}
 
 	if (objc == 2) {
-		w = dimensions.width;
-		h = dimensions.height;
+		w = (int)(round(intrinsic_w));
+		h = (int)(round(intrinsic_h));
 	}
 	//fprintf(stderr, "got w: %d, h: %d, sw: %d, sh: %d\n", w, h, sw, sh);
 
@@ -77,8 +82,8 @@ static int glue_load_svg(cdata, interp, objc, objv)
 
 	if (objc == 4) {
 		cairo_scale(cr,
-				(double)w/dimensions.width,
-				(double)h/dimensions.height);
+				w/intrinsic_w,
+				h/intrinsic_h);
 	}
 
 	rsvg_handle_render_cairo(rsvg_handle, cr);
@@ -103,10 +108,8 @@ static int glue_load_svg(cdata, interp, objc, objv)
 
 int Pixel_svg_cairo_Init(Tcl_Interp *interp)
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
-	if (Pixel_InitStubs(interp, "3.4", 0) == NULL) return TCL_ERROR;
-
-	rsvg_init();
+	if (Tcl_InitStubs(interp, "8.6", 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "3.5", 0) == NULL) return TCL_ERROR;
 
 	NEW_CMD("pixel::svg_cairo::load_svg", glue_load_svg);
 
