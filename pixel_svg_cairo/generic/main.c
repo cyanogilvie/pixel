@@ -1,6 +1,6 @@
 #include <tclstuff.h>
 #include <librsvg/rsvg.h>
-#include <librsvg/rsvg-cairo.h>
+//#include <librsvg/rsvg-cairo.h>
 #include <cairo.h>
 
 #include <stdlib.h>
@@ -22,9 +22,10 @@ static int glue_load_svg(cdata, interp, objc, objv)
 	cairo_surface_t*		surface;
 	cairo_t*				cr;
 	const unsigned char*	data;
-	int						datalen;
-	GError*					gerror;
-	RsvgHandle*				rsvg_handle;
+	int						tmpint;
+	gsize					datalen;
+	GError*					gerror = NULL;
+	RsvgHandle*				rsvg_handle = NULL;
 	RsvgDimensionData		dimensions;
 	int						stride;
 
@@ -36,11 +37,12 @@ static int glue_load_svg(cdata, interp, objc, objv)
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &h));
 	}
 
-	data = (const unsigned char*)Tcl_GetStringFromObj(objv[1], &datalen);
+	data = (const unsigned char*)Tcl_GetStringFromObj(objv[1], &tmpint);
+	datalen = tmpint;
 	rsvg_handle = rsvg_handle_new_from_data(data, datalen, &gerror);
 	if (rsvg_handle == NULL) {
 		// Some error
-		THROW_ERROR("Error loading svg data: ", gerror);
+		THROW_ERROR("Error loading svg data: ", gerror->message);
 	}
 
 	rsvg_handle_get_dimensions(rsvg_handle, &dimensions);

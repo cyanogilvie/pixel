@@ -1,0 +1,33 @@
+if {[lsearch [namespace children] ::tcltest] == -1} {
+    package require tcltest
+    namespace import ::tcltest::*
+}
+
+loadTestedCommands
+package require Pixel_svg_cairo
+
+test svg-1.1 {Render SVG} -body { #<<<
+	set p	[pixel::svg_cairo::load_svg {<?xml version="1.0" encoding="UTF-8"?>
+<svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1">
+        <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1" color-interpolation="linearRGB">
+                <stop offset="0" stop-color="#ff171717"/>
+                <stop offset="0.25" stop-color="#ff2b2b2b"/>
+                <stop offset="1.0" stop-color="#ff878787"/>
+            </linearGradient>
+        </defs>
+        <rect width="1" height="1" x="0" y="0" style="fill:url(#grad)"/>
+    </svg>
+</svg>} 190 190]
+	pixel::pmap_info $p
+} -cleanup {
+	unset -nocomplain p
+} -result {190 190}
+#>>>
+
+# cleanup
+::tcltest::cleanupTests
+return
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
