@@ -4,6 +4,10 @@
 package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@ [list apply {
     dir {
 		load [file join $dir @PKG_LIB_FILE@] @PACKAGE_NAME@
-		source [file join $dir utils.tcl]
+		if {[file exists [file join $dir library/utils.tcl]]} {
+			source [file join $dir library/utils.tcl]
+		} else {
+			source [file join $dir utils.tcl]
+		}
 	}
 } $dir]
