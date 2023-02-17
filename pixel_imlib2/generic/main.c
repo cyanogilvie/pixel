@@ -187,7 +187,7 @@ static int glue_load_image(ClientData foo, Tcl_Interp *interp, //{{{1
 	image = imlib_load_image_with_error_return(Tcl_GetString(objv[1]), &error);
 	if (error != IMLIB_LOAD_ERROR_NONE) {
 		Tcl_AppendStringsToObj(res, "Cannot load image ",
-				Tcl_GetString(objv[1]), ": ", lookup_load_error(error));
+				Tcl_GetString(objv[1]), ": ", lookup_load_error(error), NULL);
 		goto error;
 	}
 
@@ -257,7 +257,7 @@ static int glue_save_image(ClientData foo, Tcl_Interp *interp, //{{{1
 	image = imlib_create_image_using_data(pmap->width, pmap->height,
 			(DATA32 *)pmap->pixel_data);
 	if (image == NULL) {
-		Tcl_AppendStringsToObj(res, "Failed to wrap pmap in an imlib2 image");
+		Tcl_AppendStringsToObj(res, "Failed to wrap pmap in an imlib2 image", NULL);
 		goto error;
 	}
 
@@ -297,7 +297,7 @@ static int glue_save_image(ClientData foo, Tcl_Interp *interp, //{{{1
 	}
 
 	if (error != IMLIB_LOAD_ERROR_NONE) {
-		Tcl_AppendStringsToObj(res, "Error saving image to file ", filename, ": ", lookup_load_error(error));
+		Tcl_AppendStringsToObj(res, "Error saving image to file ", filename, ": ", lookup_load_error(error), NULL);
 		goto error;
 	}
 
@@ -346,7 +346,7 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	src = imlib_create_image_using_data(src_pmap->width, src_pmap->height,
 			(DATA32 *)src_pmap->pixel_data);
 	if (src == NULL) {
-		Tcl_AppendStringsToObj(res, "Failed to wrap src_pmap in an imlib2 image");
+		Tcl_AppendStringsToObj(res, "Failed to wrap src_pmap in an imlib2 image", NULL);
 		goto error;
 	}
 
@@ -424,7 +424,7 @@ static int glue_blur_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	src = imlib_create_image_using_data(src_pmap->width, src_pmap->height,
 			(DATA32 *)src_pmap->pixel_data);
 	if (src == NULL) {
-		Tcl_AppendStringsToObj(res, "Failed to wrap src_pmap in an imlib2 image");
+		Tcl_AppendStringsToObj(res, "Failed to wrap src_pmap in an imlib2 image", NULL);
 		goto error;
 	}
 
@@ -465,7 +465,7 @@ static int glue_sharpen_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	src = imlib_create_image_using_data(src_pmap->width, src_pmap->height,
 			(DATA32 *)src_pmap->pixel_data);
 	if (src == NULL) {
-		Tcl_AppendStringsToObj(res, "Failed to wrap src_pmap in an imlib2 image");
+		Tcl_AppendStringsToObj(res, "Failed to wrap src_pmap in an imlib2 image", NULL);
 		goto error;
 	}
 
