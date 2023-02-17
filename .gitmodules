@@ -4,3 +4,6 @@
 [submodule "pixel_jpeg/tclconfig"]
 	path = pixel_jpeg/tclconfig
 	url = https://github.com/tcltk/tclconfig
+[submodule "pixel_png/tclconfig"]
+	path = pixel_png/tclconfig
+	url = https://github.com/tcltk/tclconfig
