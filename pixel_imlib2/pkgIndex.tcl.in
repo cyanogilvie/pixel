@@ -3,6 +3,14 @@
 #
 package ifneeded @PACKAGE_NAME@ @PACKAGE_VERSION@ [list apply {
     dir {
+		global env
+		if {[info exists env(SNAP)]} {
+			# Hack to allow imlib2 to find its loaders when we're running in a snap
+			set arch	[lindex [glob -types d -dir [file join $env(SNAP) usr/lib] -tails *] 0]
+			set base	[file join $env(SNAP) usr/lib $arch imlib2]
+			set env(IMLIB2_LOADER_PATH)	[file join $base loaders]
+			set env(IMLIB2_FILTER_PATH)	[file join $base filters]
+		}
 		load [file join $dir @PKG_LIB_FILE@] @PACKAGE_NAME@
 		if {[file exists [file join $dir library/utils.tcl]]} {
 			source [file join $dir library/utils.tcl]
