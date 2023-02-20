@@ -93,7 +93,7 @@ static int set_digest_from_any(Tcl_Interp* interp, Tcl_Obj* obj) //{{{
 	TEST_OK(Tcl_ListObjGetElements(interp, obj, &objc, &objv));
 
 	if (objc != 2)
-		THROW_ERROR("Digest exists a 2 element list: id coeffs");
+		THROW_ERROR("Digest expects a 2 element list: id coeffs");
 
 	id = Tcl_GetStringFromObj(objv[0], &id_len);
 

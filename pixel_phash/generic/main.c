@@ -1,6 +1,8 @@
 #include <pHash.h>
 
 extern "C" {
+#define restrict
+
 #include "tclstuff.h"
 #include <pixel.h>
 }

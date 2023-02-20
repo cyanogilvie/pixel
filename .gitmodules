@@ -1,12 +1,3 @@
-[submodule "pixel_svg_cairo/tclconfig"]
-	path = pixel_svg_cairo/tclconfig
-	url = https://github.com/tcltk/tclconfig
-[submodule "pixel_jpeg/tclconfig"]
-	path = pixel_jpeg/tclconfig
-	url = https://github.com/tcltk/tclconfig
-[submodule "pixel_png/tclconfig"]
-	path = pixel_png/tclconfig
-	url = https://github.com/tcltk/tclconfig
-[submodule "pixel_imlib2/tclconfig"]
-	path = pixel_imlib2/tclconfig
+[submodule "tclconfig"]
+	path = tclconfig
 	url = https://github.com/tcltk/tclconfig

@@ -18,3 +18,5 @@ pixelConfig.sh
 pkgIndex.tcl
 *.swp
 *.swo
+*~
+tags
