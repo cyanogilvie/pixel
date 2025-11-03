@@ -656,7 +656,7 @@ gimp_image_t *pmap_scale(gimp_image_t *src, int new_width, int new_height)
 */
 
 
-gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) //{{{1
+gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) // quads: 1: clockwise 90, -1: counterclockwise 90 {{{1
 {
 	_pel			*s, *d;
 	gimp_image_t	*new;
