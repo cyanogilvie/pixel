@@ -76,8 +76,8 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([`pkg-config imlib2 --cflags --static` ${pixel_INCLUDE_LIB_SPEC}])
-TEA_ADD_LIBS([`pkg-config imlib2 --libs --static` ${pixel_STUB_LIB_SPEC}])
+TEA_ADD_INCLUDES([`pkg-config imlib2 --cflags --static` `pkg-config freetype2 --cflags --static` ${pixel_INCLUDE_LIB_SPEC}])
+TEA_ADD_LIBS([`pkg-config imlib2 --libs --static` `pkg-config freetype2 --libs --static` -lm ${pixel_STUB_LIB_SPEC}])
 #TEA_ADD_LIBS([`pkg-config imlib2 --libs` -L/usr/lib/Pixel -lPixel3 -lm -lgcov])
 TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 #TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])

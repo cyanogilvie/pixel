@@ -76,8 +76,8 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([`pkg-config --cflags libwebp` ${pixel_INCLUDE_LIB_SPEC}])
-TEA_ADD_LIBS([`pkg-config --libs libwebp` ${pixel_STUB_LIB_SPEC}])
+TEA_ADD_INCLUDES([`pkg-config --cflags --static libwebp` ${pixel_INCLUDE_LIB_SPEC}])
+TEA_ADD_LIBS([`pkg-config --libs --static libwebp` ${pixel_STUB_LIB_SPEC}])
 TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 TEA_ADD_STUB_SOURCES([])
 TEA_ADD_TCL_SOURCES([])

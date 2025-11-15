@@ -73,8 +73,8 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([`pkg-config --cflags libheif`])
-TEA_ADD_LIBS([-L../pixel_core -lPixelstub3.5 `pkg-config --libs libheif`])
+TEA_ADD_INCLUDES([`pkg-config --static --cflags libheif`])
+TEA_ADD_LIBS([-L../pixel_core -lPixelstub3.5 `pkg-config --static --libs libheif`])
 TEA_ADD_CFLAGS([-DUSE_PIXEL_STUBS])
 TEA_ADD_STUB_SOURCES([])
 TEA_ADD_TCL_SOURCES([])

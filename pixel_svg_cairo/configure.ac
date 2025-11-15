@@ -77,8 +77,8 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([-I.. `pkg-config --cflags cairo librsvg-2.0` -I../pixel_core/generic])
-TEA_ADD_LIBS([`pkg-config --libs cairo librsvg-2.0` -L../pixel_core -lPixelstub3.5])
+TEA_ADD_INCLUDES([-I.. `pkg-config --static --cflags cairo librsvg-2.0` -I../pixel_core/generic])
+TEA_ADD_LIBS([`pkg-config --static --libs cairo librsvg-2.0` -L../pixel_core -lPixelstub3.5])
 TEA_ADD_CFLAGS([-DUSE_PIXEL_STUBS])
 TEA_ADD_STUB_SOURCES([])
 TEA_ADD_TCL_SOURCES([])

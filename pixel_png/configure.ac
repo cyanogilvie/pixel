@@ -76,8 +76,8 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c pngstuff.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([`pkg-config --cflags libpng` ${pixel_INCLUDE_LIB_SPEC}])
-TEA_ADD_LIBS([`pkg-config --libs libpng` ${pixel_STUB_LIB_SPEC}])
+TEA_ADD_INCLUDES([`pkg-config --static --cflags libpng` ${pixel_INCLUDE_LIB_SPEC}])
+TEA_ADD_LIBS([`pkg-config --static --libs libpng` ${pixel_STUB_LIB_SPEC}])
 TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 TEA_ADD_STUB_SOURCES([])
 TEA_ADD_TCL_SOURCES([])
