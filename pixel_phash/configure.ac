@@ -73,8 +73,8 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c digest_type.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([`pkg-config libtiff-4 --cflags --static`])
-TEA_ADD_LIBS([-L../pixel_core -lPixelstub3.5 -lpHash `pkg-config libtiff-4 --libs --static`])
+TEA_ADD_INCLUDES([`pkg-config libtiff-4 libpng --cflags --static`])
+TEA_ADD_LIBS([-L../pixel_core -lPixelstub3.5 -lpHash `pkg-config libtiff-4 libpng --libs --static`])
 TEA_ADD_CFLAGS([-DUSE_PIXEL_STUBS])
 TEA_ADD_STUB_SOURCES([])
 TEA_ADD_TCL_SOURCES([])
