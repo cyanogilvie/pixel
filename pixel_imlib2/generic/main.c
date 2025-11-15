@@ -1,6 +1,8 @@
 // vim: ts=4 shiftwidth=4 tags=../tags
 
+#ifndef X_DISPLAY_MISSING
 #include <X11/Xlib.h>
+#endif
 #include <Imlib2.h>
 #include <tcl.h>
 #include <tclstuff.h>
@@ -134,6 +136,7 @@ static int glue_add_path_to_font_path(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
+#ifndef X_DISPLAY_MISSING
 static int glue_set_color_usage(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
 {
@@ -149,7 +152,7 @@ static int glue_set_color_usage(ClientData foo, Tcl_Interp *interp, //{{{1
 
 	return TCL_OK;
 }
-
+#endif
 
 static int glue_context_set_dither(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *CONST objv[])
@@ -496,7 +499,9 @@ int Pixel_imlib2_Init(Tcl_Interp *interp) //{{{1
 
 	Tcl_MutexLock(&g_imlib_mutex);
 	if (!g_init) {
+#ifndef X_DISPLAY_MISSING
 		imlib_set_color_usage(128);
+#endif
 		imlib_set_cache_size(0);
 		imlib_set_font_cache_size(0);
 		g_init = 1;
@@ -507,7 +512,9 @@ int Pixel_imlib2_Init(Tcl_Interp *interp) //{{{1
 	NEW_CMD("pixel::imlib2::get_cache_size", glue_get_cache_size);
 	NEW_CMD("pixel::imlib2::set_font_cache_size", glue_set_font_cache_size);
 	NEW_CMD("pixel::imlib2::add_path_to_font_path", glue_add_path_to_font_path);
+#ifndef X_DISPLAY_MISSING
 	NEW_CMD("pixel::imlib2::set_color_usage", glue_set_color_usage);
+#endif
 	NEW_CMD("pixel::imlib2::context_set_dither", glue_context_set_dither);
 	NEW_CMD("pixel::imlib2::load_image", glue_load_image);
 	NEW_CMD("pixel::imlib2::save_image", glue_save_image);

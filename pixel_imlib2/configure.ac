@@ -76,8 +76,8 @@ TEA_SETUP_COMPILER
 
 TEA_ADD_SOURCES([main.c])
 TEA_ADD_HEADERS([])
-TEA_ADD_INCLUDES([`pkg-config imlib2 --cflags` ${pixel_INCLUDE_LIB_SPEC}])
-TEA_ADD_LIBS([`pkg-config imlib2 --libs` ${pixel_STUB_LIB_SPEC}])
+TEA_ADD_INCLUDES([`pkg-config imlib2 --cflags --static` ${pixel_INCLUDE_LIB_SPEC}])
+TEA_ADD_LIBS([`pkg-config imlib2 --libs --static` ${pixel_STUB_LIB_SPEC}])
 #TEA_ADD_LIBS([`pkg-config imlib2 --libs` -L/usr/lib/Pixel -lPixel3 -lm -lgcov])
 TEA_ADD_CFLAGS([${pixel_CFLAGS}])
 #TEA_ADD_CFLAGS([-O0 -fprofile-arcs -ftest-coverage])
@@ -172,6 +172,12 @@ TEA_MAKE_LIB
 
 TEA_PROG_TCLSH
 #TEA_PROG_WISH
+
+#--------------------------------------------------------------------
+# Check if X11 is available on the system.
+#--------------------------------------------------------------------
+
+AC_CHECK_HEADER([X11/Xlib.h],[],[AC_DEFINE(X_DISPLAY_MISSING)])
 
 #--------------------------------------------------------------------
 # Finally, substitute all of the various values into the Makefile.
