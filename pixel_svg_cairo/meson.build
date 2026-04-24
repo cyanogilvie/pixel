@@ -23,8 +23,10 @@ inc = []
 subdir('teabase/init')
 
 deps += dependency('pixel', version: '>=4.0')
-deps += dependency('cairo')
-deps += dependency('librsvg-2.0')
+# static:true so pkg-config --static pulls in transitive deps (pango,
+# harfbuzz, etc.); required because alpine-tcl ships cairo/librsvg as .a only.
+deps += dependency('cairo',       static: true)
+deps += dependency('librsvg-2.0', static: true)
 
 pkg_sources = files(
   'generic/main.c',
