@@ -26,17 +26,18 @@ static int glue_load_svg(ClientData cdata, Tcl_Interp *interp,
 	gdouble					intrinsic_w = 1.0, intrinsic_h = 1.0;
 	int						stride;
 
-	if (objc != 2 && objc != 4) {
+	enum {A_cmd, A_SVGDATA, A_W, A_H, A_objc};
+	if (objc != 2 && objc != A_objc) {
 		Tcl_WrongNumArgs(interp, 1, objv, "svgdata ?w h?");
 		return TCL_ERROR;
 	}
 
-	if (objc == 4) {
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &w));
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &h));
+	if (objc == A_objc) {
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_W], &w));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_H], &h));
 	}
 
-	data = (const unsigned char*)Tcl_GetStringFromObj(objv[1], &tmpint);
+	data = (const unsigned char*)Tcl_GetStringFromObj(objv[A_SVGDATA], &tmpint);
 	datalen = tmpint;
 	rsvg_handle = rsvg_handle_new_from_data(data, datalen, &gerror);
 	if (rsvg_handle == NULL) {

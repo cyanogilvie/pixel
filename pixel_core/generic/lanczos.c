@@ -98,13 +98,13 @@ static int glue_kern_vis(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	_pel			grey = (_pel)(uint32_t)0xffa0a0a0;
 	_pel			yellow = (_pel)(uint32_t)0xffffff00;
 
-	enum {A_cmd, A_objc=6}; CHECK_ARGS("width height wt f frac");
+	enum {A_cmd, A_WIDTH, A_HEIGHT, A_WT, A_F, A_FRAC, A_objc}; CHECK_ARGS("width height wt f frac");
 
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &width));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &height));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &wt));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[4], &f));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[5], &frac));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WIDTH], &width));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_HEIGHT], &height));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_F], &f));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_FRAC], &frac));
 
 	w = wt*2+1;
 	kern = ckalloc(sizeof(fixedpoint) * w);
@@ -205,11 +205,11 @@ static int glue_scale_pmap_lanczos2(ClientData cdata, Tcl_Interp* interp, int ob
 	_pel*			t;
 	fixedpoint		kern[W];
 
-	enum {A_cmd, A_objc=4}; CHECK_ARGS("pmap width height");
+	enum {A_cmd, A_PMAP, A_WIDTH, A_HEIGHT, A_objc}; CHECK_ARGS("pmap width height");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &new_h));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WIDTH], &new_w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_HEIGHT], &new_h));
 
 	// Intermediate buffer - scaled down on the horizontal axis
 	//dst = pmap_new(new_w, src->height, (_pel)(uint32_t)0);
@@ -574,11 +574,11 @@ static int glue_scale_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int ob
 	CHECK_RANGE_ARGS("pmapf width height ?wt?");
 
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &new_h));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAPF], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WIDTH], &new_w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_HEIGHT], &new_h));
 	if (objc >= 5) {
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &wt));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
 	} else {
 		if (new_w > src->width) {
 			wt = 3;
@@ -678,10 +678,10 @@ static int glue_lowpass_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int 
 	gimp_image_t*	t = NULL;
 	double			f;
 
-	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap f");
+	enum {A_cmd, A_PMAP, A_F, A_objc}; CHECK_ARGS("pmap f");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &f));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &src));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_F], &f));
 
 	dst = pmap_new(src->width, src->height, (_pel)(uint32_t)0);
 	t = pmap_new(src->width, dst->height, (_pel)(uint32_t)0);
@@ -737,11 +737,11 @@ static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int o
 	enum {A_cmd, A_PMAPF, A_WIDTH, A_HEIGHT, A_args, A_WT=A_args, A_objc};
 	CHECK_RANGE_ARGS("pmapf width height ?wt?");
 
-	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &new_h));
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[A_PMAPF], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WIDTH], &new_w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_HEIGHT], &new_h));
 	if (objc >= 5) {
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &wt));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
 	} else {
 		if (new_w > src->width) {
 			wt = 4;
@@ -894,10 +894,10 @@ static int glue_shear_pmapf_lanczos_x(ClientData cdata, Tcl_Interp* interp, int 
 	enum {A_cmd, A_PMAPF, A_SHEAR, A_args, A_SKIP_START=A_args, A_SKIP_END, A_objc};
 	CHECK_RANGE_ARGS("pmapf shear ?skip_start? ?skip_end?");
 
-	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &shear));
-	if (objc > 3) TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &skip_start));
-	if (objc > 4) TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &skip_end));
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[A_PMAPF], &src));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_SHEAR], &shear));
+	if (objc > 3) TEST_OK(Tcl_GetIntFromObj(interp, objv[A_SKIP_START], &skip_start));
+	if (objc > 4) TEST_OK(Tcl_GetIntFromObj(interp, objv[A_SKIP_END], &skip_end));
 
 	dst = pmapf_new(src->width + (int)(ceil(fabs(shear*src->height))) - skip_start - skip_end, src->height);
 
@@ -1055,10 +1055,10 @@ static int glue_shear_pmapf_lanczos_y(ClientData cdata, Tcl_Interp* interp, int 
 	enum {A_cmd, A_PMAPF, A_SHEAR, A_args, A_SKIP_START=A_args, A_SKIP_END, A_objc};
 	CHECK_RANGE_ARGS("pmapf shear ?skip_start? ?skip_end?");
 
-	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &shear));
-	if (objc > 3) TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &skip_start));
-	if (objc > 4) TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &skip_end));
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[A_PMAPF], &src));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_SHEAR], &shear));
+	if (objc > 3) TEST_OK(Tcl_GetIntFromObj(interp, objv[A_SKIP_START], &skip_start));
+	if (objc > 4) TEST_OK(Tcl_GetIntFromObj(interp, objv[A_SKIP_END], &skip_end));
 
 	dst = pmapf_new(src->width, src->height + (int)(ceil(fabs(shear*src->width))) - skip_start - skip_end);
 
@@ -1211,11 +1211,11 @@ static int glue_lowpass_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int
 	double			f;
 	int				wt;
 
-	enum {A_cmd, A_objc=4}; CHECK_ARGS("pmapf wt f");
+	enum {A_cmd, A_PMAPF, A_WT, A_F, A_objc}; CHECK_ARGS("pmapf wt f");
 
-	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &wt));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &f));
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[A_PMAPF], &src));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_F], &f));
 
 	dst = pmapf_new(src->width, src->height);
 	t = pmapf_new(src->width, dst->height);

@@ -83,9 +83,9 @@ static int glue_set_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 {
 	int cache_size;
 
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("cache_size");
+	enum {A_cmd, A_CACHE_SIZE, A_objc}; CHECK_ARGS("cache_size");
 
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &cache_size));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_CACHE_SIZE], &cache_size));
 	Tcl_MutexLock(&g_imlib_mutex);
 	imlib_set_cache_size(cache_size);
 	Tcl_MutexUnlock(&g_imlib_mutex);
@@ -99,7 +99,7 @@ static int glue_get_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 {
 	int cache_size;
 
-	enum {A_cmd, A_objc=1}; CHECK_ARGS("");
+	enum {A_cmd, A_objc}; CHECK_ARGS("");
 
 	Tcl_MutexLock(&g_imlib_mutex);
 	cache_size = imlib_get_cache_size();
@@ -116,9 +116,9 @@ static int glue_set_font_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 {
 	int cache_size;
 
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("cache_size");
+	enum {A_cmd, A_CACHE_SIZE, A_objc}; CHECK_ARGS("cache_size");
 
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &cache_size));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_CACHE_SIZE], &cache_size));
 	Tcl_MutexLock(&g_imlib_mutex);
 	imlib_set_font_cache_size(cache_size);
 	Tcl_MutexUnlock(&g_imlib_mutex);
@@ -130,10 +130,10 @@ static int glue_set_font_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 static int glue_add_path_to_font_path(ClientData foo, Tcl_Interp *interp, //{{{1
 		int objc, Tcl_Obj *const objv[])
 {
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("path");
+	enum {A_cmd, A_PATH, A_objc}; CHECK_ARGS("path");
 
 	Tcl_MutexLock(&g_imlib_mutex);
-	imlib_add_path_to_font_path(Tcl_GetString(objv[1]));
+	imlib_add_path_to_font_path(Tcl_GetString(objv[A_PATH]));
 	Tcl_MutexUnlock(&g_imlib_mutex);
 
 	return TCL_OK;
@@ -146,9 +146,9 @@ static int glue_set_color_usage(ClientData foo, Tcl_Interp *interp, //{{{1
 {
 	int num_colours;
 
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("num_colours");
+	enum {A_cmd, A_NUM_COLOURS, A_objc}; CHECK_ARGS("num_colours");
 
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &num_colours));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_NUM_COLOURS], &num_colours));
 
 	Tcl_MutexLock(&g_imlib_mutex);
 	imlib_set_color_usage(num_colours);
@@ -163,9 +163,9 @@ static int glue_context_set_dither(ClientData foo, Tcl_Interp *interp, //{{{1
 {
 	int dither;
 
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("dither?");
+	enum {A_cmd, A_DITHER, A_objc}; CHECK_ARGS("dither?");
 
-	TEST_OK(Tcl_GetBooleanFromObj(interp, objv[1], &dither));
+	TEST_OK(Tcl_GetBooleanFromObj(interp, objv[A_DITHER], &dither));
 
 	Tcl_MutexLock(&g_imlib_mutex);
 	imlib_context_set_dither(dither);
@@ -191,10 +191,10 @@ static int glue_load_image(ClientData foo, Tcl_Interp *interp, //{{{1
 	res = Tcl_NewObj();
 
 	Tcl_MutexLock(&g_imlib_mutex);
-	image = imlib_load_image_with_error_return(Tcl_GetString(objv[1]), &error);
+	image = imlib_load_image_with_error_return(Tcl_GetString(objv[A_FILENAME]), &error);
 	if (error != IMLIB_LOAD_ERROR_NONE) {
 		Tcl_AppendStringsToObj(res, "Cannot load image ",
-				Tcl_GetString(objv[1]), ": ", lookup_load_error(error), NULL);
+				Tcl_GetString(objv[A_FILENAME]), ": ", lookup_load_error(error), NULL);
 		goto error;
 	}
 
@@ -206,7 +206,7 @@ static int glue_load_image(ClientData foo, Tcl_Interp *interp, //{{{1
 			g_progress_cb = NULL;
 		}
 		g_interp = interp;
-		g_progress_cb = objv[2];
+		g_progress_cb = objv[A_PROGRESS_CB];
 		Tcl_IncrRefCount(g_progress_cb);
 		imlib_context_set_progress_function(progress_func);
 		imlib_context_set_progress_granularity(10);
@@ -255,7 +255,7 @@ static int glue_save_image(ClientData foo, Tcl_Interp *interp, //{{{1
 	enum {A_cmd, A_PMAP, A_FILENAME, A_args, A_TYPE=A_args, A_PROGRESS_CB, A_objc};
 	CHECK_RANGE_ARGS("pmap filename ?type? ?progress_callback?");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &pmap));
 
 	res = Tcl_NewObj();
 
@@ -270,10 +270,10 @@ static int glue_save_image(ClientData foo, Tcl_Interp *interp, //{{{1
 
 	imlib_context_set_image(image);
 
-	filename = Tcl_GetString(objv[2]);
+	filename = Tcl_GetString(objv[A_FILENAME]);
 	type = NULL;
 	if (objc >= 4) {
-		type = Tcl_GetString(objv[3]);
+		type = Tcl_GetString(objv[A_TYPE]);
 		imlib_image_set_format(type);
 	} else {
 		type = strrchr(filename, '.');
@@ -287,7 +287,7 @@ static int glue_save_image(ClientData foo, Tcl_Interp *interp, //{{{1
 			g_progress_cb = NULL;
 		}
 		g_interp = interp;
-		g_progress_cb = objv[4];
+		g_progress_cb = objv[A_PROGRESS_CB];
 		Tcl_IncrRefCount(g_progress_cb);
 		imlib_context_set_progress_function(progress_func);
 		imlib_context_set_progress_granularity(10);
@@ -332,21 +332,28 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	int					w, h;
 	Tcl_Obj*			res;
 
+	enum {
+		A_cmd, A_SRC_PMAP, A_W, A_H,
+		A_SMOOTH,  // optional: objc>=5
+		A_BORDER_L, A_BORDER_R, A_BORDER_T, A_BORDER_B,  // optional: objc>=9
+		A_PROGRESS_CB,  // optional: objc==10
+		A_objc_max
+	};
 	if (objc < 4 || (objc > 6 && objc != 9 && objc != 10)) {
 		Tcl_WrongNumArgs(interp, 1, objv, "src_pmap w h ?smooth? ?border_l border_r border_t border_b? ?progress_callback?");
 		return TCL_ERROR;
 	}
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &w));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &h));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_SRC_PMAP], &src_pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_W], &w));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_H], &h));
 	if (objc >= 5)
-		TEST_OK(Tcl_GetBooleanFromObj(interp, objv[4], &anti_alias));
+		TEST_OK(Tcl_GetBooleanFromObj(interp, objv[A_SMOOTH], &anti_alias));
 	if (objc >= 9) {
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[5], &border.left));
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[6], &border.right));
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[7], &border.top));
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[8], &border.bottom));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_BORDER_L], &border.left));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_BORDER_R], &border.right));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_BORDER_T], &border.top));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_BORDER_B], &border.bottom));
 	}
 
 	res = Tcl_NewObj();
@@ -371,7 +378,7 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 			g_progress_cb = NULL;
 		}
 		g_interp = interp;
-		g_progress_cb = objv[9];
+		g_progress_cb = objv[A_PROGRESS_CB];
 		Tcl_IncrRefCount(g_progress_cb);
 		imlib_context_set_progress_function(progress_func);
 		imlib_context_set_progress_granularity(10);
@@ -422,10 +429,10 @@ static int glue_blur_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	Imlib_Image			*src;
 	Tcl_Obj*			res;
 
-	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap radius");
+	enum {A_cmd, A_PMAP, A_RADIUS, A_objc}; CHECK_ARGS("pmap radius");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &radius));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &src_pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_RADIUS], &radius));
 
 	res = Tcl_NewObj();
 
@@ -463,10 +470,10 @@ static int glue_sharpen_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	Imlib_Image			*src;
 	Tcl_Obj*			res;
 
-	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap radius");
+	enum {A_cmd, A_PMAP, A_RADIUS, A_objc}; CHECK_ARGS("pmap radius");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &radius));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &src_pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_RADIUS], &radius));
 
 	res = Tcl_NewObj();
 

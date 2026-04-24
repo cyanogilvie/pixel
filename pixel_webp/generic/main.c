@@ -18,8 +18,8 @@ static int glue_encodewebp(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_O
 
 	enum {A_cmd, A_PMAP, A_QUALITY, A_objc}; CHECK_ARGS("pmap quality");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quality));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_QUALITY], &quality));
 
 	length = WebPEncodeBGRA((uint8_t*)pmap->pixel_data, pmap->width, pmap->height, pmap->width*4, quality, &webp_data);
 
@@ -40,8 +40,8 @@ static int glue_encodewebp_noalpha(ClientData cdata, Tcl_Interp* interp, int obj
 
 	enum {A_cmd, A_PMAP, A_QUALITY, A_objc}; CHECK_ARGS("pmap quality");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quality));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_QUALITY], &quality));
 
 	length = WebPEncodeBGR((uint8_t*)pmap->pixel_data, pmap->width, pmap->height, pmap->width*4, quality, &webp_data);
 
@@ -61,7 +61,7 @@ static int glue_decodewebp(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_O
 
 	enum {A_cmd, A_WEBP_DATA, A_objc}; CHECK_ARGS("webp_data");
 
-	webp_data = Tcl_GetByteArrayFromObj(objv[1], &length);
+	webp_data = Tcl_GetByteArrayFromObj(objv[A_WEBP_DATA], &length);
 
 	new = (gimp_image_t*)malloc(sizeof(gimp_image_t));
 	new->bytes_per_pixel = 4;

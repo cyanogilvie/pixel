@@ -394,11 +394,11 @@ static int glue_loadjpeg(ClientData foo, Tcl_Interp *interp,
 		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t *	pmap;
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("filename");
+	enum {A_cmd, A_FILENAME, A_objc}; CHECK_ARGS("filename");
 
-	pmap = loadjpeg(Tcl_GetString(objv[1]));
+	pmap = loadjpeg(Tcl_GetString(objv[A_FILENAME]));
 	if (pmap == NULL)
-		THROW_ERROR("Error loading jpeg file: ", Tcl_GetString(objv[1]));
+		THROW_ERROR("Error loading jpeg file: ", Tcl_GetString(objv[A_FILENAME]));
 	
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
 
@@ -414,15 +414,15 @@ static int glue_savejpeg(ClientData foo, Tcl_Interp *interp,
 	gimp_image_t	*pmap;
 	int				quality;
 	
-	enum {A_cmd, A_objc=4}; CHECK_ARGS("filename pmap quality");
+	enum {A_cmd, A_FILENAME, A_PMAP, A_QUALITY, A_objc}; CHECK_ARGS("filename pmap quality");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &pmap));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &quality));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_QUALITY], &quality));
 	
-	err = savejpeg(Tcl_GetString(objv[1]), pmap, quality);
+	err = savejpeg(Tcl_GetString(objv[A_FILENAME]), pmap, quality);
 
 	if (err != 0)
-		THROW_ERROR("Error saving jpeg file: ", Tcl_GetString(objv[1]));
+		THROW_ERROR("Error saving jpeg file: ", Tcl_GetString(objv[A_FILENAME]));
 	
 	return TCL_OK;
 }
@@ -437,10 +437,10 @@ static int glue_encodejpeg(ClientData foo, Tcl_Interp *interp,
 	unsigned long	length;
 	unsigned char	*jpeg_data;
 	
-	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap quality");
+	enum {A_cmd, A_PMAP, A_QUALITY, A_objc}; CHECK_ARGS("pmap quality");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quality));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &pmap));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_QUALITY], &quality));
 
 	jpeg_data = encodejpeg(pmap, &length, quality);
 
@@ -462,7 +462,7 @@ static int glue_decodejpeg(ClientData foo, Tcl_Interp *interp,
 
 	enum {A_cmd, A_JPEG_DATA, A_objc}; CHECK_ARGS("jpeg_data");
 
-	jpeg_data = Tcl_GetByteArrayFromObj(objv[1], &length);
+	jpeg_data = Tcl_GetByteArrayFromObj(objv[A_JPEG_DATA], &length);
 
 	new = decodejpeg(jpeg_data, length);
 	if (new == NULL)
@@ -484,10 +484,10 @@ static int glue_jpeg_info(ClientData foo, Tcl_Interp *interp,
 	Tcl_Obj			*res;
 
 	
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("filename");
+	enum {A_cmd, A_FILENAME, A_objc}; CHECK_ARGS("filename");
 
-	if ((fp = fopen(Tcl_GetString(objv[1]), "rb")) == NULL)
-		THROW_ERROR("Cannot open file: (", Tcl_GetString(objv[1]), ")");
+	if ((fp = fopen(Tcl_GetString(objv[A_FILENAME]), "rb")) == NULL)
+		THROW_ERROR("Cannot open file: (", Tcl_GetString(objv[A_FILENAME]), ")");
 
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_decompress(&cinfo);

@@ -31,10 +31,10 @@ static int glue_loadpng(ClientData cdata, Tcl_Interp *interp, // loadpng filenam
 	gimp_image_t *	pmap;
 	enum {A_cmd, A_FILENAME, A_objc}; CHECK_ARGS("filename");
 
-	pmap = read_png(Tcl_GetString(objv[1]));
+	pmap = read_png(Tcl_GetString(objv[A_FILENAME]));
 
 	if (pmap == NULL)
-		THROW_ERROR("Error loading png file: ", Tcl_GetString(objv[1]));
+		THROW_ERROR("Error loading png file: ", Tcl_GetString(objv[A_FILENAME]));
 	
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmap));
 
@@ -75,9 +75,9 @@ static int glue_is_png(ClientData cdata, Tcl_Interp *interp, // is_png filename 
 
 	enum {A_cmd, A_FILENAME, A_objc}; CHECK_ARGS("filename");
 
-	fp = fopen(Tcl_GetString(objv[1]), "rb");
+	fp = fopen(Tcl_GetString(objv[A_FILENAME]), "rb");
 	if (fp == NULL)
-		THROW_ERROR("Unable to open file: (", Tcl_GetString(objv[1]), ")");
+		THROW_ERROR("Unable to open file: (", Tcl_GetString(objv[A_FILENAME]), ")");
 
 	if (fread(buf, 1, 8, fp) != 8) {
 		Tcl_SetObjResult(interp, Tcl_NewBooleanObj(0));
@@ -98,7 +98,7 @@ static int glue_png_dimensions(ClientData cdata, Tcl_Interp *interp, // png_dime
 
 	enum {A_cmd, A_FILENAME, A_objc}; CHECK_ARGS("filename");
 
-	if (get_png_dimensions(Tcl_GetString(objv[1]), &x, &y) != 0)
+	if (get_png_dimensions(Tcl_GetString(objv[A_FILENAME]), &x, &y) != 0)
 		THROW_ERROR("Error reading PNG dimensions");
 
 	res = Tcl_NewListObj(0, NULL);
@@ -183,10 +183,10 @@ static int glue_encode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 	enum {A_cmd, A_PMAP, A_args, A_COMPRESSION=A_args, A_objc};
 	CHECK_RANGE_ARGS("pmap ?compression?");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &pmap));
 
 	if (objc >= 3) {
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &compression));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_COMPRESSION], &compression));
 	}
 
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -293,7 +293,7 @@ static int glue_decode(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj *
 	enum {A_cmd, A_PNGDATA, A_objc}; CHECK_ARGS("pngdata");
 
 	pngdata.ofs = 0;
-	pngdata.buf = Tcl_GetByteArrayFromObj(objv[1], &pngdata.len);
+	pngdata.buf = Tcl_GetByteArrayFromObj(objv[A_PNGDATA], &pngdata.len);
 
 	if (pngdata.len < PNG_SIG_LEN || !png_check_sig(pngdata.buf, PNG_SIG_LEN)) {
 		Tcl_SetErrorCode(interp, "PIXEL", "PNG", "NOT_A_PNG", NULL);

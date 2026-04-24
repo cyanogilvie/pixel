@@ -406,12 +406,12 @@ static int glue_scale_perceptual(ClientData cdata, Tcl_Interp* interp, int objc,
 	enum {A_cmd, A_PMAPF, A_FACTOR, A_args, A_PATCH_SIZE=A_args, A_objc};
 	CHECK_RANGE_ARGS("pmapf factor ?patch_size?");
 
-	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &factor));
+	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[A_PMAPF], &in));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_FACTOR], &factor));
 
 	if (objc >= 4) {
 		float	sqrt_np;
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &patch_size));
+		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_PATCH_SIZE], &patch_size));
 		sqrt_np = sqrtf(patch_size);
 		if ((int)sqrt_np * (int)sqrt_np != patch_size)
 			THROW_ERROR("patch_size must be a square number");
@@ -422,7 +422,7 @@ static int glue_scale_perceptual(ClientData cdata, Tcl_Interp* interp, int objc,
 
 	if (factor == 1) {
 		// Do nothing gracefully
-		Tcl_SetObjResult(interp, objv[1]);
+		Tcl_SetObjResult(interp, objv[A_PMAPF]);
 		return TCL_OK;
 	}
 

@@ -39,9 +39,9 @@ static int dct_imagehash(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	ulong64			hash = 0;
 	int				ret;
 
-	enum {A_cmd, A_objc=2}; CHECK_ARGS("fn");
+	enum {A_cmd, A_FN, A_objc}; CHECK_ARGS("fn");
 
-	fn = Tcl_GetString(objv[1]);
+	fn = Tcl_GetString(objv[A_FN]);
 
 	ret = ph_dct_imagehash(fn, hash);
 	if (ret < 0)
@@ -61,12 +61,12 @@ static int image_digest(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj*
 	Digest			digest;
 
 	// Use sigma=1, gamma=1, N=180
-	enum {A_cmd, A_objc=5}; CHECK_ARGS("pmap sigma gamma N");
+	enum {A_cmd, A_PMAP, A_SIGMA, A_GAMMA, A_N, A_objc}; CHECK_ARGS("pmap sigma gamma N");
 
-	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &inp));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &sigma));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &gamma));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &N));
+	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &inp));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_SIGMA], &sigma));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_GAMMA], &gamma));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_N], &N));
 
 	CImg<uint8_t> cimg((uint8_t*)inp->pixel_data, inp->width, inp->height, 1, 4, true);
 
@@ -88,12 +88,12 @@ static int image_digest_filename(ClientData cdata, Tcl_Interp* interp, int objc,
 	const char*		fn;
 
 	// Use sigma=1, gamma=1, N=180
-	enum {A_cmd, A_objc=5}; CHECK_ARGS("filename sigma gamma N");
+	enum {A_cmd, A_FILENAME, A_SIGMA, A_GAMMA, A_N, A_objc}; CHECK_ARGS("filename sigma gamma N");
 
-	fn = Tcl_GetString(objv[1]);
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &sigma));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &gamma));
-	TEST_OK(Tcl_GetIntFromObj(interp, objv[4], &N));
+	fn = Tcl_GetString(objv[A_FILENAME]);
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_SIGMA], &sigma));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_GAMMA], &gamma));
+	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_N], &N));
 
 	ret = ph_image_digest(fn, sigma, gamma, digest, N);
 	if (ret < 0)
@@ -110,10 +110,10 @@ static int hamming_distance(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_
 	Tcl_WideInt		thash1, thash2;
 	ulong64			hash1, hash2;
 
-	enum {A_cmd, A_objc=3}; CHECK_ARGS("hash1 hash2");
+	enum {A_cmd, A_HASH1, A_HASH2, A_objc}; CHECK_ARGS("hash1 hash2");
 
-	TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &thash1));
-	TEST_OK(Tcl_GetWideIntFromObj(interp, objv[2], &thash2));
+	TEST_OK(Tcl_GetWideIntFromObj(interp, objv[A_HASH1], &thash1));
+	TEST_OK(Tcl_GetWideIntFromObj(interp, objv[A_HASH2], &thash2));
 
 	hash1 = thash1;
 	hash2 = thash2;
@@ -131,11 +131,11 @@ static int crosscorr(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* co
 	double		threshold, pcc;
 	int			ret;
 
-	enum {A_cmd, A_objc=4}; CHECK_ARGS("digest1 digest2 threshold");
+	enum {A_cmd, A_DIGEST1, A_DIGEST2, A_THRESHOLD, A_objc}; CHECK_ARGS("digest1 digest2 threshold");
 
-	TEST_OK(Pixel_GetPHashDigestFromObj(interp, objv[1], &dig1));
-	TEST_OK(Pixel_GetPHashDigestFromObj(interp, objv[2], &dig2));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &threshold));
+	TEST_OK(Pixel_GetPHashDigestFromObj(interp, objv[A_DIGEST1], &dig1));
+	TEST_OK(Pixel_GetPHashDigestFromObj(interp, objv[A_DIGEST2], &dig2));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_THRESHOLD], &threshold));
 
 	ret = ph_crosscorr(*dig1, *dig2, pcc, threshold);
 	if (ret < 0)
@@ -155,11 +155,11 @@ static int mh_imagehash(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj*
 	const char*		fn;
 
 	// Use alpha=2.0, lvl=1.0
-	enum {A_cmd, A_objc=4}; CHECK_ARGS("filename alpha lvl");
+	enum {A_cmd, A_FILENAME, A_ALPHA, A_LVL, A_objc}; CHECK_ARGS("filename alpha lvl");
 
-	fn = Tcl_GetString(objv[1]);
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &alpha));
-	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[3], &lvl));
+	fn = Tcl_GetString(objv[A_FILENAME]);
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_ALPHA], &alpha));
+	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_LVL], &lvl));
 
 	hash = ph_mh_imagehash(fn, N, alpha, lvl);
 
@@ -177,8 +177,8 @@ static int hammingdistance2(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_
 
 	enum {A_cmd, A_HASH1, A_HASH2, A_objc}; CHECK_ARGS("hash1 hash2");
 
-	hash1 = (uint8_t*)Tcl_GetByteArrayFromObj(objv[1], &len1);
-	hash2 = (uint8_t*)Tcl_GetByteArrayFromObj(objv[2], &len2);
+	hash1 = (uint8_t*)Tcl_GetByteArrayFromObj(objv[A_HASH1], &len1);
+	hash2 = (uint8_t*)Tcl_GetByteArrayFromObj(objv[A_HASH2], &len2);
 
 	Tcl_SetObjResult(interp, Tcl_NewDoubleObj(ph_hammingdistance2(hash1, len1, hash2, len2)));
 
