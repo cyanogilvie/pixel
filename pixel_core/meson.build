@@ -72,6 +72,15 @@ configure_file(
   install_dir:    pkg_dir,
 )
 
+# Headers transitively included by pixel.h that consumers (pixel_jpeg, etc.)
+# need in the same directory so their `#include <pixel.h>` resolves.
+install_headers(
+  'generic/2d_types.h',
+  'generic/pmapf.h',
+  'generic/perceptual_scaling.h',
+  install_dir: pkg_dir,
+)
+
 stubs_lib = static_library(meson.project_name() + 'stub',
   'generic/PixelStubLib.c',
   dependencies: deps,
