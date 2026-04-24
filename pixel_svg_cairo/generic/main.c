@@ -1,36 +1,35 @@
+#if HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #include <tclstuff.h>
 #include <librsvg/rsvg.h>
-//#include <librsvg/rsvg-cairo.h>
 #include <cairo.h>
 
 #include <stdlib.h>
 #include <pixel.h>
-//#include "2d.h"
-//#include "primitives.h"
-//#include "tcl_pmap.h"
 
 
-static int glue_load_svg(cdata, interp, objc, objv)
-	ClientData		cdata;
-	Tcl_Interp		*interp;
-	int				objc;
-	Tcl_Obj *CONST	objv[];
+static int glue_load_svg(ClientData cdata, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	_pel					init;
 	gimp_image_t*			new;
-	int						w, h;
+	int						w = 0, h = 0;
 	cairo_surface_t*		surface;
 	cairo_t*				cr;
 	const unsigned char*	data;
-	int						tmpint;
+	Tcl_Size				tmpint;
 	gsize					datalen;
 	GError*					gerror = NULL;
 	RsvgHandle*				rsvg_handle = NULL;
 	gdouble					intrinsic_w = 1.0, intrinsic_h = 1.0;
 	int						stride;
 
-	if (objc != 2 && objc != 4)
-		CHECK_ARGS(1, "svgdata ?w h?");
+	if (objc != 2 && objc != 4) {
+		Tcl_WrongNumArgs(interp, 1, objv, "svgdata ?w h?");
+		return TCL_ERROR;
+	}
 
 	if (objc == 4) {
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &w));
@@ -41,13 +40,10 @@ static int glue_load_svg(cdata, interp, objc, objv)
 	datalen = tmpint;
 	rsvg_handle = rsvg_handle_new_from_data(data, datalen, &gerror);
 	if (rsvg_handle == NULL) {
-		// Some error
 		THROW_ERROR("Error loading svg data: ", gerror->message);
 	}
 
 	if (!rsvg_handle_get_intrinsic_size_in_pixels(rsvg_handle, &intrinsic_w, &intrinsic_h)) {
-		// Intrinsic size was not defined, what to do?
-		//fprintf(stderr, "No intrinsic size in SVG\n");
 		intrinsic_w = 1.0;
 		intrinsic_h = 1.0;
 	}
@@ -56,18 +52,12 @@ static int glue_load_svg(cdata, interp, objc, objv)
 		w = (int)(round(intrinsic_w));
 		h = (int)(round(intrinsic_h));
 	}
-	//fprintf(stderr, "got w: %d, h: %d, sw: %d, sh: %d\n", w, h, sw, sh);
 
-	//init.c = 0xff0000ff;
 	init.c = 0x00000000;
 	new = pmap_new(w, h, init);
 	box(new, 0, 0, w, h, init, 0);
 
 	stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, w);
-	/*
-	fprintf(stderr, "computed stride: %d, width: %d, width*4: %d\n",
-			stride, w, w*4);
-	*/
 	surface = cairo_image_surface_create_for_data((unsigned char*)new->pixel_data,
 			CAIRO_FORMAT_ARGB32,
 			w, h,
@@ -88,9 +78,7 @@ static int glue_load_svg(cdata, interp, objc, objv)
 
 	rsvg_handle_render_cairo(rsvg_handle, cr);
 
-	//cairo_surface_finish(surface);
 	cairo_surface_flush(surface);
-	//cairo_surface_destroy(surface);
 	if (cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
 		fprintf(stderr, "cairo error: %s\n", cairo_status_to_string(cairo_status(cr)));
 		cairo_destroy(cr);
@@ -108,12 +96,13 @@ static int glue_load_svg(cdata, interp, objc, objv)
 
 int Pixel_svg_cairo_Init(Tcl_Interp *interp)
 {
-	if (Tcl_InitStubs(interp, "8.6", 0) == NULL) return TCL_ERROR;
-	if (Pixel_InitStubs(interp, "3.5", 0) == NULL) return TCL_ERROR;
+	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "4.0", 0) == NULL) return TCL_ERROR;
 
 	NEW_CMD("pixel::svg_cairo::load_svg", glue_load_svg);
 
+	if (Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION) != TCL_OK)
+		return TCL_ERROR;
+
 	return TCL_OK;
 }
-
-

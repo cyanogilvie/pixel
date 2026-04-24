@@ -1,3 +1,7 @@
+#if HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #ifdef DEBUG
 #define DBG(format, args...) fprintf(stderr, "D: %s:%u:%s() " format, \
 		                  __FILE__, __LINE__, __FUNCTION__ , ## args)
@@ -191,7 +195,7 @@ static long get_exif_int(ExifData* exif_data, ExifEntry* exif_entry) //{{{1
 }
 
 
-gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
+gimp_image_t *decodejpeg(unsigned char *jpeg_data, Tcl_Size length) // {{{1
 {
 	struct jpeg_decompress_struct	cinfo;
 	struct custom_error_mgr			jerr;
@@ -387,10 +391,10 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, int length) // {{{1
 
 // loadjpeg filename {{{1
 static int glue_loadjpeg(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t *	pmap;
-	CHECK_ARGS(1, "filename");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("filename");
 
 	pmap = loadjpeg(Tcl_GetString(objv[1]));
 	if (pmap == NULL)
@@ -404,13 +408,13 @@ static int glue_loadjpeg(ClientData foo, Tcl_Interp *interp,
 
 // savejpeg filename pmap quality {{{1
 static int glue_savejpeg(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int				err;
 	gimp_image_t	*pmap;
 	int				quality;
 	
-	CHECK_ARGS(3, "filename pmap quality");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("filename pmap quality");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &pmap));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[3], &quality));
@@ -425,15 +429,15 @@ static int glue_savejpeg(ClientData foo, Tcl_Interp *interp,
 
 
 // encodejpeg pmap quality {{{1
-static int glue_encodejpeg(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_encodejpeg(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap;
 	int				quality;
 	unsigned long	length;
 	unsigned char	*jpeg_data;
 	
-	CHECK_ARGS(2, "pmap quality");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap quality");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quality));
@@ -449,14 +453,14 @@ static int glue_encodejpeg(ClientData *foo, Tcl_Interp *interp,
 
 
 // decodejpeg jpeg_data {{{1
-static int glue_decodejpeg(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_decodejpeg(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	unsigned char	*jpeg_data;
-	int				length;
+	Tcl_Size		length;
 	gimp_image_t	*new;
-	
-	CHECK_ARGS(1, "jpeg_data");
+
+	enum {A_cmd, A_JPEG_DATA, A_objc}; CHECK_ARGS("jpeg_data");
 
 	jpeg_data = Tcl_GetByteArrayFromObj(objv[1], &length);
 
@@ -472,7 +476,7 @@ static int glue_decodejpeg(ClientData *foo, Tcl_Interp *interp,
 
 // jpeg_info filename {{{1
 static int glue_jpeg_info(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	struct jpeg_decompress_struct	cinfo;
 	struct jpeg_error_mgr			jerr;
@@ -480,7 +484,7 @@ static int glue_jpeg_info(ClientData foo, Tcl_Interp *interp,
 	Tcl_Obj			*res;
 
 	
-	CHECK_ARGS(1, "filename");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("filename");
 
 	if ((fp = fopen(Tcl_GetString(objv[1]), "rb")) == NULL)
 		THROW_ERROR("Cannot open file: (", Tcl_GetString(objv[1]), ")");
@@ -622,8 +626,8 @@ static int glue_jpeg_info(ClientData foo, Tcl_Interp *interp,
 // Init {{{1
 int Pixel_jpeg_Init(Tcl_Interp *interp)
 {
-	if (Tcl_InitStubs(interp, "8.4", 0) == NULL) return TCL_ERROR;
-	if (Pixel_InitStubs(interp, "3.3", 0) == NULL) return TCL_ERROR;
+	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "4.0", 0) == NULL) return TCL_ERROR;
 
 	NEW_CMD("pixel::jpeg::loadjpeg", glue_loadjpeg);
 	NEW_CMD("pixel::jpeg::savejpeg", glue_savejpeg);

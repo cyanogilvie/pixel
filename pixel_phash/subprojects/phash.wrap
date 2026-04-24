@@ -1,0 +1,8 @@
+[wrap-git]
+url = https://github.com/aetilius/pHash.git
+revision = dea9ffca729841db087f46a7389dd8610a629dc6
+depth = 1
+patch_directory = phash
+
+[provide]
+dependency_names = phash, pHash

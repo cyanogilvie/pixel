@@ -1,5 +1,9 @@
 // vim: ts=4 shiftwidth=4 tags=../tags
 
+#if HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #ifndef X_DISPLAY_MISSING
 #include <X11/Xlib.h>
 #endif
@@ -75,11 +79,11 @@ static char *lookup_load_error(Imlib_Load_Error error) //{{{1
 
 
 static int glue_set_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int cache_size;
 
-	CHECK_ARGS(1, "cache_size");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("cache_size");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &cache_size));
 	Tcl_MutexLock(&g_imlib_mutex);
@@ -91,11 +95,11 @@ static int glue_set_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_get_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int cache_size;
 
-	CHECK_ARGS(0, "");
+	enum {A_cmd, A_objc=1}; CHECK_ARGS("");
 
 	Tcl_MutexLock(&g_imlib_mutex);
 	cache_size = imlib_get_cache_size();
@@ -108,11 +112,11 @@ static int glue_get_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_set_font_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int cache_size;
 
-	CHECK_ARGS(1, "cache_size");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("cache_size");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &cache_size));
 	Tcl_MutexLock(&g_imlib_mutex);
@@ -124,9 +128,9 @@ static int glue_set_font_cache_size(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_add_path_to_font_path(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
-	CHECK_ARGS(1, "path");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("path");
 
 	Tcl_MutexLock(&g_imlib_mutex);
 	imlib_add_path_to_font_path(Tcl_GetString(objv[1]));
@@ -138,11 +142,11 @@ static int glue_add_path_to_font_path(ClientData foo, Tcl_Interp *interp, //{{{1
 
 #ifndef X_DISPLAY_MISSING
 static int glue_set_color_usage(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int num_colours;
 
-	CHECK_ARGS(1, "num_colours");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("num_colours");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &num_colours));
 
@@ -155,11 +159,11 @@ static int glue_set_color_usage(ClientData foo, Tcl_Interp *interp, //{{{1
 #endif
 
 static int glue_context_set_dither(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int dither;
 
-	CHECK_ARGS(1, "dither?");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("dither?");
 
 	TEST_OK(Tcl_GetBooleanFromObj(interp, objv[1], &dither));
 
@@ -172,7 +176,7 @@ static int glue_context_set_dither(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_load_image(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	Imlib_Image			image;
 	Imlib_Load_Error	error;
@@ -181,8 +185,8 @@ static int glue_load_image(ClientData foo, Tcl_Interp *interp, //{{{1
 	gimp_image_t		*new;
 	Tcl_Obj				*res;
 
-	if (objc < 2 || objc > 3)
-		CHECK_ARGS(1, "filename ?progress_callback?");
+	enum {A_cmd, A_FILENAME, A_args, A_PROGRESS_CB=A_args, A_objc};
+	CHECK_RANGE_ARGS("filename ?progress_callback?");
 
 	res = Tcl_NewObj();
 
@@ -239,7 +243,7 @@ error:
 
 
 static int glue_save_image(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	Imlib_Image			image;
 	Imlib_Load_Error	error;
@@ -248,8 +252,8 @@ static int glue_save_image(ClientData foo, Tcl_Interp *interp, //{{{1
 	char				*type;
 	Tcl_Obj*			res;
 
-	if (objc < 3 || objc > 5)
-		CHECK_ARGS(2, "pmap filename ?type? ?progress_callback?");
+	enum {A_cmd, A_PMAP, A_FILENAME, A_args, A_TYPE=A_args, A_PROGRESS_CB, A_objc};
+	CHECK_RANGE_ARGS("pmap filename ?type? ?progress_callback?");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 
@@ -316,7 +320,7 @@ error:
 
 
 static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*src_pmap;
 	gimp_image_t		*dest_pmap;
@@ -328,8 +332,10 @@ static int glue_scale_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
 	int					w, h;
 	Tcl_Obj*			res;
 
-	if (objc < 4 || (objc > 6 && objc != 9 && objc != 10))
-		CHECK_ARGS(3, "src_pmap w h ?smooth? ?border_l border_r border_t border_b? ?progress_callback?");
+	if (objc < 4 || (objc > 6 && objc != 9 && objc != 10)) {
+		Tcl_WrongNumArgs(interp, 1, objv, "src_pmap w h ?smooth? ?border_l border_r border_t border_b? ?progress_callback?");
+		return TCL_ERROR;
+	}
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &w));
@@ -409,14 +415,14 @@ error:
 
 
 static int glue_blur_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*src_pmap;
 	int					radius;
 	Imlib_Image			*src;
 	Tcl_Obj*			res;
 
-	CHECK_ARGS(2, "pmap radius");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap radius");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &radius));
@@ -450,14 +456,14 @@ error:
 
 
 static int glue_sharpen_pmap(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*src_pmap;
 	int					radius;
 	Imlib_Image			*src;
 	Tcl_Obj*			res;
 
-	CHECK_ARGS(2, "pmap radius");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap radius");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src_pmap));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &radius));
@@ -492,9 +498,9 @@ error:
 
 int Pixel_imlib2_Init(Tcl_Interp *interp) //{{{1
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
+	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) return TCL_ERROR;
 #ifdef USE_PIXEL_STUBS
-	if (Pixel_InitStubs(interp, "3.4", 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "4.0", 0) == NULL) return TCL_ERROR;
 #endif
 
 	Tcl_MutexLock(&g_imlib_mutex);

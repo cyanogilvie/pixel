@@ -1,0 +1,17 @@
+option('with-audio-hash',
+    type: 'boolean',
+    value: false,
+    description: 'Build audio hashing support (requires mpg123, sndfile, samplerate, vorbis, ogg)',
+)
+
+option('with-video-hash',
+    type: 'boolean',
+    value: false,
+    description: 'Build video hashing support (requires ffmpeg libs: avcodec, avformat, swscale, avutil)',
+)
+
+option('build-examples',
+    type: 'boolean',
+    value: false,
+    description: 'Build the example/test programs under examples/',
+)

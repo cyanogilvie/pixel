@@ -59,8 +59,9 @@ static void update_string_rep(Tcl_Obj* obj) //{{{
 	Digest*		dig = (Digest*)obj->internalRep.twoPtrValue.ptr1;
 	Tcl_Obj*	tmp = Tcl_NewObj();
 	Tcl_Obj*	coeffs = Tcl_NewObj();
-	int			i, len;
-	char*		str;
+	int			i;
+	Tcl_Size	len;
+	const char*	str;
 
 	Tcl_IncrRefCount(tmp);
 	Tcl_ListObjAppendElement(NULL, tmp, Tcl_NewStringObj(dig->id, -1));
@@ -81,7 +82,8 @@ static void update_string_rep(Tcl_Obj* obj) //{{{
 //}}}
 static int set_digest_from_any(Tcl_Interp* interp, Tcl_Obj* obj) //{{{
 {
-	int			objc, coeffc, i, id_len, ret=TCL_OK;
+	Tcl_Size	objc, coeffc, id_len;
+	int			i, ret=TCL_OK;
 	Tcl_Obj**	objv;
 	Tcl_Obj**	coeffv;
 	Digest*		dig = NULL;

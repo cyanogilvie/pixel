@@ -37,3 +37,7 @@ pixel_core/generic/pixelDecls.h
 subprojects/packagecache/
 subprojects/.wraplock
 subprojects/*-*/
+
+# meson wrap-extracted sources (keep only the wrap + packagefiles under VCS)
+pixel_phash/subprojects/phash/
+pixel_phash/subprojects/.wraplock

@@ -5,3 +5,21 @@
 [submodule "pixel_core/teabase"]
 	path = pixel_core/teabase
 	url = git@github.com:cyanogilvie/teabase
+[submodule "pixel_jpeg/teabase"]
+	path = pixel_jpeg/teabase
+	url = git@github.com:cyanogilvie/teabase
+[submodule "pixel_png/teabase"]
+	path = pixel_png/teabase
+	url = git@github.com:cyanogilvie/teabase
+[submodule "pixel_webp/teabase"]
+	path = pixel_webp/teabase
+	url = git@github.com:cyanogilvie/teabase
+[submodule "pixel_imlib2/teabase"]
+	path = pixel_imlib2/teabase
+	url = git@github.com:cyanogilvie/teabase
+[submodule "pixel_svg_cairo/teabase"]
+	path = pixel_svg_cairo/teabase
+	url = git@github.com:cyanogilvie/teabase
+[submodule "pixel_phash/teabase"]
+	path = pixel_phash/teabase
+	url = git@github.com:cyanogilvie/teabase

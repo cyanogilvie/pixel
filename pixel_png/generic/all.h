@@ -12,13 +12,13 @@
 #define PNG_SIG_LEN	8
 
 struct png_membuf {
-	int			ofs;
-	int			len;
+	Tcl_Size	ofs;
+	Tcl_Size	len;
 	uint8_t*	buf;
 };
 
 struct write_buf {
-	int			ofs;
+	Tcl_Size	ofs;
 	Tcl_Obj*	data;
 };
 

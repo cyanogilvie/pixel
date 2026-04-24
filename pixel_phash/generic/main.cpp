@@ -1,3 +1,7 @@
+#if HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #include <pHash.h>
 
 extern "C" {
@@ -35,7 +39,7 @@ static int dct_imagehash(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	ulong64			hash = 0;
 	int				ret;
 
-	CHECK_ARGS(1, "fn");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("fn");
 
 	fn = Tcl_GetString(objv[1]);
 
@@ -57,7 +61,7 @@ static int image_digest(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj*
 	Digest			digest;
 
 	// Use sigma=1, gamma=1, N=180
-	CHECK_ARGS(4, "pmap sigma gamma N");
+	enum {A_cmd, A_objc=5}; CHECK_ARGS("pmap sigma gamma N");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &inp));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &sigma));
@@ -84,7 +88,7 @@ static int image_digest_filename(ClientData cdata, Tcl_Interp* interp, int objc,
 	const char*		fn;
 
 	// Use sigma=1, gamma=1, N=180
-	CHECK_ARGS(4, "filename sigma gamma N");
+	enum {A_cmd, A_objc=5}; CHECK_ARGS("filename sigma gamma N");
 
 	fn = Tcl_GetString(objv[1]);
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &sigma));
@@ -106,7 +110,7 @@ static int hamming_distance(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_
 	Tcl_WideInt		thash1, thash2;
 	ulong64			hash1, hash2;
 
-	CHECK_ARGS(2, "hash1 hash2");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("hash1 hash2");
 
 	TEST_OK(Tcl_GetWideIntFromObj(interp, objv[1], &thash1));
 	TEST_OK(Tcl_GetWideIntFromObj(interp, objv[2], &thash2));
@@ -127,7 +131,7 @@ static int crosscorr(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* co
 	double		threshold, pcc;
 	int			ret;
 
-	CHECK_ARGS(3, "digest1 digest2 threshold");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("digest1 digest2 threshold");
 
 	TEST_OK(Pixel_GetPHashDigestFromObj(interp, objv[1], &dig1));
 	TEST_OK(Pixel_GetPHashDigestFromObj(interp, objv[2], &dig2));
@@ -151,7 +155,7 @@ static int mh_imagehash(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj*
 	const char*		fn;
 
 	// Use alpha=2.0, lvl=1.0
-	CHECK_ARGS(3, "filename alpha lvl");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("filename alpha lvl");
 
 	fn = Tcl_GetString(objv[1]);
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &alpha));
@@ -169,9 +173,9 @@ static int hammingdistance2(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_
 {
 	uint8_t*	hash1;
 	uint8_t*	hash2;
-	int			len1, len2;
+	Tcl_Size	len1, len2;
 
-	CHECK_ARGS(2, "hash1 hash2");
+	enum {A_cmd, A_HASH1, A_HASH2, A_objc}; CHECK_ARGS("hash1 hash2");
 
 	hash1 = (uint8_t*)Tcl_GetByteArrayFromObj(objv[1], &len1);
 	hash2 = (uint8_t*)Tcl_GetByteArrayFromObj(objv[2], &len2);
@@ -184,8 +188,8 @@ static int hammingdistance2(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_
 //}}}
 extern "C" int Pixel_phash_Init(Tcl_Interp* interp) //{{{
 {
-	if (Tcl_InitStubs(interp, "8.4", 0) == NULL) return TCL_ERROR;
-	if (Pixel_InitStubs(interp, "3.5", 0) == NULL) return TCL_ERROR;
+	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) return TCL_ERROR;
+	if (Pixel_InitStubs(interp, "4.0", 0) == NULL) return TCL_ERROR;
 
 	NEW_CMD("::pixel::phash::image_digest", image_digest);
 	NEW_CMD("::pixel::phash::image_digest_filename", image_digest_filename);
