@@ -40,8 +40,12 @@ deps += dependency('phash',
   fallback: ['phash', 'phash_dep'],
   default_options: ['default_library=static'])
 
-deps += dependency('libtiff-4')
-deps += dependency('libpng')
+deps += dependency('libtiff-4', static: true)
+deps += dependency('libpng',    static: true)
+# CImg.h uses libwebp conditionally; pHash.a links against its symbols even
+# when we don't touch image I/O from our own code. Add it explicitly so the
+# static link is closed.
+deps += dependency('libwebp',   static: true)
 
 pkg_sources = files(
   'generic/main.cpp',

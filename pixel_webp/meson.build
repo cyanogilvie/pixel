@@ -23,7 +23,9 @@ inc = []
 subdir('teabase/init')
 
 deps += dependency('pixel', version: '>=4.0')
-deps += dependency('libwebp')
+# static:true so pkg-config --static picks up Libs.private (e.g. -lsharpyuv),
+# which is needed because the alpine-tcl base image ships libwebp as .a only.
+deps += dependency('libwebp', static: true)
 
 pkg_sources = files(
   'generic/main.c',
