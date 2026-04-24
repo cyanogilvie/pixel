@@ -1,28 +1,31 @@
-#ifndef USE_TCL_STUBS
-#define USE_TCL_STUBS
+#if HAVE_CONFIG_H
+#	include <config.h>
 #endif
-#undef USE_TCL_STUB_PROCS
 
-#include "tcl.h"
+#undef USE_TCL_STUBS
+#undef USE_PIXEL_STUBS
+#define USE_TCL_STUBS 1
+#define USE_PIXEL_STUBS 1
+
 #include "pixel.h"
 
-#undef TCL_STORAGE_CLASS
-#define TCL_STORAGE_CLASS DLLEXPORT
+MODULE_SCOPE const PixelStubs*	pixelStubsPtr;
+const PixelStubs*				pixelStubsPtr = NULL;
 
-PixelStubs *pixelStubsPtr;
-
-CONST char *Pixel_InitStubs(Tcl_Interp *interp, char *version, int exact)
+#undef Pixel_InitStubs
+const char *Pixel_InitStubs(Tcl_Interp *interp, const char *version, int exact)
 {
 	const char	*actualVersion;
 
-	actualVersion = Tcl_PkgRequireEx(interp, "Pixel", version, exact,
-			(ClientData *)&pixelStubsPtr);
+	actualVersion = Tcl_PkgRequireEx(interp, PACKAGE_NAME, version, exact,
+			(void *)&pixelStubsPtr);
 
 	if (!actualVersion)
 		return NULL;
 
 	if (!pixelStubsPtr) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj("This implementation of Pixel does not support stubs", -1));
+		Tcl_SetObjResult(interp, Tcl_NewStringObj(
+				"This implementation of " PACKAGE_NAME " does not support stubs", -1));
 		return NULL;
 	}
 

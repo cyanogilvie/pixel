@@ -403,8 +403,8 @@ static int glue_scale_perceptual(ClientData cdata, Tcl_Interp* interp, int objc,
 	struct pmapf*	in = NULL;
 	struct pmapf*	out = NULL;
 
-	if (objc<3 || objc>4)
-		CHECK_ARGS(3, "pmapf factor ?patch_size?");
+	enum {A_cmd, A_PMAPF, A_FACTOR, A_args, A_PATCH_SIZE=A_args, A_objc};
+	CHECK_RANGE_ARGS("pmapf factor ?patch_size?");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &factor));

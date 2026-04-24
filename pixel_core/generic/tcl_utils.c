@@ -1,10 +1,6 @@
 #include "tcl_utils.h"
 
-static int _read_file_ex(interp, filename, res, binary)
-	Tcl_Interp	*interp;
-   	const char	*filename;
-   	Tcl_Obj		**res;
-   	int			binary;
+static int _read_file_ex(Tcl_Interp *interp, const char *filename, Tcl_Obj **res, int binary)
 {
 	Tcl_Channel	fshandle;
 	Tcl_Obj		*fnobj;
@@ -15,7 +11,7 @@ static int _read_file_ex(interp, filename, res, binary)
 	fshandle = Tcl_FSOpenFileChannel(interp, fnobj, "r", 0644);
 	Tcl_DecrRefCount(fnobj);
 	if (fshandle == NULL) return TCL_ERROR;
-	
+
 	if (binary) {
 		TEST_OK(Tcl_SetChannelOption(interp, fshandle, "-translation", "binary"));
 		TEST_OK(Tcl_SetChannelOption(interp, fshandle, "-encoding", "binary"));
@@ -32,7 +28,7 @@ static int _read_file_ex(interp, filename, res, binary)
 }
 
 
-const unsigned char *read_vfs_file(const char *filename, int *len, int binary)
+const unsigned char *read_vfs_file(const char *filename, Tcl_Size *len, int binary)
 {
 	Tcl_Obj		*res;
 
@@ -44,12 +40,7 @@ const unsigned char *read_vfs_file(const char *filename, int *len, int binary)
 }
 
 
-int read_vfs_file2(interp, filename, buf, len, binary)
-	Tcl_Interp		*interp;
-	const char		*filename;
-	unsigned char	**buf;
-	int				*len;
-	int				binary;
+int read_vfs_file2(Tcl_Interp *interp, const char *filename, unsigned char **buf, Tcl_Size *len, int binary)
 {
 	Tcl_Obj		*res;
 
@@ -58,5 +49,3 @@ int read_vfs_file2(interp, filename, buf, len, binary)
 
 	return TCL_OK;
 }
-
-

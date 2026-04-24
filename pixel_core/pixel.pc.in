@@ -1,0 +1,7 @@
+pkg_dir=${pcfiledir}/../@PKG_DIR_BASENAME@
+
+Name: @PACKAGE_NAME@
+Description: Pixel core (2D pmap + stubs) for Tcl
+Version: @PACKAGE_VERSION@
+Cflags: -I${pkg_dir} -DUSE_PIXEL_STUBS=1
+Libs: -L${pkg_dir} -l@STUBLIB@

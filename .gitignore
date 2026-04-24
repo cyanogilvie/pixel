@@ -20,3 +20,20 @@ pkgIndex.tcl
 *.swo
 *~
 tags
+
+# meson out-of-tree build dirs
+build/
+build9g/
+build9/
+build86/
+builddir/
+build-*/
+
+# generated stubs (regenerated into the build dir)
+pixel_core/generic/pixelStubInit.c
+pixel_core/generic/pixelDecls.h
+
+# meson subprojects cache
+subprojects/packagecache/
+subprojects/.wraplock
+subprojects/*-*/

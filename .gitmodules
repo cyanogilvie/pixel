@@ -2,3 +2,6 @@
 	path = tclconfig
 	url = https://github.com/tcltk/tclconfig
 	shallow = true
+[submodule "pixel_core/teabase"]
+	path = pixel_core/teabase
+	url = git@github.com:cyanogilvie/teabase

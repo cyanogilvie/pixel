@@ -98,7 +98,7 @@ static int glue_kern_vis(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	_pel			grey = (_pel)(uint32_t)0xffa0a0a0;
 	_pel			yellow = (_pel)(uint32_t)0xffffff00;
 
-	CHECK_ARGS(5, "width height wt f frac");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("width height wt f frac");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &width));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &height));
@@ -205,7 +205,7 @@ static int glue_scale_pmap_lanczos2(ClientData cdata, Tcl_Interp* interp, int ob
 	_pel*			t;
 	fixedpoint		kern[W];
 
-	CHECK_ARGS(3, "pmap width height");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("pmap width height");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
@@ -570,8 +570,8 @@ static int glue_scale_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int ob
 	gimp_image_t*	t = NULL;
 	int				new_w, new_h, wt;
 
-	if (objc < 4 || objc > 5)
-		CHECK_ARGS(3, "pmapf width height ?wt?");
+	enum {A_cmd, A_PMAPF, A_WIDTH, A_HEIGHT, A_args, A_WT=A_args, A_objc};
+	CHECK_RANGE_ARGS("pmapf width height ?wt?");
 
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
@@ -678,7 +678,7 @@ static int glue_lowpass_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int 
 	gimp_image_t*	t = NULL;
 	double			f;
 
-	CHECK_ARGS(2, "pmap f");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap f");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &f));
@@ -734,8 +734,8 @@ static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int o
 	struct pmapf*	t = NULL;
 	int				new_w, new_h, wt;
 
-	if (objc < 4 || objc > 5)
-		CHECK_ARGS(3, "pmapf width height ?wt?");
+	enum {A_cmd, A_PMAPF, A_WIDTH, A_HEIGHT, A_args, A_WT=A_args, A_objc};
+	CHECK_RANGE_ARGS("pmapf width height ?wt?");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
@@ -891,9 +891,8 @@ static int glue_shear_pmapf_lanczos_x(ClientData cdata, Tcl_Interp* interp, int 
 	float			kern_norm[w];
 	int				xs, xd, y, skip_start=0, skip_end=0;
 
-	if (objc<3 || objc>5) {
-		CHECK_ARGS(2, "pmapf shear ?skip_start? ?skip_end?");
-	}
+	enum {A_cmd, A_PMAPF, A_SHEAR, A_args, A_SKIP_START=A_args, A_SKIP_END, A_objc};
+	CHECK_RANGE_ARGS("pmapf shear ?skip_start? ?skip_end?");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &shear));
@@ -1053,9 +1052,8 @@ static int glue_shear_pmapf_lanczos_y(ClientData cdata, Tcl_Interp* interp, int 
 	float			kern_norm[w];
 	int				ys, yd, x, skip_start=0, skip_end=0;
 
-	if (objc<3 || objc>5) {
-		CHECK_ARGS(2, "pmapf shear ?skip_start? ?skip_end?");
-	}
+	enum {A_cmd, A_PMAPF, A_SHEAR, A_args, A_SKIP_START=A_args, A_SKIP_END, A_objc};
+	CHECK_RANGE_ARGS("pmapf shear ?skip_start? ?skip_end?");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &shear));
@@ -1213,7 +1211,7 @@ static int glue_lowpass_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int
 	double			f;
 	int				wt;
 
-	CHECK_ARGS(3, "pmapf wt f");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("pmapf wt f");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &wt));

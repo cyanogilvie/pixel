@@ -55,8 +55,8 @@ static void update_string_rep(Tcl_Obj* obj) //<<<
 	struct pmapf*	pmapf = (struct pmapf*)obj->internalRep.twoPtrValue.ptr1;
 	Tcl_Obj*		objv[4];
 	Tcl_Obj*		list = NULL;
-	char*			str;
-	int				length;
+	const char*		str;
+	Tcl_Size		length;
 
 	//fprintf(stderr, "tcl_pmap: Called update_string_rep\n");
 	//Tcl_Panic("Bang");
@@ -89,11 +89,11 @@ static int set_pmapf_from_any(Tcl_Interp* interp, Tcl_Obj* obj) //<<<
 {
 	const Tcl_ObjType*	oldtype = obj->typePtr;
 	struct pmapf*	pmapf;
-	int				objc;
+	Tcl_Size		objc;
 	Tcl_Obj**		objv;
 	int				width, height, bytes_per_pixel;
 	pelf*			pixel_data;
-	int				size, src_size;
+	Tcl_Size		size, src_size;
 
 	//fprintf(stderr, "tcl_pmap: Called set_pmap_from_any: (%s)\n", Tcl_GetString(obj));
 	//THROW_ERROR("Bang");
@@ -150,7 +150,7 @@ void Pixel_SetPMAPFObj(Tcl_Obj* obj, struct pmapf* pmapf) //<<<
 //	fprintf(stderr, "tcl_pmap: Called Tcl_SetPMAPObj\n");
 
 	if (Tcl_IsShared(obj))
-		panic("Tcl_SetPMAPFObj called with shared obj");
+		Tcl_Panic("Tcl_SetPMAPFObj called with shared obj");
 
 	if ((oldType != NULL) && (oldType->freeIntRepProc != NULL))
 		oldType->freeIntRepProc(obj);

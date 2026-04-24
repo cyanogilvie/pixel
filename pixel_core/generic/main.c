@@ -1,3 +1,7 @@
+#if HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #ifdef DEBUG
 #define DBG(format, args...) fprintf(stderr, "D: %s:%u:%s() " format, \
 		                  __FILE__, __LINE__, __FUNCTION__ , ## args)
@@ -23,17 +27,17 @@
 #	define unlikely(exp) (exp)
 #endif
 
-extern PixelStubs pixelStubs;
+extern const PixelStubs* const pixelConstStubsPtr;
 
 // pmap_new x y colour {{{1
-static int glue_pmap_new(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_new(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	int				x, y;
 	_pel			colour;
 	gimp_image_t	*new;
 	
-	CHECK_ARGS(3, "x y colour");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("x y colour");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &x));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &y));
@@ -48,13 +52,13 @@ static int glue_pmap_new(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmap_clr dest colour {{{1
-static int glue_pmap_clr(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_clr(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	_pel			colour;
 	gimp_image_t	*dest;
 	
-	CHECK_ARGS(2, "dest colour");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("dest colour");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], (int *)&colour.c));
@@ -66,13 +70,13 @@ static int glue_pmap_clr(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmapf_clr dest colour {{{1
-static int glue_pmapf_clr(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmapf_clr(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	pelf			colour;
 	struct pmapf*	dest;
 	
-	CHECK_ARGS(2, "dest colour");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("dest colour");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &dest));
 	TEST_OK(Pixel_GetPELFFromObj(interp, objv[2], &colour));
@@ -84,14 +88,14 @@ static int glue_pmapf_clr(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmap_cut src x1 y1 x2 y2 {{{1
-static int glue_pmap_cut(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_cut(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*src;
 	gimp_image_t	*new;
 	int				x1, y1, x2, y2;
 	
-	CHECK_ARGS(5, "src x1 y1 x2 y2");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("src x1 y1 x2 y2");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x1));
@@ -108,14 +112,14 @@ static int glue_pmap_cut(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmap_paste dest src x y flags {{{1
-static int glue_pmap_paste(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_paste(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*dest;
 	gimp_image_t		*src;
 	int					x, y, flags;
 	
-	CHECK_ARGS(5, "dest src x y flags");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("dest src x y flags");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &src));
@@ -130,15 +134,15 @@ static int glue_pmap_paste(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmap_paste_ref dest src ref x y flags {{{1
-static int glue_pmap_paste_ref(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_paste_ref(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*dest;
 	gimp_image_t		*src;
 	gimp_image_t		*ref;
 	int					x, y, flags;
 	
-	CHECK_ARGS(6, "dest src ref x y flags");
+	enum {A_cmd, A_objc=7}; CHECK_ARGS("dest src ref x y flags");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &src));
@@ -154,14 +158,14 @@ static int glue_pmap_paste_ref(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmap_patch dest src sx sy sw sh dx dy flags {{{1
-static int glue_pmap_patch(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_patch(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*dest;
 	gimp_image_t		*src;
 	int					sx, sy, sw, sh, dx, dy, flags;
 	
-	CHECK_ARGS(9, "dest src sx sy sw sh dx dy flags");
+	enum {A_cmd, A_objc=10}; CHECK_ARGS("dest src sx sy sw sh dx dy flags");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &src));
@@ -180,15 +184,15 @@ static int glue_pmap_patch(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmap_compose dest src x y flags {{{1
-static int glue_pmap_compose(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_compose(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*dest;
 	gimp_image_t		*src;
 	gimp_image_t		*new;
 	int					x, y, flags;
 	
-	CHECK_ARGS(5, "dest src x y flags");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("dest src x y flags");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &src));
@@ -206,13 +210,13 @@ static int glue_pmap_compose(ClientData *foo, Tcl_Interp *interp,
 
 // pmap_filter dest flags factor {{{1
 static int glue_pmap_filter(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t *	dest;
 	int				flags;
 	double			factor;
 	
-	CHECK_ARGS(3, "dest flags factor");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("dest flags factor");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &flags));
@@ -225,14 +229,14 @@ static int glue_pmap_filter(ClientData foo, Tcl_Interp *interp,
 
 
 // pmap_dropshadow src {{{1
-static int glue_pmap_dropshadow(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_dropshadow(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*src;
 	gimp_image_t	*new;
 	int				blur;
 	
-	CHECK_ARGS(2, "src blur");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("src blur");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &blur));
@@ -247,13 +251,13 @@ static int glue_pmap_dropshadow(ClientData *foo, Tcl_Interp *interp,
 
 // pmap_rotate src quads {{{1
 static int glue_pmap_rotate(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*src;
 	gimp_image_t	*new;
 	int				quads;
 	
-	CHECK_ARGS(2, "src quads");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("src quads");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quads));
@@ -267,13 +271,13 @@ static int glue_pmap_rotate(ClientData foo, Tcl_Interp *interp,
 
 
 // pmap_info pmap {{{1
-static int glue_pmap_info(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmap_info(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	Tcl_Obj			*res;
 	gimp_image_t	*pmap;
 	
-	CHECK_ARGS(1, "pmap");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmap");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 
@@ -288,13 +292,13 @@ static int glue_pmap_info(ClientData *foo, Tcl_Interp *interp,
 
 
 // pmapf_info pmapf {{{1
-static int glue_pmapf_info(ClientData *foo, Tcl_Interp *interp, 
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_pmapf_info(ClientData foo, Tcl_Interp *interp, 
+		int objc, Tcl_Obj *const objv[])
 {
 	Tcl_Obj*		res;
 	struct pmapf*	pmapf;
 	
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &pmapf));
 
@@ -309,10 +313,10 @@ static int glue_pmapf_info(ClientData *foo, Tcl_Interp *interp,
 
 
 // dup obj {{{1
-static int glue_dup(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_dup(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
-	CHECK_ARGS(1, "obj");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("obj");
 
 	Tcl_SetObjResult(interp, Tcl_DuplicateObj(objv[1]));
 
@@ -321,12 +325,12 @@ static int glue_dup(ClientData *foo, Tcl_Interp *interp,
 
 // blend frompel topel degree {{{1
 static int glue_blend(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	_pel			frompel, topel, newpel;
 	double			degree;
 
-	CHECK_ARGS(3, "frompel topel degree");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("frompel topel degree");
 	
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], (int *)&frompel.c));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], (int *)&topel.c));
@@ -354,13 +358,13 @@ static int glue_blend(ClientData foo, Tcl_Interp *interp,
 
 // center x y w h pmap {{{1
 static int glue_center(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int				x, y, w, h, pw, ph, cx, cy;
 	gimp_image_t	*pmap;
 	Tcl_Obj			*res;
 
-	CHECK_ARGS(5, "x y w h pmap");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("x y w h pmap");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &x));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &y));
@@ -386,13 +390,13 @@ static int glue_center(ClientData foo, Tcl_Interp *interp,
 
 
 static int glue_put_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*dest;
 	_pel				col;
 	int					x, y, flags;
 	
-	CHECK_ARGS(5, "dest x y colour flags");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("dest x y colour flags");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &dest));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x));
@@ -407,14 +411,14 @@ static int glue_put_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_get_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t		*src;
 	_pel				col;
 	int					x, y;
 	Tcl_Obj				*res;
 	
-	CHECK_ARGS(3, "src x y");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("src x y");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x));
@@ -434,18 +438,15 @@ static int glue_get_pixel(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
-static int glue_digest_region(cdata, interp, objc, objv) //{{{1
-	ClientData		cdata;
-	Tcl_Interp		*interp;
-	int				objc;
-	Tcl_Obj *CONST	objv[];
+static int glue_digest_region(ClientData cdata, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*src;
 	int				x, y, w, h;
 	unsigned int	r, g, b, a;
 	Tcl_Obj			*res;
 
-	CHECK_ARGS(5, "src x y w h");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("src x y w h");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x));
@@ -468,14 +469,14 @@ static int glue_digest_region(cdata, interp, objc, objv) //{{{1
 
 
 // box dest x y w h colour flags {{{1
-static int glue_box(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_box(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t *	pmap;
 	int				x, y, w, h, flags;
 	_pel			colour;
 	
-	CHECK_ARGS(7, "dest x y w h colour flags");
+	enum {A_cmd, A_objc=8}; CHECK_ARGS("dest x y w h colour flags");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x));
@@ -492,14 +493,14 @@ static int glue_box(ClientData *foo, Tcl_Interp *interp,
 
 
 // line x1 y1 x2 y2 colour pmap {{{1
-static int glue_line(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_line(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	int				x1, y1, x2, y2;
 	_pel			col;
 	gimp_image_t	*dest;
 	
-	CHECK_ARGS(6, "x1 y1 x2 y2 colour pmap");
+	enum {A_cmd, A_objc=7}; CHECK_ARGS("x1 y1 x2 y2 colour pmap");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &x1));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &y1));
@@ -514,14 +515,14 @@ static int glue_line(ClientData *foo, Tcl_Interp *interp,
 }
 
 // line_aa x1 y1 x2 y2 colour pmap {{{1
-static int glue_line_aa(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_line_aa(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	int				x1, y1, x2, y2;
 	_pel			col;
 	gimp_image_t	*dest;
 	
-	CHECK_ARGS(6, "x1 y1 x2 y2 colour pmap");
+	enum {A_cmd, A_objc=7}; CHECK_ARGS("x1 y1 x2 y2 colour pmap");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &x1));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &y1));
@@ -537,15 +538,15 @@ static int glue_line_aa(ClientData *foo, Tcl_Interp *interp,
 
 
 // line_aa_osa x1 y1 x2 y2 colour osa pmap {{{1
-static int glue_line_aa_osa(ClientData *foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+static int glue_line_aa_osa(ClientData foo, Tcl_Interp *interp,
+		int objc, Tcl_Obj *const objv[])
 {
 	double			x1, y1, x2, y2;
 	int				osa;
 	_pel			col;
 	gimp_image_t	*dest;
 	
-	CHECK_ARGS(7, "x1 y1 x2 y2 colour osa pmap");
+	enum {A_cmd, A_objc=8}; CHECK_ARGS("x1 y1 x2 y2 colour osa pmap");
 
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &x1));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &y1));
@@ -565,7 +566,7 @@ static int glue_pmapf_new(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Ob
 {
 	int				width, height;
 
-	CHECK_ARGS(2, "width height");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("width height");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &width));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &height));
@@ -579,7 +580,7 @@ static int glue_pmapf_to_pmap(ClientData cdata, Tcl_Interp* interp, int objc, Tc
 {
 	struct pmapf*	pmapf;
 
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &pmapf));
 	Tcl_SetObjResult(interp, Tcl_NewPMAPObj(pmapf_to_pmap(pmapf)));
@@ -592,7 +593,7 @@ static int glue_pmap_to_pmapf(ClientData cdata, Tcl_Interp* interp, int objc, Tc
 {
 	gimp_image_t*	pmap;
 
-	CHECK_ARGS(1, "pmap");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmap");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(pmap_to_pmapf(pmap)));
@@ -603,14 +604,14 @@ static int glue_pmap_to_pmapf(ClientData cdata, Tcl_Interp* interp, int objc, Tc
 
 // bezier x1 y1 cpx1 cpy1 cpx2 cpy2 x2 y2 colour osa pmap {{{1
 static int glue_bezier(ClientData foo, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	double			x1, y1, cpx1, cpy1, cpx2, cpy2, x2, y2;
 	int				osa;
 	_pel			col;
 	gimp_image_t	*dest;
 	
-	CHECK_ARGS(11, "x1 y1 cpx1 cpy1 cpx2 cpy2 x2 y2 colour osa pmap");
+	enum {A_cmd, A_objc=12}; CHECK_ARGS("x1 y1 cpx1 cpy1 cpx2 cpy2 x2 y2 colour osa pmap");
 
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &x1));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &y1));
@@ -633,7 +634,8 @@ static int glue_bezier(ClientData foo, Tcl_Interp *interp,
 int Pixel_GetPELFFromObj(Tcl_Interp* interp, Tcl_Obj* obj, pelf* out) // Temporary: make this a proper Tcl_ObjType {{{
 {
 	Tcl_Obj**	ov;
-	int			oc, c;
+	Tcl_Size	oc;
+	int			c;
 
 	if (Tcl_ListObjGetElements(interp, obj, &oc, &ov) != TCL_OK)
 		return TCL_ERROR;
@@ -656,7 +658,7 @@ static int glue_gradient_radial(ClientData cdata, Tcl_Interp* interp, int objc, 
 	int				width, height;
 	pelf			centre_colour, outer_colour;
 
-	CHECK_ARGS(4, "width height centre_colour outer_colour");
+	enum {A_cmd, A_objc=5}; CHECK_ARGS("width height centre_colour outer_colour");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &width));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &height));
@@ -674,7 +676,7 @@ static int glue_gradient_linear_v(ClientData cdata, Tcl_Interp* interp, int objc
 	int				width, height;
 	pelf			top_colour, bottom_colour;
 
-	CHECK_ARGS(4, "width height top_colour bottom_colour");
+	enum {A_cmd, A_objc=5}; CHECK_ARGS("width height top_colour bottom_colour");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &width));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &height));
@@ -694,7 +696,7 @@ static int glue_pmapf_alpha_over(ClientData cdata, Tcl_Interp* interp, int objc,
 	struct pmapf*	src = NULL;
 	struct pmapf*	out = NULL;
 
-	CHECK_ARGS(4, "dest src x y");
+	enum {A_cmd, A_objc=5}; CHECK_ARGS("dest src x y");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &dest));
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[2], &src));
@@ -714,7 +716,7 @@ static int glue_pmapf_rotate_90(ClientData cdata, Tcl_Interp* interp, int objc, 
 	struct pmapf*	src = NULL;
 	struct pmapf*	out = NULL;
 
-	CHECK_ARGS(2, "src quads");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("src quads");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &quads));
@@ -732,7 +734,7 @@ static int glue_pmapf_cut(ClientData cdata, Tcl_Interp *interp, int objc, Tcl_Ob
 	struct pmapf* restrict	new = NULL;
 	int						x1, y1, x2, y2;
 	
-	CHECK_ARGS(5, "src x1 y1 x2 y2");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("src x1 y1 x2 y2");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &x1));
@@ -749,14 +751,14 @@ static int glue_pmapf_cut(ClientData cdata, Tcl_Interp *interp, int objc, Tcl_Ob
 
 
 static int glue_rle_encode(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap;
 	unsigned char	*rle_data;
 	unsigned int	len;
 	int				status;
 
-	CHECK_ARGS(1, "pmap");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmap");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 
@@ -771,16 +773,16 @@ static int glue_rle_encode(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_rle_decode(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap;
 	unsigned char	*rle_data;
-	unsigned int	len;
+	Tcl_Size		len;
 	int				status;
 
-	CHECK_ARGS(1, "rle_data");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("rle_data");
 
-	rle_data = Tcl_GetByteArrayFromObj(objv[1], (int *)&len);
+	rle_data = Tcl_GetByteArrayFromObj(objv[1], &len);
 
 	pmap = rle_decode(rle_data, len, &status);
 	if (pmap == NULL)
@@ -793,7 +795,7 @@ static int glue_rle_decode(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 #ifdef BMP_CRUFT
 	gimp_image_t	*pmap;
@@ -804,7 +806,7 @@ static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
 	unsigned char	*d;
 #endif
 
-	CHECK_ARGS(1, "pmap");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmap");
 
 #ifndef BMP_CRUFT
 	THROW_ERROR("Need to rewrite bmp code");
@@ -856,7 +858,7 @@ static int glue_pmap2bmp(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_pmap_sub(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap1, *pmap2;
 	_pel			*s1, *s2, *d;
@@ -865,7 +867,7 @@ static int glue_pmap_sub(ClientData foo, Tcl_Interp *interp, //{{{1
 	int				i, total;
 	gimp_image_t	*new;
 
-	CHECK_ARGS(2, "pmap1 pmap2");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap1 pmap2");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap1));
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[2], &pmap2));
@@ -911,7 +913,7 @@ static int glue_pmap_sub(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_channel_histogram(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap;
 	_pel			*s;
@@ -922,7 +924,7 @@ static int glue_channel_histogram(ClientData foo, Tcl_Interp *interp, //{{{1
 	int				count_b[256];
 	int				count_a[256];
 
-	CHECK_ARGS(1, "pmap");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmap");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 
@@ -969,14 +971,14 @@ static int glue_channel_histogram(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_flatten_sv(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap;
 	_pel			*s;
 	int				i, total;
 	double			h, xs, xv, new_s, new_v;
 
-	CHECK_ARGS(3, "pmap s v");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("pmap s v");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &new_s));
@@ -1005,13 +1007,13 @@ static int glue_flatten_sv(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_rgb2hsv(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	int			r, g, b;
 	double		h, s, v;
 	Tcl_Obj		*res;
 
-	CHECK_ARGS(3, "r g b");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("r g b");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &r));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &g));
@@ -1032,13 +1034,13 @@ static int glue_rgb2hsv(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_hsv2rgb(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	unsigned char	r, g, b;
 	double			h, s, v;
 	Tcl_Obj			*res;
 
-	CHECK_ARGS(3, "h s v");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("h s v");
 
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[1], &h));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &s));
@@ -1059,7 +1061,7 @@ static int glue_hsv2rgb(ClientData foo, Tcl_Interp *interp, //{{{1
 
 
 static int glue_process_image_hsv(ClientData foo, Tcl_Interp *interp, //{{{1
-		int objc, Tcl_Obj *CONST objv[])
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap;
 	_pel			*s;
@@ -1068,11 +1070,11 @@ static int glue_process_image_hsv(ClientData foo, Tcl_Interp *interp, //{{{1
 	Tcl_Obj			*cb;
 	Tcl_Obj			*o[5];
 	Tcl_Obj			**newvals;
-	int				new_c;
+	Tcl_Size		new_c;
 	double			nh, ns, nv;
 	int				na;
 
-	CHECK_ARGS(2, "pmap cb");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmap cb");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 	cb = objv[2];
@@ -1129,17 +1131,14 @@ static int glue_process_image_hsv(ClientData foo, Tcl_Interp *interp, //{{{1
 }
 
 
-static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
-	ClientData		cdata;
-	Tcl_Interp		*interp;
-	int				objc;
-	Tcl_Obj *CONST	objv[];
+static int glue_scale_pmap(ClientData cdata, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *const objv[])
 {
 	gimp_image_t	*pmap;
 	gimp_image_t	*scaled;
 	int				new_w, new_h;
 
-	CHECK_ARGS(3, "src new_width new_height");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("src new_width new_height");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &pmap));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
@@ -1161,16 +1160,13 @@ static int glue_scale_pmap(cdata, interp, objc, objv) //{{{1
 }
 
 
-static int glue_image_mimetype(cdata, interp, objc, objv) //{{{1
-	ClientData		cdata;
-	Tcl_Interp		*interp;
-	int				objc;
-	Tcl_Obj *CONST	objv[];
+static int glue_image_mimetype(ClientData cdata, Tcl_Interp *interp, //{{{1
+		int objc, Tcl_Obj *const objv[])
 {
 	unsigned char*	bytes;
-	int				len;
+	Tcl_Size		len;
 
-	CHECK_ARGS(1, "bytes");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("bytes");
 
 	bytes = Tcl_GetByteArrayFromObj(objv[1], &len);
 
@@ -1418,7 +1414,7 @@ static int glue_scale_pmap_lanczos(ClientData cdata, Tcl_Interp* interp, int obj
 	int				new_w, new_h, xi, yi;
 	double			x, y;	// interpolated coordinates in the source for the new sample
 
-	CHECK_ARGS(3, "pmap width height");
+	enum {A_cmd, A_objc=4}; CHECK_ARGS("pmap width height");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_w));
@@ -1483,7 +1479,7 @@ static int glue_dump_pmapf(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_O
 	int				x, y, c;
 	Tcl_Obj*		res = Tcl_NewObj();
 
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &t));
 
@@ -1510,7 +1506,7 @@ static int glue_invert(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* 
 	pelf*			i;
 	pelf*			o;
 
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
 	out = pmapf_new(in->width, in->height);
@@ -1540,7 +1536,7 @@ static int glue_neg(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* con
 	pelf* restrict	i;
 	pelf* restrict	o;
 
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
 	out = pmapf_new(in->width, in->height);
@@ -1567,7 +1563,7 @@ static int glue_mul(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* con
 	struct pmapf*	dst = NULL;
 	double			factor;
 
-	CHECK_ARGS(2, "pmapf factor");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmapf factor");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &factor));
@@ -1603,7 +1599,7 @@ static int glue_add(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* con
 	pelf*			b;
 	pelf*			o;
 
-	CHECK_ARGS(2, "pmapf_a pmapf_b");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmapf_a pmapf_b");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &pmapf_a));
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[2], &pmapf_b));
@@ -1639,7 +1635,7 @@ static int glue_fade(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* co
 	pelf*			i;
 	pelf*			o;
 
-	CHECK_ARGS(2, "pmapf factor");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmapf factor");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[2], &factor));
@@ -1678,7 +1674,7 @@ static int glue_clamp(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* c
 	pelf*			i;
 	pelf*			o;
 
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
 
@@ -1706,7 +1702,7 @@ static int glue_mirror_x(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	pelf* restrict	i;
 	pelf* restrict	o;
 
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &in));
 
@@ -1741,7 +1737,7 @@ static int glue_mirror_y(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	pelf* restrict	s;
 	pelf* restrict	d;
 
-	CHECK_ARGS(1, "pmapf");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmapf");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 
@@ -1783,7 +1779,7 @@ static int glue_depixelize(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_O
 	gimp_image_t*	in = NULL;
 	gimp_image_t*	out = NULL;
 
-	CHECK_ARGS(1, "pmap");
+	enum {A_cmd, A_objc=2}; CHECK_ARGS("pmap");
 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[1], &in));
 
@@ -1896,7 +1892,7 @@ static int glue_closeup(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj*
 	struct pmapf*	src = NULL;
 	struct pmapf*	dst = NULL;
 
-	CHECK_ARGS(2, "pmapf factor");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmapf factor");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &factor));
@@ -1934,7 +1930,7 @@ static int glue_closeup_grid(ClientData cdata, Tcl_Interp* interp, int objc, Tcl
 	struct pmapf*	src = NULL;
 	struct pmapf*	dst = NULL;
 
-	CHECK_ARGS(2, "pmapf factor");
+	enum {A_cmd, A_objc=3}; CHECK_ARGS("pmapf factor");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[1], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &factor));
@@ -1978,7 +1974,7 @@ static int glue_checkerboard(ClientData cdata, Tcl_Interp* interp, int objc, Tcl
 
 	struct pmapf*	dst = NULL;
 
-	CHECK_ARGS(5, "width height size col1 col1");
+	enum {A_cmd, A_objc=6}; CHECK_ARGS("width height size col1 col1");
 
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[1], &new_w));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[2], &new_h));
@@ -2011,7 +2007,7 @@ static int glue_checkerboard(ClientData cdata, Tcl_Interp* interp, int objc, Tcl
 //}}}
 int Pixel_Init(Tcl_Interp *interp) // {{{1
 {
-	if (Tcl_InitStubs(interp, "8.1", 0) == NULL) return TCL_ERROR;
+	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) return TCL_ERROR;
 
 	Tcl_RegisterObjType(&tcl_pmap);
 
@@ -2085,7 +2081,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 
 	TEST_OK(initvars(interp));
 
-	TEST_OK(Tcl_PkgProvideEx(interp, PACKAGE_NAME, PACKAGE_VERSION, &pixelStubs));
+	TEST_OK(Tcl_PkgProvideEx(interp, PACKAGE_NAME, PACKAGE_VERSION, (void *)pixelConstStubsPtr));
 
 	return TCL_OK;
 }
