@@ -1,5 +1,5 @@
 project('pixel', 'c',
-  version:          '4.1',
+  version:          '4.2',
   default_options:  ['c_std=c2y,c23,c2x', 'warning_level=3', 'werror=true'],
   meson_version:    '>=1.3.0',
 )
@@ -17,6 +17,10 @@ add_project_arguments('-Wno-missing-field-initializers', language: 'c')
 conf = configuration_data()
 conf.set10('TESTMODE', get_option('testmode'))
 conf.set10('DEBUG',    get_option('debugmode'))
+
+# C23's unreachable() macro lives in <stddef.h>; not all compilers/std modes
+# provide it, so detect it and fall back to a compiler builtin in pixelInt.h.
+conf.set10('HAVE_UNREACHABLE', cc.has_header_symbol('stddef.h', 'unreachable'))
 
 tea_want_shims  = ['tip445']
 tea_want_defer  = true
