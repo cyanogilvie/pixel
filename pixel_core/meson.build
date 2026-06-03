@@ -1,5 +1,5 @@
 project('pixel', 'c',
-  version:          '4.2',
+  version:          '4.3',
   default_options:  ['c_std=c2y,c23,c2x', 'warning_level=3', 'werror=true'],
   meson_version:    '>=1.3.0',
 )
