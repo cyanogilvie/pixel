@@ -102,10 +102,8 @@ declare 33 generic {
 	int Tcl_GetPMAPFromObj(Tcl_Interp * interp, Tcl_Obj * obj, gimp_image_t ** pmap)
 }
 declare 34 generic {
-	const unsigned char *read_vfs_file(const char *filename, Tcl_Size *len, int binary)
 }
 declare 35 generic {
-	int read_vfs_file2(Tcl_Interp *interp, const char *filename, unsigned char **buf, Tcl_Size *len, int binary)
 }
 declare 36 generic {
 	gimp_image_t *rle_decode(const unsigned char *rle_data, unsigned int data_len, int *status)

@@ -1,13 +1,9 @@
-#if HAVE_CONFIG_H
-#	include <config.h>
-#endif
-
 #undef USE_TCL_STUBS
 #undef USE_PIXEL_STUBS
 #define USE_TCL_STUBS 1
 #define USE_PIXEL_STUBS 1
 
-#include "pixel.h"
+#include <pixelInt.h>
 
 MODULE_SCOPE const PixelStubs*	pixelStubsPtr;
 const PixelStubs*				pixelStubsPtr = NULL;

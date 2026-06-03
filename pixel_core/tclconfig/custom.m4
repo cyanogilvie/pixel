@@ -1,2 +1,0 @@
-AC_DEFUN([SETUP_ASSEMBLER], [
-])

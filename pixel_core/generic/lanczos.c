@@ -1,4 +1,4 @@
-#include "pixel.h"
+#include <pixelInt.h>
 
 #define PI			3.141592653589793
 
@@ -7,7 +7,6 @@
 #define FIXED_BITS	22		// Max is min(fixedpoint's bits-10, uint64_t's bits/2-1)
 #define FIXED_TO_DOUBLE(f) ((f) / (double)(1LL<<FIXED_BITS))
 
-static inline int max(const int i1, const int i2) { return i1 > i2 ? i1 : i2; }
 static inline int min(const int i1, const int i2) { return i1 < i2 ? i1 : i2; }
 
 typedef int32_t fixedpoint;
@@ -82,21 +81,21 @@ static void make_kern_float2(float* restrict kern, const int wt, const float f, 
 }
 
 //}}}
-static int glue_kern_vis(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_kern_vis(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	gimp_image_t*	out = NULL;
 	int				width, height, x, k, yofs, from_x, from_y, to_x, to_y, wt, w;
 	fixedpoint*		kern = NULL;
 	double			frac, f, kf, k0;
-	fixedpoint		min = 256LL<<FIXED_BITS, max = -256LL<<FIXED_BITS;
+	fixedpoint		min = 256LL<<FIXED_BITS, max = -(256LL<<FIXED_BITS);
 	double			minf, maxf, xf, yf;
-	_pel			red = (_pel)(uint32_t)0xffff0000;
-	_pel			green = (_pel)(uint32_t)0xff00ff00;
-	_pel			lightgreen = (_pel)(uint32_t)0xffa0ffa0;
-	_pel			black = (_pel)(uint32_t)0xffffffff;
-	_pel			white = (_pel)(uint32_t)0xff000000;
-	_pel			grey = (_pel)(uint32_t)0xffa0a0a0;
-	_pel			yellow = (_pel)(uint32_t)0xffffff00;
+	_pel			red = {.c = 0xffff0000};
+	_pel			green = {.c = 0xff00ff00};
+	_pel			lightgreen = {.c = 0xffa0ffa0};
+	_pel			black = {.c = 0xffffffff};
+	_pel			white = {.c = 0xff000000};
+	_pel			grey = {.c = 0xffa0a0a0};
+	_pel			yellow = {.c = 0xffffff00};
 
 	enum {A_cmd, A_WIDTH, A_HEIGHT, A_WT, A_F, A_FRAC, A_objc}; CHECK_ARGS("width height wt f frac");
 
@@ -109,7 +108,7 @@ static int glue_kern_vis(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	w = wt*2+1;
 	kern = ckalloc(sizeof(fixedpoint) * w);
 
-	out = pmap_new(width, height, (_pel)(uint32_t)0);
+	out = pmap_new(width, height, (_pel){.c = 0});
 	pmap_clr(out, white);
 	memset(kern, 0, w);
 	make_kern(kern, wt, f, frac, 0, w);
@@ -166,7 +165,6 @@ static int glue_kern_vis(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj
 	}
 
 	// Kernel
-	kf = 0;
 	from_x = 0;
 	from_y = (yofs - h(wt, f, -wt+k-frac) * yf)+.5;
 	for (x=1; x<width; x++) {
@@ -212,9 +210,9 @@ static int glue_scale_pmap_lanczos2(ClientData cdata, Tcl_Interp* interp, int ob
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_HEIGHT], &new_h));
 
 	// Intermediate buffer - scaled down on the horizontal axis
-	//dst = pmap_new(new_w, src->height, (_pel)(uint32_t)0);
-	//dst = pmap_new(src->width, src->height, (_pel)(uint32_t)0);
-	dst = pmap_new(new_w, new_h, (_pel)(uint32_t)0);
+	//dst = pmap_new(new_w, src->height, (_pel){.c = 0});
+	//dst = pmap_new(src->width, src->height, (_pel){.c = 0});
+	dst = pmap_new(new_w, new_h, (_pel){.c = 0});
 
 	//t = (_pel*)malloc(src->width*src->height*sizeof(_pel));
 	t = (_pel*)malloc(dst->width*src->height*sizeof(_pel));
@@ -563,7 +561,7 @@ void lanczos_half_scale_f(_pel* in, _pel* out, const int orig_dim, const int new
 
 
 //}}}
-static int glue_scale_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_scale_pmap_lanczos3(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	gimp_image_t*	src = NULL;
 	gimp_image_t*	dst = NULL;
@@ -580,13 +578,15 @@ static int glue_scale_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int ob
 	if (objc >= 5) {
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
 	} else {
-		if (new_w > src->width) {
+		const int src_w = (int)src->width;
+
+		if (new_w > src_w) {
 			wt = 3;
-		} else if (new_w * 8 < src->width) {
+		} else if (new_w * 8 < src_w) {
 			wt = 15;
-		} else if (new_w * 5 < src->width) {
+		} else if (new_w * 5 < src_w) {
 			wt = 13;
-		} else if (new_w * 3 < src->width) {
+		} else if (new_w * 3 < src_w) {
 			wt = 10;
 		} else {
 			wt = 9;
@@ -594,14 +594,14 @@ static int glue_scale_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int ob
 	}
 
 	// Intermediate buffer - scaled down on the horizontal axis
-	//dst = pmap_new(new_w, src->height, (_pel)(uint32_t)0);
-	//dst = pmap_new(src->width, src->height, (_pel)(uint32_t)0);
-	dst = pmap_new(new_w, new_h, (_pel)(uint32_t)0);
+	//dst = pmap_new(new_w, src->height, (_pel){.c = 0});
+	//dst = pmap_new(src->width, src->height, (_pel){.c = 0});
+	dst = pmap_new(new_w, new_h, (_pel){.c = 0});
 
-	//t = pmap_new(src->width, src->height, (_pel)(uint32_t)0);
+	//t = pmap_new(src->width, src->height, (_pel){.c = 0});
 
 	/*
-	t = pmap_new(dst->width, src->height, (_pel)(uint32_t)0);
+	t = pmap_new(dst->width, src->height, (_pel){.c = 0});
 	// first: scale width
 	lanczos_half_scale(
 			src->pixel_data,	// in
@@ -631,7 +631,7 @@ static int glue_scale_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int ob
 			);
 	*/
 
-	t = pmap_new(src->width, dst->height, (_pel)(uint32_t)0);
+	t = pmap_new(src->width, dst->height, (_pel){.c = 0});
 	// first: scale height
 	lanczos_half_scale(
 			src->pixel_data,	// in
@@ -671,7 +671,7 @@ static int glue_scale_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int ob
 }
 
 //}}}
-static int glue_lowpass_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_lowpass_pmap_lanczos3(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	gimp_image_t*	src = NULL;
 	gimp_image_t*	dst = NULL;
@@ -683,8 +683,8 @@ static int glue_lowpass_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int 
 	TEST_OK(Tcl_GetPMAPFromObj(interp, objv[A_PMAP], &src));
 	TEST_OK(Tcl_GetDoubleFromObj(interp, objv[A_F], &f));
 
-	dst = pmap_new(src->width, src->height, (_pel)(uint32_t)0);
-	t = pmap_new(src->width, dst->height, (_pel)(uint32_t)0);
+	dst = pmap_new(src->width, src->height, (_pel){.c = 0});
+	t = pmap_new(src->width, dst->height, (_pel){.c = 0});
 
 	// first: scale height
 	lanczos_half_scale_f(
@@ -727,7 +727,7 @@ static int glue_lowpass_pmap_lanczos3(ClientData cdata, Tcl_Interp* interp, int 
 }
 
 //}}}
-static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_scale_pmapf_lanczos3(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	struct pmapf*	src = NULL;
 	struct pmapf*	dst = NULL;
@@ -743,13 +743,15 @@ static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int o
 	if (objc >= 5) {
 		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
 	} else {
-		if (new_w > src->width) {
+		const int src_w = (int)src->width;
+
+		if (new_w > src_w) {
 			wt = 4;
-		} else if (new_w * 8 < src->width) {
+		} else if (new_w * 8 < src_w) {
 			wt = 15;
-		} else if (new_w * 5 < src->width) {
+		} else if (new_w * 5 < src_w) {
 			wt = 13;
-		} else if (new_w * 3 < src->width) {
+		} else if (new_w * 3 < src_w) {
 			wt = 10;
 		} else {
 			wt = 9;
@@ -881,7 +883,7 @@ static int glue_scale_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int o
 }
 
 //}}}
-static int glue_shear_pmapf_lanczos_x(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_shear_pmapf_lanczos_x(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	struct pmapf*	src = NULL;
 	struct pmapf*	dst = NULL;
@@ -911,7 +913,7 @@ static int glue_shear_pmapf_lanczos_x(ClientData cdata, Tcl_Interp* interp, int 
 			//const int xdstart = (int)floor(xf);				// [xdstart, xdend] - range of dst pixels that take input from src
 			//const int xdend   = src_w + (int)ceil(xf);
 			pelf* restrict	d = dst->pixel_data + y*dst_w - skip_start;
-			pelf* restrict	s = src->pixel_data + y*src_w;
+			pelf* restrict	s/* = src->pixel_data + y*src_w*/;
 			int				c;
 			const int		xi = xf;
 			const float		frac = (xf-xi);
@@ -1042,7 +1044,7 @@ static int glue_shear_pmapf_lanczos_x(ClientData cdata, Tcl_Interp* interp, int 
 }
 
 //}}}
-static int glue_shear_pmapf_lanczos_y(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_shear_pmapf_lanczos_y(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	struct pmapf*	src = NULL;
 	struct pmapf*	dst = NULL;
@@ -1073,7 +1075,7 @@ static int glue_shear_pmapf_lanczos_y(ClientData cdata, Tcl_Interp* interp, int 
 			//const int ydstart = (int)floor(yf);				// [ydstart, ydend] - range of dst pixels that take input from src
 			//const int ydend   = src_h + (int)ceil(yf);
 			pelf* restrict	d = dst->pixel_data + x - skip_start*dst_w;
-			pelf* restrict	s = src->pixel_data + x;
+			pelf* restrict	s/* = src->pixel_data + x*/;
 			int				c;
 			const int		yi = yf;
 			const float		frac = (yf-yi);
@@ -1203,7 +1205,7 @@ static int glue_shear_pmapf_lanczos_y(ClientData cdata, Tcl_Interp* interp, int 
 }
 
 //}}}
-static int glue_lowpass_pmapf_lanczos3(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_lowpass_pmapf_lanczos3(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	struct pmapf*	src = NULL;
 	struct pmapf*	dst = NULL;

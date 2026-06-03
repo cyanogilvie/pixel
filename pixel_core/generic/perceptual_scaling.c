@@ -1,14 +1,15 @@
-#include "pixel.h"
+#include <pixelInt.h>
 
 static void convValid(struct pmapf* out, struct pmapf* in, const int kern_size) //{{{
 {
-	int		x, y, kx, ky, c;
+	uint32_t	x, y;
+	int			kx, ky, c;
 	pelf*	i;
 	pelf*	o;
 
-	for (y=0; y<in->height-kern_size+1; y++) {
+	for (y=0; y+kern_size<=in->height; y++) {
 		o = out->pixel_data + y*out->width;
-		for (x=0; x<in->width-kern_size+1; x++, o++) {
+		for (x=0; x+kern_size<=in->width; x++, o++) {
 			for (c=0; c<4; c++)
 				o->chan[c] = 0.0f;
 
@@ -29,15 +30,16 @@ static void convValid(struct pmapf* out, struct pmapf* in, const int kern_size) 
 //}}}
 static void convFull(struct pmapf* out, struct pmapf* in, const int kern_size) //{{{
 {
-	int		x, y, kx, ky, c;
+	uint32_t	x, y;
+	int			kx, ky, c;
 	pelf*	i;
 	pelf*	o;
 
 	for (y=0; y<in->height; y++) {
 		o = out->pixel_data + y*out->width;
 		for (x=0; x<in->width; x++, o++) {
-			int		end_ky = y+kern_size <= in->height ? kern_size : in->height - y;
-			int		end_kx = x+kern_size <= in->width  ? kern_size : in->width  - x;
+			int		end_ky = y+kern_size <= in->height ? kern_size : (int)(in->height - y);
+			int		end_kx = x+kern_size <= in->width  ? kern_size : (int)(in->width  - x);
 
 			for (c=0; c<4; c++)
 				o->chan[c] = 0.0f;
@@ -59,7 +61,7 @@ static void convFull(struct pmapf* out, struct pmapf* in, const int kern_size) /
 //}}}
 static void subSample(struct pmapf* out, struct pmapf* in, int interval) //{{{
 {
-	int		x, y;
+	uint32_t	x, y;
 	pelf*	o = out->pixel_data;
 	pelf*	i = NULL;
 
@@ -181,11 +183,12 @@ struct pmapf* pmapf_copy(struct pmapf* src) //{{{
 //}}}
 void dump_pmapf(struct pmapf* pmapf) //{{{
 {
-	int	x, y, c;
+	uint32_t	x, y;
+	int			c;
 
 	for (y=0; y<pmapf->height; y++) {
 		for (x=0; x<pmapf->width; x++) {
-			fprintf(stderr, "(%d, %d):", x, y);
+			fprintf(stderr, "(%u, %u):", x, y);
 			for (c=0; c<4; c++)
 				fprintf(stderr, " %.3f", pmapf->pixel_data[y*pmapf->width+x].chan[c]);
 			fprintf(stderr, "\n");
@@ -194,7 +197,7 @@ void dump_pmapf(struct pmapf* pmapf) //{{{
 }
 
 //}}}
-static void squish(struct pmapf* pmapf) //{{{
+[[maybe_unused]] static void squish(struct pmapf* pmapf) //{{{
 {
 	float		max = -1e6f, min = 1e6f, range, bump, f=1.0f;
 	int			c, remain;
@@ -236,52 +239,30 @@ static void clamp(struct pmapf* pmapf) //{{{
 struct pmapf* scale_perceptual(struct pmapf* H, int s, int np) //{{{
 {
 	// Parameter and local variable names chosen to correspond with https://graphics.ethz.ch/~cengizo/Files/Sig15PerceptualDownscaling.pdf
-	/*
-	int				width = .5 + H->width / s;
-	int				height = .5 + H->height / s;
-	*/
 	int				width = H->width / s;
 	int				height = H->height / s;
 	int				sqrt_np = sqrtf(np);
-	int				c;
 	pelf			white, black;
-	struct pmapf*	tb = NULL;
-	struct pmapf*	tb2 = NULL;
-	struct pmapf*	t = NULL;
-	struct pmapf*	t2 = NULL;
-	struct pmapf*	tc = NULL;
-	struct pmapf*	L = NULL;
-	struct pmapf*	L2 = NULL;
-	struct pmapf*	M = NULL;
-	struct pmapf*	Sl = NULL;
-	struct pmapf*	Sh = NULL;
-	struct pmapf*	R = NULL;
-	struct pmapf*	Im = NULL;
-	struct pmapf*	N = NULL;
-	struct pmapf*	T = NULL;
-	struct pmapf*	D = NULL;
 
-	for (c=0; c<4; c++) {
+	for (int c=0; c<4; c++) {
 		white.chan[c] = 1.0f;
 		black.chan[c] = 0.0f;
 	}
 
-	tb = pmapf_new(H->width, H->height);
-	tb2 = pmapf_new(H->width, H->height);
-	t = pmapf_new(width, height);
-	t2 = pmapf_new(width, height);
-	L = pmapf_new(width, height);
-	L2 = pmapf_new(width, height);
-	M = pmapf_new(width, height);
-	Sl = pmapf_new(width, height);
-	Sh = pmapf_new(width, height);
-	R = pmapf_new(width, height);
-	Im = pmapf_new(width, height);
-	N = pmapf_new(width, height);
-	T = pmapf_new(width, height);
-	M = pmapf_new(width, height);
-	R = pmapf_new(width, height);
-	D = pmapf_new(width, height);
+	struct pmapf*	tb  = pmapf_new(H->width, H->height); defer { pmapf_free(&tb);  }
+	struct pmapf*	tb2 = pmapf_new(H->width, H->height); defer { pmapf_free(&tb2); }
+	struct pmapf*	t   = pmapf_new(width, height);       defer { pmapf_free(&t);   }
+	struct pmapf*	t2  = pmapf_new(width, height);       defer { pmapf_free(&t2);  }
+	struct pmapf*	L   = pmapf_new(width, height);       defer { pmapf_free(&L);   }
+	struct pmapf*	L2  = pmapf_new(width, height);       defer { pmapf_free(&L2);  }
+	struct pmapf*	M   = pmapf_new(width, height);       defer { pmapf_free(&M);   }
+	struct pmapf*	Sl  = pmapf_new(width, height);       defer { pmapf_free(&Sl);  }
+	struct pmapf*	Sh  = pmapf_new(width, height);       defer { pmapf_free(&Sh);  }
+	struct pmapf*	R   = pmapf_new(width, height);       defer { pmapf_free(&R);   }
+	struct pmapf*	Im  = pmapf_new(width, height);       defer { pmapf_free(&Im);  }
+	struct pmapf*	N   = pmapf_new(width, height);       defer { pmapf_free(&N);   }
+	struct pmapf*	T   = pmapf_new(width, height);       defer { pmapf_free(&T);   }
+	struct pmapf*	D   = pmapf_new(width, height);       // returned to caller
 
 	pmapf_clr(tb, black);
 	pmapf_clr(tb2, black);
@@ -296,8 +277,6 @@ struct pmapf* scale_perceptual(struct pmapf* H, int s, int np) //{{{
 	//pmapf_clr(Im, black);
 	pmapf_clr(N, black);
 	pmapf_clr(T, black);
-	pmapf_clr(M, black);
-	pmapf_clr(R, black);
 	pmapf_clr(D, black);
 
 	clamp(H);
@@ -350,26 +329,20 @@ struct pmapf* scale_perceptual(struct pmapf* H, int s, int np) //{{{
 	fprintf(stderr, "10: T\n"); dump_pmapf(T);
 
 	// 11: M ←  convFull(M, P(sqrt(np)))
-	tc = pmapf_copy(M);
-	convFull(M, tc, sqrt_np);
-	pmapf_free(&tc);
+	{
+		struct pmapf*	tc = pmapf_copy(M); defer { pmapf_free(&tc); }
+		convFull(M, tc, sqrt_np);
+	}
 	fprintf(stderr, "11: M\n"); dump_pmapf(M);
 
 	// 12: R ←  convFull(R, P(sqrt(np)))
-	tc = pmapf_copy(R);
-	convFull(R, tc, sqrt_np);
-	pmapf_free(&tc);
+	{
+		struct pmapf*	tc = pmapf_copy(R); defer { pmapf_free(&tc); }
+		convFull(R, tc, sqrt_np);
+	}
 	fprintf(stderr, "12: R\n"); dump_pmapf(R);
 
 	// 13: D ←  (M + R × L − T)/N
-	/*
-	tc = pmapf_copy(M);
-	pmapf_add(tc, R);
-	pmapf_mul_into(D, tc, L);
-	pmapf_free(&tc);
-	pmapf_sub(D, T);
-	pmapf_div(D, N);
-	*/
 	pmapf_mul_into(D, R, L);
 	pmapf_add(D, M);
 	pmapf_sub(D, T);
@@ -378,26 +351,12 @@ struct pmapf* scale_perceptual(struct pmapf* H, int s, int np) //{{{
 	fprintf(stderr, "13: D/N\n"); dump_pmapf(D);
 	//squish(D);
 
-	pmapf_free(&tb);
-	pmapf_free(&tb2);
-	pmapf_free(&t);
-	pmapf_free(&t2);
-	pmapf_free(&L);
-	pmapf_free(&L2);
-	pmapf_free(&M);
-	pmapf_free(&Sl);
-	pmapf_free(&Sh);
-	pmapf_free(&R);
-	pmapf_free(&Im);
-	pmapf_free(&N);
-	pmapf_free(&T);
-
 	return D;
 }
 
 //}}}
 
-static int glue_scale_perceptual(ClientData cdata, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
+static int glue_scale_perceptual(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	int				factor, patch_size=4;
 	struct pmapf*	in = NULL;

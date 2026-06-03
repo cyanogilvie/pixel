@@ -5,8 +5,10 @@ if {"::tcltest" ni [namespace children]} {
 	namespace import ::tcltest::*
 }
 
-package require Pixel
+::tcltest::loadTestedCommands
 package require Pixel_jpeg
+
+set here	[file dirname [file normalize [info script]]]
 
 proc readbin fn { #<<<
 	set h	[open $fn rb]
@@ -20,7 +22,7 @@ proc readbin fn { #<<<
 #>>>
 
 test scale_lanczos-1.1 {scale down, landscape} -body { #<<<
-	set p	[pixel::pmap_to_pmapf [pixel::jpeg::decodejpeg [readbin tests/test.jpg]]]
+	set p	[pixel::pmap_to_pmapf [pixel::jpeg::decodejpeg [readbin [file join $here test.jpg]]]]
 	set p	[pixel scale_pmapf_lanczos $p 180 20]
 	pixel pmapf_info $p
 } -cleanup {
@@ -28,7 +30,7 @@ test scale_lanczos-1.1 {scale down, landscape} -body { #<<<
 } -result {180 20}
 #>>>
 test scale_lanczos-2.1 {scale down, portrait} -body { #<<<
-	set p	[pixel pmapf_rotate_90 [pixel pmap_to_pmapf [pixel::jpeg::decodejpeg [readbin tests/test.jpg]]] 1]
+	set p	[pixel pmapf_rotate_90 [pixel pmap_to_pmapf [pixel::jpeg::decodejpeg [readbin [file join $here test.jpg]]]] 1]
 	set p	[pixel scale_pmapf_lanczos $p 20 180]
 	pixel pmapf_info $p
 } -cleanup {

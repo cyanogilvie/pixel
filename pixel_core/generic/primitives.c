@@ -1,12 +1,8 @@
-#include "pixel.h"
+#include <pixelInt.h>
 #include "2d_lookups.h"
 
 
-void box(dest, x, y, w, h, colour, flags) //{{{
-	gimp_image_t	*dest;
-	int				x, y, w, h;
-	_pel			colour;
-	int				flags;
+void box(gimp_image_t *dest, int x, int y, int w, int h, _pel colour, int flags) //{{{
 {
 	//uint32		c;
 	int			l;
@@ -231,8 +227,8 @@ void line_aa_osa(double x1, double y1, double x2, double y2, _pel col, int osa, 
 	double		major;
 	int			steps;
 
-	if ( abs(y2-y1) > abs(x2-x1) ) {
-		major = abs(y2-y1);
+	if ( fabs(y2-y1) > fabs(x2-x1) ) {
+		major = fabs(y2-y1);
 		if (y1 > y2) {
 			hold = y1;
 			y1 = y2;
@@ -242,7 +238,7 @@ void line_aa_osa(double x1, double y1, double x2, double y2, _pel col, int osa, 
 			x2 = hold;
 		}
 	} else {
-		major = abs(x2-x1);
+		major = fabs(x2-x1);
 		if (x1 > x2) {
 			hold = y1;
 			y1 = y2;
@@ -333,7 +329,7 @@ void line_aa_osa(double x1, double y1, double x2, double y2, _pel col, int osa, 
 //}}}
 
 // 4 point bezier curves:
-// B(u) = p * (1 - u)³ + p  * 3 * u * (1 - u)² + p * 3 * u² * (1 - u) + p
+// B(u) = p * (1 - u)ï¿½ + p  * 3 * u * (1 - u)ï¿½ + p * 3 * uï¿½ * (1 - u) + p
 //         0              1                       2                      3
 void bezier(double x1, double y1, double cpx1, double cpy1, double cpx2, double cpy2, double x2, double y2, _pel colour, int osa, gimp_image_t *dest) //{{{
 {
@@ -347,14 +343,14 @@ void bezier(double x1, double y1, double cpx1, double cpy1, double cpx2, double 
 
 	// Length estimation <<<
 	lacc = 0;
-	dx = abs(cpx1 - x1);
-	dy = abs(cpy1 - y1);
+	dx = fabs(cpx1 - x1);
+	dy = fabs(cpy1 - y1);
 	lacc += sqrt(dx*dx + dy*dy);
-	dx = abs(cpx2 - cpx1);
-	dy = abs(cpy2 - cpy1);
+	dx = fabs(cpx2 - cpx1);
+	dy = fabs(cpy2 - cpy1);
 	lacc += sqrt(dx*dx + dy*dy);
-	dx = abs(x2 - cpx2);
-	dy = abs(y2 - cpy2);
+	dx = fabs(x2 - cpx2);
+	dy = fabs(y2 - cpy2);
 	lacc += sqrt(dx*dx + dy*dy);
 	// Length estimation >>>
 
@@ -378,7 +374,8 @@ void bezier(double x1, double y1, double cpx1, double cpy1, double cpx2, double 
 
 struct pmapf* pmapf_gradient_radial(int width, int height, pelf* centre_colour, pelf* outer_colour) //{{{
 {
-	int				x, y, c;
+	uint32_t		x, y;
+	int				c;
 	float			cx, cy, max_dist;
 	struct pmapf*	dest = NULL;
 	pelf*			d;
@@ -409,7 +406,8 @@ struct pmapf* pmapf_gradient_radial(int width, int height, pelf* centre_colour, 
 //}}}
 struct pmapf* pmapf_gradient_linear_v(int width, int height, pelf* top_colour, pelf* bottom_colour) //{{{
 {
-	int				x, y, c;
+	uint32_t		x, y;
+	int				c;
 	struct pmapf*	dest = NULL;
 	pelf*			d;
 	pelf			diff;

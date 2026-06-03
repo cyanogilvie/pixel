@@ -2,9 +2,7 @@
  * Distilled from the Imlib2 library
  */
 
-#include "pixel.h"
-#include <stdlib.h>
-#include <string.h>
+#include <pixelInt.h>
 
 // Macros <<<
 #define CLIP(x, y, w, h, xx, yy, ww, hh) \
@@ -169,36 +167,32 @@ static int *CalcXPoints(int sw, int dw) // Return an array of dw+1 coords interp
 //>>>
 static ScaleInfo *CalcScaleInfo(gimp_image_t *im, int sw, int sh, int dw, int dh) //<<<
 {
-	ScaleInfo     *isi;
 	int                 scw, sch;
 
 	scw = dw * im->width / sw;
 	sch = dh * im->height / sh;
 
-	isi = malloc(sizeof(ScaleInfo));
-	if (!isi)
-		return NULL;
-	memset(isi, 0, sizeof(ScaleInfo));
+	ScaleInfo*	isi = malloc(sizeof(ScaleInfo));
+	if (!isi) return NULL;
+	*isi = (ScaleInfo){0};
+	defer { if (isi) FreeScaleInfo(isi); }
 
 	isi->xup_yup = (abs(dw) >= sw) + ((abs(dh) >= sh) << 1);
 
 	isi->xpoints = CalcXPoints(im->width, scw);
-	if (!isi->xpoints)
-		return FreeScaleInfo(isi);
-	isi->ypoints = CalcYPoints((DATA32 *)im->pixel_data, im->width, im->height,
-			sch);
-	if (!isi->ypoints)
-		return FreeScaleInfo(isi);
+	if (!isi->xpoints) return NULL;
+	isi->ypoints = CalcYPoints((DATA32 *)im->pixel_data, im->width, im->height, sch);
+	if (!isi->ypoints) return NULL;
 
 	isi->xapoints = CalcApoints(im->width, scw, 0, 0, isi->xup_yup & 1);
-	if (!isi->xapoints)
-		return FreeScaleInfo(isi);
+	if (!isi->xapoints) return NULL;
 
 	isi->yapoints = CalcApoints(im->height, sch, 0, 0, isi->xup_yup & 2);
-	if (!isi->yapoints)
-		return FreeScaleInfo(isi);
+	if (!isi->yapoints) return NULL;
 
-	return isi;
+	ScaleInfo*	out = isi;
+	isi = NULL;		// transfer ownership to caller; suppress deferred free
+	return out;
 }
 
 //>>>
@@ -518,16 +512,14 @@ gimp_image_t *scale_pmap( //<<<
 		int ssx, int ssy, int ssw, int ssh,
 		int ddx, int ddy, int ddw, int ddh)
 {
-	ScaleInfo		*scaleinfo = NULL;
-	DATA32			*buf = NULL;
 	int				sx, sy, sw, sh, dx, dy, dw, dh, dxx, dyy, y2, x2;
 	int				psx, psy, psw, psh;
 	int				y, h, hh;
-	gimp_image_t	*dst;
 	_pel			init;
 
 	init.c = 0;
-	dst = pmap_new(abs(ddw), abs(ddh), init);
+	gimp_image_t*	dst = pmap_new(abs(ddw), abs(ddh), init);
+	defer { if (dst) pmap_free(&dst); }
 	// We will be overwriting all the dst pixels, so don't bother to blank
 
 	sx = ssx;
@@ -547,7 +539,7 @@ gimp_image_t *scale_pmap( //<<<
 	psy = sy;
 	psw = sw;
 	psh = sh;
-	CLIP(sx, sy, sw, sh, 0, 0, src->width, src->height);
+	CLIP(sx, sy, sw, sh, 0, 0, (int)src->width, (int)src->height);
 	if (psx != sx)
 		dx += ((sx - psx) * abs(ddw)) / ssw;
 	if (psy != sy)
@@ -565,13 +557,13 @@ gimp_image_t *scale_pmap( //<<<
 	psh = dh;
 	x2 = sx;
 	y2 = sy;
-	CLIP(dx, dy, dw, dh, 0, 0, dst->width, dst->height);
+	CLIP(dx, dy, dw, dh, 0, 0, (int)dst->width, (int)dst->height);
 	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
 		return NULL;
-	if (psx != dx)
-		sx += ((dx - psx) * ssw) / abs(ddw);
-	if (psy != dy)
-		sy += ((dy - psy) * ssh) / abs(ddh);
+	//if (psx != dx)
+	//	sx += ((dx - psx) * ssw) / abs(ddw);
+	//if (psy != dy)
+	//	sy += ((dy - psy) * ssh) / abs(ddh);
 	if (psw != dw)
 		sw = (sw * dw) / psw;
 	if (psh != dh)
@@ -588,19 +580,18 @@ gimp_image_t *scale_pmap( //<<<
 	/* do a second check to see if we now have invalid coords */
 	/* don't do anything if we have a 0 width or height image to render */
 	/* if the input rect size < 0 don't render either */
-	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0))
-		return NULL;
+	if ((dw <= 0) || (dh <= 0) || (sw <= 0) || (sh <= 0)) return NULL;
 
-	scaleinfo = CalcScaleInfo(src, ssw, ssh, ddw, ddh);
-	if (!scaleinfo)
-		return NULL;
+	ScaleInfo*	scaleinfo = CalcScaleInfo(src, ssw, ssh, ddw, ddh);
+	if (!scaleinfo) return NULL;
+	defer { FreeScaleInfo(scaleinfo); }
+
 	/* if we are scaling the image at all make a scaling buffer */
 	/* allocate a buffer to render scaled RGBA data into */
-	buf = malloc(dw * LINESIZE * sizeof(DATA32));
-	if (!buf) {
-		FreeScaleInfo(scaleinfo);
-		return NULL;
-	}
+	DATA32*		buf = malloc(dw * LINESIZE * sizeof(DATA32));
+	if (!buf) return NULL;
+	defer { free(buf); }
+
 	/* setup h */
 	h = dh;
 	/* scale in LINESIZE Y chunks and convert to depth */
@@ -614,11 +605,10 @@ gimp_image_t *scale_pmap( //<<<
 
 		h -= LINESIZE;
 	}
-	/* free up our buffers and point tables */
-	free(buf);
-	FreeScaleInfo(scaleinfo);
 
-   return dst;
+	gimp_image_t*	out = dst;
+	dst = NULL;		// transfer ownership to caller; suppress deferred free
+	return out;
 }
 
 //>>>

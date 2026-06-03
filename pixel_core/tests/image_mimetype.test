@@ -5,12 +5,13 @@ if {"::tcltest" ni [namespace children]} {
 	namespace import ::tcltest::*
 }
 
-package require Pixel
+::tcltest::loadTestedCommands
+set here	[file dirname [file normalize [info script]]]
 
 proc readbin fn {
-	set h	[open tests/$fn r]
+	global here
+	set h	[open [file join $here $fn] rb]
 	try {
-		chan configure $h -translation binary -encoding binary
 		chan read $h
 	} finally {
 		close $h

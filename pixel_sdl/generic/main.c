@@ -131,9 +131,15 @@ static int glue_setup_screen(ClientData foo, Tcl_Interp *interp,
 		scr_pmap->pixel_data = (_pel *)new_surface->pixels;
 	}
 
-	sp = (sp_info *)malloc(sizeof(sp_info));
+	sp = (sp_info *)calloc(1, sizeof(sp_info));
 	sp->type = "SDL Screen";
 	sp->info = new_sdl_console_inf;
+	// sdl_console_inf is a malloc'd POD struct; its SDL_Surface and prebuffer
+	// pointers alias resources with externally-managed lifecycles (SDL_Quit
+	// for the video-mode console; the pmap owns prebuffer->pixel_data), so a
+	// plain free() is the correct destructor for the side-channel struct
+	// itself.
+	sp->free_info = free;
 
 	sdl_init_timestuff(new_sdl_console_inf);
 	

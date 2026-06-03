@@ -178,9 +178,13 @@ int PTCCreateWidget(ClientData foo, Tcl_Interp *interp, //<<<1
 	new_console_inf->console = widget->console;
 	init_timestuff(new_console_inf);
 
-	sp = (sp_info *)malloc(sizeof(sp_info));
+	sp = (sp_info *)calloc(1, sizeof(sp_info));
 	sp->type = "OpenPTC Console";
 	sp->info = new_console_inf;
+	// console_inf is a malloc'd POD struct; its surface/console pointers
+	// are owned by the PTC_widget, not by the pmap Tcl_Obj, so a plain
+	// free() is the correct destructor here.
+	sp->free_info = free;
 	
 	widget->pmap = Tcl_NewPMAPObj(scr_pmap);
 	widget->pmap->internalRep.twoPtrValue.ptr2 = sp;

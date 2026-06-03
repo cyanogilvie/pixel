@@ -1,7 +1,7 @@
-#include "pixel.h"
+#include <pixelInt.h>
 #include "2d_lookups.h"
 
-void quadshade(double x, double y, _pel colour, int osa, int flags, gimp_image_t *dest)
+void quadshade(double x, double y, _pel colour, int /*osa*/, int /*flags*/, gimp_image_t *dest)
 {
 	//double	fx, fy;
 	//int		ox, oy;

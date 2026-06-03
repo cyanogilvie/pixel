@@ -1,34 +1,30 @@
-#include "pixel.h"
+#include <pixelInt.h>
 
 
-gimp_image_t *rle_decode(rle_data, data_len, status) //{{{1
-		const unsigned char	*rle_data;
-		unsigned int		data_len;
-		int					*status;
+gimp_image_t *rle_decode(const uint8_t* rle_data, unsigned int data_len, int* status) //{{{
 {
-	gimp_image_t		*res;
-	const rle_header	*header;
-	const _pel			*map;
-	const unsigned char	*p;
-	_pel				*d;
-	const _pel			*s;
-	int					tmp, i, j;
+	gimp_image_t*		res = NULL;
+	const rle_header*	header;
+	const _pel*			map;
+	const uint8_t*		p;
+	_pel*				d;
+	const _pel*			s;
+	int					i, j;
+	unsigned int		tmp;
 	unsigned char		chunk_type, repcount;
 	unsigned int		key;
 	_pel				value;
 	int					saw_eof = 0;
 
-	res = NULL;
-	
 	// Sanity checks {{{
 	if (data_len < sizeof(rle_header)) {
 		*status = RLE_STATUS_TOOSHORT;
 		return NULL;
 	}
 
-	header = (rle_header *)rle_data;
+	header = (rle_header*)rle_data;
 
-	if (strncmp("pixelrle", header->tag, 8) != 0) {
+	if (memcmp("pixelrle", header->tag, 8) != 0) {
 		*status = RLE_STATUS_BAD_TAG;
 		return NULL;
 	}
@@ -81,29 +77,26 @@ gimp_image_t *rle_decode(rle_data, data_len, status) //{{{1
 
 	value.c = 0x0;
 	res = pmap_new(header->width, header->height, value);
+	defer { if (res) pmap_free(&res); }
 	d = res->pixel_data;
 
 	//fprintf(stderr, "processing %d chunks, saw_eof: %d\n", header->num_chunks, saw_eof);
 	for (i = header->num_chunks; i>0 && saw_eof==0; i--) {
 		//fprintf(stderr, "processing chunk: %d\t%p\t", header->num_chunks - i, p);
 		chunk_type = *p; p++;
-		tmp = 0;
 		switch (chunk_type) {
 			case 0:
 				// Map run
 				repcount = *p; p++;
-				key = 0;
 				switch (header->map_table_keysize) {
-					case 1: key = *(unsigned char *)p; p += 1; break;
-					case 2: key = *(unsigned short *)p; p += 2; break;
+					case 1: key = *(uint8_t*)p; p += 1; break;
+					case 2: key = *(uint16_t*)p; p += 2; break;
 					default:
-							pmap_free(&res);
 							*status = RLE_STATUS_INVALID_KEYSIZE;
 							return NULL;
 							break;
 				}
 				if (key > header->map_table_length) {
-					pmap_free(&res);
 					*status = RLE_STATUS_KEY_OUT_OF_RANGE;
 					return NULL;
 				}
@@ -117,16 +110,16 @@ gimp_image_t *rle_decode(rle_data, data_len, status) //{{{1
 
 			case 1:
 				// Value run
-				repcount = *p; p++;
-				value = *(_pel *)p; p += sizeof(_pel);
+				repcount = *p++;
+				value = *(_pel*)p; p += sizeof(_pel);
 				//fprintf(stderr, "value run 0x%x * %d\n", value.c, repcount);
 				//value.c = 0xff00ff00;
 				break;
 
 			case 2:
 				// Verbatim run
-				repcount = *p; p++;
-				s = (_pel *)p;
+				repcount = *p++;
+				s = (_pel*)p;
 				//fprintf(stderr, "verbatim run %d\n", repcount);
 				for (j=0; j<repcount; j++) {
 					d->c = s->c;
@@ -142,7 +135,7 @@ gimp_image_t *rle_decode(rle_data, data_len, status) //{{{1
 					d++;
 					s++;
 				}
-				p = (const unsigned char *)s;
+				p = (const uint8_t *)s;
 				repcount = 0;
 				break;
 
@@ -156,7 +149,6 @@ gimp_image_t *rle_decode(rle_data, data_len, status) //{{{1
 			default:
 				// Unknown chunk
 				//fprintf(stderr, "unknown %d\n", chunk_type);
-				pmap_free(&res);
 				*status = RLE_STATUS_BAD_CHUNK;
 				return NULL;
 				break;
@@ -174,60 +166,52 @@ gimp_image_t *rle_decode(rle_data, data_len, status) //{{{1
 		}
 	}
 
-	return res;
+	gimp_image_t*	out = res;
+	res = NULL;		// transfer ownership to caller; suppress deferred free
+	return out;
 }
 
-
-unsigned char *rle_encode(pmap, data_len, status) //{{{1
-		const gimp_image_t	*pmap;
-		unsigned int		*data_len;
-		int					*status;
+//}}}
+uint8_t* rle_encode(const gimp_image_t* pmap, unsigned int* data_len, int* /*status*/) //{{{
 {
-	unsigned char	*res;
-	unsigned char	*oldres;
-	rle_header		*header;
-	int				test_map[4096];
-	int				test_map_count[4096];
+	uint8_t*		res;
+	rle_header*		header;
+	uint32_t		test_map[4096] = {0};
+	int				test_map_count[4096] = {0};
 	int				max_map = 0;
 	int				map_size;
-	int				value=0;
+	uint32_t		value = 0;
 	int				slot;
-	_pel			*map;
-	const _pel		*s;
-	const _pel		*r;
-	_pel			*d;
-	int				i, j, pelcount, remaining, runlength, keysize;
-	int				guess_len, used;
+	_pel*			map;
+	const _pel*		s;
+	const _pel*		r;
+	_pel*			d;
+	uint32_t		pelcount, remaining;
+	int				i, j, runlength, keysize;
+	size_t			guess_len, used;
 	int				chunks_count;
 	unsigned char	*p;
-	int				stats[5];
-	
-	stats[0] = 0;
-	stats[1] = 0;
-	stats[2] = 0;
-	stats[3] = 0;
-	stats[4] = 0;
+	int				stats[5] = {0};
 	
 	pelcount = pmap->width * pmap->height;
 	guess_len = sizeof(rle_header) + 256 + (pelcount * 4) / 3;
 
-	res = (unsigned char *)malloc(guess_len);
-	header = (rle_header *)res;
-	strncpy(header->tag, "pixelrle", 8);
-	header->line_end_check[0] = 0xA;
-	header->line_end_check[1] = 0xD;
-	header->line_end_check[2] = 'a';
-	header->unicode_check[0] = 0xF0;
-	header->unicode_check[1] = 0x0;
-	header->version = RLE_VERSION;
-	header->width = pmap->width;
-	header->height = pmap->height;
+	res = (uint8_t*)malloc(guess_len);
+	header = (rle_header*)res;
+	*header = (rle_header){
+		.line_end_check		= {0xA, 0xD, 'a'},
+		.unicode_check		= {0xF0, 0x0},
+		.version			= RLE_VERSION,
+		.width				= pmap->width,
+		.height				= pmap->height,
+	};
+	memcpy(header->tag, "pixelrle", 8);
 	used = sizeof(rle_header);
 
 	s = pmap->pixel_data;
 	
 	for (i = pelcount; i>0; i--, s++) {
-		if (i != pelcount && value == s->c)
+		if ((uint32_t)i != pelcount && value == s->c)
 			continue;
 
 		value = s->c;
@@ -257,14 +241,15 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 
 	if (guess_len < used + sizeof(_pel) * j + (pelcount * 4) / 3) {
 		guess_len = used + sizeof(_pel) * j + (pelcount * 4) / 3;
-		res = (unsigned char *)realloc(res, guess_len);
+		res = (uint8_t*)realloc(res, guess_len);
+		header = (rle_header*)res;
 	}
 
 	map_size = j;
 	header->map_table_length = map_size;
 	header->map_table_keysize = keysize = (j <= 256) ? 1 : 2;
 
-	map = (_pel *)(res + sizeof(rle_header));
+	map = (_pel*)(res + sizeof(rle_header));
 	slot = 0;
 	for (i=0; i<max_map; i++) {
 		if (test_map_count[i] >= 6) {
@@ -275,7 +260,7 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 
 	used += map_size * sizeof(_pel);
 	
-	p = (unsigned char *)(res + used);
+	p = (uint8_t*)(res + used);
 
 	remaining = pelcount;
 
@@ -300,13 +285,13 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 		// Ensure there is enough allocated at least for this chunk and the
 		// EOF marker (1 byte)
 		if (guess_len < used + 3 + 256*sizeof(_pel)) {
+			const size_t p_offset = p - res;
 			guess_len += 65535;
-			oldres = res;
-			//fprintf(stderr, "reallocing to %d bytes\n", guess_len);
-			res = (unsigned char *)realloc(res, guess_len);
-			p += res - oldres;
-			map = (_pel *)(res + sizeof(rle_header));
-			header = (rle_header *)res;
+			//fprintf(stderr, "reallocing to %zu bytes\n", guess_len);
+			res = (uint8_t*)realloc(res, guess_len);
+			p = res + p_offset;
+			map = (_pel*)(res + sizeof(rle_header));
+			header = (rle_header*)res;
 		}
 		
 		if (slot >= 0) {
@@ -319,7 +304,7 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 			*/
 			stats[0]++;
 			*p = 0; p++;			// Map run
-			*p = (unsigned char)runlength; p++;
+			*p = (uint8_t)runlength; p++;
 			if (runlength == 255)
 				stats[4]++;
 			used += 2;
@@ -327,15 +312,15 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 				*p = slot; p++;
 				used++;
 			} else {
-				*(unsigned short *)p = slot; p += 2;
+				*(uint16_t*)p = slot; p += 2;
 				used += 2;
 			}
 		} else {
 			if (runlength > 1) {
 				stats[1]++;
 				*p = 1; p++;		// Value run
-				*p = (unsigned char)runlength; p++;
-				*(unsigned int *)p = value; p += sizeof(_pel);
+				*p = (uint8_t)runlength; p++;
+				*(uint32_t*)p = value; p += sizeof(_pel);
 				used += 6;
 				//fprintf(stderr, "processing chunk: %d\t%d\t", chunks_count, p - res);
 				//fprintf(stderr, "value run 0x%x %d\n", value, runlength);
@@ -353,7 +338,7 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 				d->c = value; d++;
 				//fprintf(stderr, "processing chunk: %d\t%d\t", chunks_count, p - res);
 				//fprintf(stderr, "verbatim run %d\n", runlength);
-				*p = (unsigned char)runlength; p++;
+				*p = (uint8_t)runlength; p++;
 				p += runlength * sizeof(_pel);
 
 				used += 2 + runlength * sizeof(_pel);
@@ -371,6 +356,7 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 
 	guess_len = used;
 	res = realloc(res, guess_len);
+	header = (rle_header*)res;
 
 	*data_len = used;
 
@@ -397,4 +383,4 @@ unsigned char *rle_encode(pmap, data_len, status) //{{{1
 	return res;
 }
 
-
+//}}}

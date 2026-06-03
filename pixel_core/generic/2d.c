@@ -1,11 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <string.h>
-#include <math.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include "pixel.h"
+#include <pixelInt.h>
 //#include "2d.h"
 //#include "misc.h"
 
@@ -40,23 +33,21 @@ void asm_memcpy( _pel *dest_buf, _pel *src_buf, uint32 len );
 #endif
 
 //int g_total_pmaps = 0;
-gimp_image_t *pmap_new(int x, int y, _pel colour) //{{{1
+gimp_image_t *pmap_new(int x, int y, _pel /*colour*/) //{{{1
 {
 	gimp_image_t	*new;
 
 	new = (gimp_image_t *)malloc(sizeof(gimp_image_t));
+	if (!new) Tcl_Panic("Could not allocate memory for pmap");
 	new->width = x;
 	new->height = y;
 	new->bytes_per_pixel = 4;
-	//out->pixel_data = (_pel*)malloc(sizeof(_pel) * x * y);
-	// Allocate memory aligned to 32 bytes (for SIMD)
+	// Allocate memory aligned to 32 bytes (for SIMD).  Pixel data is
+	// intentionally left uninitialised — every caller writes the buffer
+	// before reading it, and zeroing this memory in a hot graphics path is
+	// significant wasted work.
 	if (0 != posix_memalign((void**)&new->pixel_data, 32, sizeof(_pel) * x * y))
-		Tcl_Panic("Could not allocate memory for pelf data");
-//	asm_pelset(new->pixel_data, colour, x*y);
-
-//	g_total_pmaps++;
-//	fprintf(stderr, "allocing pmap: w: %d h: %d  %p %d\n",
-//			x, y, new, g_total_pmaps);
+		Tcl_Panic("Could not allocate memory for pixel data");
 
 	return new;
 }
@@ -195,9 +186,9 @@ gimp_image_t *pmap_cut(gimp_image_t *src, int x1, int y1, int x2, int y2) //{{{1
 	if (x1 < 0) x1 = 0;
 	if (y1 < 0) y1 = 0;
 
-	if (x2 > src->width) x2 = src->width-1;
-	if (y2 > src->height) y2 = src->height-1;
-	
+	if (x2 > (int)src->width)  x2 = (int)src->width  - 1;
+	if (y2 > (int)src->height) y2 = (int)src->height - 1;
+
 	width = x2 - x1 + 1;
 	height = y2 - y1 + 1;
 
@@ -574,7 +565,8 @@ void pmap_filter(gimp_image_t *dest, int flags, double factor) // {{{1
 gimp_image_t *pmap_dropshadow(gimp_image_t *src, int blur) // {{{1
 {
 	gimp_image_t	*new;
-	int				i, x, y, size;
+	int				i;
+	uint32_t		x, y, size;
 	_pel			*s;
 	_pel			*d;
 	_pel			*sr;
@@ -663,7 +655,7 @@ gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) // quads: 1: clockwise 9
 	//_pel			tmp;
 	int				sign;
 	int				littlejump, bigjump;
-	int				nx, ny;
+	uint32_t		nx, ny;
 	
 	sign = (quads < 0) ? -1 : 1;
 //	fprintf(stderr, "quads1: (%d)\n", quads);
@@ -737,15 +729,10 @@ gimp_image_t *pmap_rotate(gimp_image_t *src, int quads) // quads: 1: clockwise 9
 }
 
 
-void digest_region(src, x, y, w, h, r, g, b, a) //{{{1
-	gimp_image_t	*src;
-	int				x, y, w, h;
-	unsigned int	*r;
-	unsigned int	*g;
-	unsigned int	*b;
-	unsigned int	*a;
+void digest_region(gimp_image_t *src, int x, int y, int w, int h, unsigned int *r, unsigned int *g, unsigned int *b, unsigned int *a) //{{{1
 {
-	unsigned int	lr, lg, lb, la, lx, ly, span, considered;
+	unsigned int	lr, lg, lb, la, considered;
+	int				lx, ly, span;
 	_pel			*s;
 
 	lr = lg = lb = la = 0;
@@ -768,15 +755,15 @@ void digest_region(src, x, y, w, h, r, g, b, a) //{{{1
 		y = 0;
 	}
 
-	if (x + w > src->width) {
-		w = src->width - x;
+	if (x + w > (int)src->width) {
+		w = (int)src->width - x;
 	}
-	if (y + h > src->height) {
-		y = src->height - y;
+	if (y + h > (int)src->height) {
+		y = (int)src->height - y;
 	}
 
 	s = src->pixel_data + y * src->width + x;
-	span = src->width - w;
+	span = (int)src->width - w;
 	for (ly = 0; ly < h; ly++) {
 		for (lx = 0; lx < w; lx++) {
 			lr += s->ch.r;
@@ -843,9 +830,7 @@ _pel get_pixel(gimp_image_t *src, int x, int y) //{{{1
 }
 
 
-void rgb2hsv(r, g, b, h, s, v) //{{{1
-	unsigned char	r, g, b;
-	double			*h, *s, *v;
+void rgb2hsv(unsigned char r, unsigned char g, unsigned char b, double *h, double *s, double *v) //{{{1
 {
 #define MAX		256
 #define OLD_HSV
@@ -928,9 +913,7 @@ void rgb2hsv(r, g, b, h, s, v) //{{{1
 }
 
 
-void hsv2rgb(h, s, v, r, g, b) //{{{1
-	double			h, s, v;
-	unsigned char	*r, *g, *b;
+void hsv2rgb(double h, double s, double v, unsigned char *r, unsigned char *g, unsigned char *b) //{{{1
 {
 #define MAX		256
 	int		low = MAX;
@@ -1002,18 +985,16 @@ struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, 
 	int		x, y, c, to_x, to_y, yofs_src=0, xofs_src=0;	// dest coord space
 	pelf*	d;
 	pelf*	s;
-	pelf*	o;
 	struct pmapf*	out = NULL;
 
 	out = pmapf_new(dest->width, dest->height);
 	memcpy(out->pixel_data, dest->pixel_data, dest->width*dest->height*dest->bytes_per_pixel);
-	o = out->pixel_data;
 
 	to_x = xofs + src->width;
 	to_y = yofs + src->height;
 
-	if (to_x > dest->width)  to_x = dest->width;
-	if (to_y > dest->height) to_y = dest->height;
+	if (to_x > (int)dest->width)  to_x = (int)dest->width;
+	if (to_y > (int)dest->height) to_y = (int)dest->height;
 
 	if (yofs < 0) {
 		yofs_src = -yofs;
@@ -1028,12 +1009,12 @@ struct pmapf* pmapf_alpha_over(struct pmapf* dest, struct pmapf* src, int xofs, 
 	}
 
 	//fprintf(stderr, "yofs: %d, yofs_src: %d, src->height: %d, to_y: %d\n", yofs, yofs_src, src->height, to_y);
-	if (yofs_src >= src->height) return out;
-	if (xofs_src >= src->width)  return out;
+	if (yofs_src >= (int)src->height) return out;
+	if (xofs_src >= (int)src->width)  return out;
 
 	for (y=yofs; y<to_y; y++) {
 		d = dest->pixel_data + y*dest->width + xofs;
-		o = out->pixel_data + y*out->width + xofs;
+		pelf* o = out->pixel_data + y*out->width + xofs;
 		s = src->pixel_data + (y-yofs+yofs_src)*src->width + xofs_src;
 		for (x=xofs; x<to_x; x++, d++, s++, o++) {
 			for (c=0; c<3; c++)
@@ -1053,7 +1034,7 @@ struct pmapf* pmapf_rotate_90(struct pmapf* restrict src, int quads) //{{{1
 	struct pmapf*	new = NULL;
 	int				sign;
 	int				littlejump, bigjump;
-	int				nx, ny;
+	uint32_t		nx, ny;
 	
 	sign = (quads < 0) ? -1 : 1;
 	quads = abs(quads) % 4;
@@ -1065,7 +1046,6 @@ struct pmapf* pmapf_rotate_90(struct pmapf* restrict src, int quads) //{{{1
 
 	switch (quads) {
 		case 1:
-		case -1:
 			new = pmapf_new(src->height, src->width);
 			break;
 
@@ -1073,6 +1053,9 @@ struct pmapf* pmapf_rotate_90(struct pmapf* restrict src, int quads) //{{{1
 		case 2:
 			new = pmapf_new(src->width, src->height);
 			break;
+
+		default:
+			unreachable();
 	}
 
 	d = new->pixel_data;
@@ -1166,9 +1149,9 @@ struct pmapf* pmapf_cut(struct pmapf* restrict src, int x1, int y1, int x2, int 
 	if (x1 < 0) x1 = 0;
 	if (y1 < 0) y1 = 0;
 
-	if (x2 > src->width)  x2 = src->width-1;
-	if (y2 > src->height) y2 = src->height-1;
-	
+	if (x2 > (int)src->width)  x2 = (int)src->width  - 1;
+	if (y2 > (int)src->height) y2 = (int)src->height - 1;
+
 	{
 		const int				src_width  = src->width;
 		const int				dst_width  = x2 - x1 + 1;
@@ -1209,7 +1192,7 @@ void do_dirty_tricks() // {{{1
 
 	for( a=0; a<=255; a++ )
 		for( b=0; b<=255; b++ ) {
-			foo = (((128-abs(a-128)) + 127) / (255.0)) * b;
+			foo = (((128-abs((int)a-128)) + 127) / (255.0)) * b;
 			scale_lookup_linear[a][b] = (uint8)foo;
 			if( foo - scale_lookup_linear[a][b] > 0.5 ) scale_lookup_linear[a][b]++;
 			inv_scale_lookup_linear[a][b] = b - scale_lookup_linear[a][b];
@@ -1252,6 +1235,7 @@ struct pmapf* pmapf_new(int width, int height) //{{{
 	struct pmapf*	out = NULL;
 
 	out = (struct pmapf*)malloc(sizeof(struct pmapf));
+	if (!out) Tcl_Panic("Could not allocate memory for pmapf");
 	out->width = width;
 	out->height = height;
 	out->bytes_per_pixel = sizeof(pelf);	// Used to signal floating point pixel data
@@ -1307,7 +1291,8 @@ inline int clamp_int(int in, int max) //{{{
 //}}}
 struct pmapf* pmap_to_pmapf(gimp_image_t* in) //{{{
 {
-	int				x, y, c;
+	uint32_t		x, y;
+	int				c;
 	struct pmapf*	out;
 	_pel*			s;
 	pelf*			d;
@@ -1332,12 +1317,13 @@ struct pmapf* pmap_to_pmapf(gimp_image_t* in) //{{{
 //}}}
 gimp_image_t* pmapf_to_pmap(struct pmapf* in) //{{{
 {
-	int				x, y, c;
+	uint32_t		x, y;
+	int				c;
 	gimp_image_t*	out;
 	_pel*			d;
 	pelf*			s;
 
-	out = pmap_new(in->width, in->height, (_pel)(uint32_t)0);
+	out = pmap_new(in->width, in->height, (_pel){.c = 0});
 
 	s = in->pixel_data;
 	d = (_pel*)(out->pixel_data);

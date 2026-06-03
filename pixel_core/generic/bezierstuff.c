@@ -1,12 +1,9 @@
-//#include "all.h"
-#include "pixel.h"
+#include <pixelInt.h>
 
 // Code originally from Milton Friedman <uncle@stein.u.washington.edu> _____________
 #define sqr(x) (x * x)
 
 #define _ABS(x) (x < 0 ? -x : x)
-
-static const double TOLERANCE = 0.0000001;  // Application specific tolerance
 
 //extern double sqrt(double);
 

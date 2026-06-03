@@ -1,5 +1,4 @@
-//#include "all.h"
-#include "pixel.h"
+#include <pixelInt.h>
 
 static void free_internal_rep(Tcl_Obj* obj);
 static void dup_internal_rep(Tcl_Obj* src, Tcl_Obj* dest);
@@ -19,15 +18,15 @@ Tcl_ObjType pmapf_type = {
 static void free_internal_rep(Tcl_Obj* obj) //<<<
 {
 	struct pmapf*	pmapf = (struct pmapf*)obj->internalRep.twoPtrValue.ptr1;
-	sp_info*		sp = (sp_info*)obj->internalRep.twoPtrValue.ptr2;
-	//fprintf(stderr, "tcl_pmap: Called free_internal_rep\n");
+	sp_info*		sp    = (sp_info*)obj->internalRep.twoPtrValue.ptr2;
 
-#warning pmap free_internal rep must free sp_info
-	//call sp->free_info(obj) routine
-
-	if (pmapf != NULL) {
-		pmapf_free(&pmapf);
+	if (sp != NULL) {
+		if (sp->free_info) sp->free_info(sp->info);
+		free(sp);
+		obj->internalRep.twoPtrValue.ptr2 = NULL;
 	}
+
+	if (pmapf != NULL) pmapf_free(&pmapf);
 }
 
 //>>>
@@ -53,33 +52,30 @@ static void dup_internal_rep(Tcl_Obj* src, Tcl_Obj* dest) //<<<
 static void update_string_rep(Tcl_Obj* obj) //<<<
 {
 	struct pmapf*	pmapf = (struct pmapf*)obj->internalRep.twoPtrValue.ptr1;
-	Tcl_Obj*		objv[4];
-	Tcl_Obj*		list = NULL;
+	Tcl_Obj*		objv[4] = {0};	defer { for (int i=0; i<4; ++i) replace_tclobj(&objv[i], NULL); }
+	Tcl_Obj*		list = NULL;	defer { replace_tclobj(&list, NULL); }
 	const char*		str;
 	Tcl_Size		length;
 
 	//fprintf(stderr, "tcl_pmap: Called update_string_rep\n");
 	//Tcl_Panic("Bang");
-	
-	objv[0] = Tcl_NewIntObj(pmapf->width);
-	objv[1] = Tcl_NewIntObj(pmapf->height);
-	objv[2] = Tcl_NewIntObj(pmapf->bytes_per_pixel);
-	objv[3] = Tcl_NewByteArrayObj((unsigned char *)pmapf->pixel_data,
+
+	replace_tclobj(&objv[0], Tcl_NewIntObj(pmapf->width));
+	replace_tclobj(&objv[1], Tcl_NewIntObj(pmapf->height));
+	replace_tclobj(&objv[2], Tcl_NewIntObj(pmapf->bytes_per_pixel));
+	replace_tclobj(&objv[3], Tcl_NewByteArrayObj((uint8_t*)pmapf->pixel_data,
 			pmapf->width *
 			pmapf->height *
-			pmapf->bytes_per_pixel);
+			pmapf->bytes_per_pixel));
 
-	Tcl_IncrRefCount(list = Tcl_NewListObj(4, objv));
-	
+	replace_tclobj(&list, Tcl_NewListObj(4, objv));
+
 	str = Tcl_GetStringFromObj(list, &length);
-	
+
 	obj->bytes = ckalloc(length + 1);
 	memcpy(obj->bytes, str, length);
 	obj->bytes[length] = 0;
 	obj->length = length;
-
-	Tcl_InvalidateStringRep(list);
-	Tcl_DecrRefCount(list); list = NULL;
 
 	//fprintf(stderr, "rep: (%s)\n", Tcl_GetString(obj));
 }
@@ -123,7 +119,7 @@ static int set_pmapf_from_any(Tcl_Interp* interp, Tcl_Obj* obj) //<<<
 	pixel_data = (pelf*)Tcl_GetByteArrayFromObj(objv[3], &src_size);
 
 	if (size != src_size) {
-		fprintf(stderr, "Size mismatch: %d should be %d\n", src_size, size);
+		fprintf(stderr, "Size mismatch: %" TCL_SIZE_MODIFIER "d should be %" TCL_SIZE_MODIFIER "d\n", src_size, size);
 		THROW_ERROR("Supplied pixel data is the wrong size");
 	}
 

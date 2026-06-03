@@ -27,16 +27,23 @@ typedef int Tcl_Size;
 #  endif
 #endif
 
-#include "tclstuff.h"
-#include "2d_types.h"
-#include "pmapf.h"
-#include "perceptual_scaling.h"
+#include <tclstuff.h>
+#include <2d_types.h>
+#include <pmapf.h>
+#include <perceptual_scaling.h>
 
 
+/* Optional side-channel info attached to a pmap/pmapf Tcl_Obj via
+ * internalRep.twoPtrValue.ptr2.  Lifetime is 1:1 with the owning Tcl_Obj
+ * (dup_internal_rep produces a copy with no sp_info — live resources such
+ * as SDL surfaces can't be meaningfully duplicated).  free_info, if non-NULL,
+ * is invoked on the info payload when the Tcl_Obj is freed; sp_info itself
+ * is then freed unconditionally.  Use plain free() as free_info when info
+ * is a malloc'd POD struct with no further owned resources. */
 typedef struct {
-	char *		type;
-	void *		info;
-	/* ptr to free_info routine */
+	char*		type;
+	void*		info;
+	void		(*free_info)(void* info);
 } sp_info;
 
 EXTERN_C Tcl_ObjType tcl_pmap;
@@ -74,10 +81,10 @@ typedef struct {
 extern "C" {
 #endif
 
-#include "pixelDecls.h"
+#include <pixelDecls.h>
 
 #ifdef USE_PIXEL_STUBS
-EXTERN const char *Pixel_InitStubs(Tcl_Interp *interp, const char *version, int exact);
+DLLEXPORT const char* Pixel_InitStubs(Tcl_Interp *interp, const char *version, int exact);
 #endif
 
 #ifdef __cplusplus

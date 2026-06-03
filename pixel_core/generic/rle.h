@@ -50,8 +50,8 @@ typedef struct {
 #define RLE_STATUS_KEY_OUT_OF_RANGE		-10
 
 
-extern gimp_image_t *rle_decode(const unsigned char *rle_data, unsigned int data_len, int *status);
-extern unsigned char *rle_encode(const gimp_image_t *pmap, unsigned int *data_len, int *status);
+extern gimp_image_t *rle_decode(const uint8_t* rle_data, unsigned int data_len, int* status);
+extern uint8_t *rle_encode(const gimp_image_t *pmap, unsigned int* data_len, int* status);
 
 
 #endif

@@ -2,7 +2,7 @@
 #define _2D_H
 
 #include <sys/types.h>
-#include "2d_types.h"
+#include <2d_types.h>
 
 
 /*
@@ -16,7 +16,7 @@ typedef signed char		sint8;
 typedef unsigned char	uint8;
 */
 
-#include "2d_lookups.h"
+#include <2d_lookups.h>
 
 #ifndef EXTERN_C
 #  ifdef __cplusplus
