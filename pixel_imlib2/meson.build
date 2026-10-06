@@ -1,5 +1,5 @@
 project('Pixel_imlib2', 'c',
-  version:          '4.0',
+  version:          '4.0.1',
   default_options:  ['c_std=c17', 'warning_level=2'],
   meson_version:    '>=1.3.0',
 )

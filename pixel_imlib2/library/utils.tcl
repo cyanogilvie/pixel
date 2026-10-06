@@ -2,7 +2,7 @@ namespace eval ::pixel::imlib2 {
 	proc ::pixel::imlib2::decode bytes {
 		set h	[file tempfile fn]
 		try {
-			chan configure $h -translation binary -encoding binary
+			chan configure $h -translation binary
 			puts -nonewline $h $bytes
 			flush $h
 			pixel::imlib2::load_image $fn
@@ -15,7 +15,7 @@ namespace eval ::pixel::imlib2 {
 	proc ::pixel::imlib2::encode {format pmap} {
 		set h	[file tempfile fn]
 		try {
-			chan configure $h -translation binary -encoding binary
+			chan configure $h -translation binary
 			pixel::imlib2::save_image $pmap $fn $format
 			seek $h 0
 			read $h

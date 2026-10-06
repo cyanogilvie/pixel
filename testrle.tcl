@@ -10,7 +10,7 @@ set orig	[pixel::imlib2::load_image "rletest4.gif"]
 set rledata	[pixel::rle_encode $orig]
 puts "rledata size: ([string length $rledata])"
 set fp	[open "rletest.rle" w]
-fconfigure $fp -translation binary -encoding binary
+fconfigure $fp -translation binary
 puts -nonewline $fp $rledata
 close $fp
 set test	[pixel::rle_decode $rledata]
