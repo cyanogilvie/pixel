@@ -1,0 +1,92 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> shiftwidth=4 ts=4
+#
+# Decoding: every pixel of the fixtures against what was encoded.
+#   grey.jpg		32x16 YCbCr, sRGB 118 throughout
+#   grad.jpg		16x8 YCbCr (cjpeg -quality 100 -sample 1x1): r 16x, g 32y, b 200
+#   grad-gray.jpg	the same gradient as grayscale (cjpeg -grayscale)
+
+if {[lsearch [namespace children] ::tcltest] == -1} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+::tcltest::loadTestedCommands
+package require Pixel
+package require Pixel_jpeg
+
+namespace eval ::pixel_jpeg_test {
+	namespace path ::tcltest
+
+	variable dir	[file dirname [file normalize [info script]]]
+
+	proc fixture name {
+		variable dir
+		set h	[open [file join $dir $name] rb]
+		try {read $h} finally {close $h}
+	}
+
+	# The largest difference of any channel of any pixel of pmap from expect
+	# (a lambda {x y} -> {r g b a}), with where it is: {diff x y got want}
+	proc worst {pmap expect} {
+		lassign [pixel::pmap_info $pmap] w h
+		set worst	{-1}
+		for {set y 0} {$y < $h} {incr y} {
+			for {set x 0} {$x < $w} {incr x} {
+				set got		[pixel::get_pixel $pmap $x $y]
+				set want	[apply $expect $x $y]
+				foreach g $got e $want {
+					set d	[expr {abs($g - $e)}]
+					if {$d > [lindex $worst 0]} {set worst [list $d $x $y $got $want]}
+				}
+			}
+		}
+		set worst
+	}
+
+	proc within {limit worst} {
+		expr {[lindex $worst 0] <= $limit ? "ok" : $worst}
+	}
+
+	variable grey	{{x y} {list 118 118 118 255}}
+	variable grad	{{x y} {list [expr {16*$x}] [expr {32*$y}] 200 255}}
+	variable gray	{{x y} {
+		set l	[expr {round(0.299*16*$x + 0.587*32*$y + 0.114*200)}]
+		list $l $l $l 255
+	}}
+
+	# libjpeg-turbo 3.2 ignored the output format when it was set after
+	# jpeg_start_decompress, and filled the 4-byte pixels with 3-byte RGB: the
+	# alpha held the next pixel's red, and the last quarter of the image was 0
+	test decode-1.1 {A YCbCr jpeg decodes to its colour, opaque, to the last pixel} -body {
+		set p	[pixel::jpeg::decodejpeg [fixture grey.jpg]]
+		list [pixel::pmap_info $p] [within 0 [worst $p $grey]]
+	} -result {{32 16} ok}
+
+	test decode-1.2 {Every pixel of a YCbCr gradient is where it was encoded} -body {
+		set p	[pixel::jpeg::decodejpeg [fixture grad.jpg]]
+		list [pixel::pmap_info $p] [within 3 [worst $p $grad]]
+	} -result {{16 8} ok}
+
+	test decode-1.3 {A grayscale jpeg decodes to grey pixels, opaque} -body {
+		set p	[pixel::jpeg::decodejpeg [fixture grad-gray.jpg]]
+		list [pixel::pmap_info $p] [within 2 [worst $p $gray]]
+	} -result {{16 8} ok}
+
+	test decode-2.1 {loadjpeg decodes a file as decodejpeg does its data} -body {
+		set p	[pixel::jpeg::loadjpeg [file join $dir grad.jpg]]
+		list [pixel::pmap_info $p] [within 3 [worst $p $grad]]
+	} -result {{16 8} ok}
+
+	test decode-2.2 {loadjpeg decodes a grayscale jpeg} -body {
+		set p	[pixel::jpeg::loadjpeg [file join $dir grad-gray.jpg]]
+		list [pixel::pmap_info $p] [within 2 [worst $p $gray]]
+	} -result {{16 8} ok}
+
+	test decode-3.1 {What encodejpeg makes decodes back to the same flat colour} -body {
+		set p	[pixel::jpeg::decodejpeg [pixel::jpeg::encodejpeg [pixel::jpeg::decodejpeg [fixture grey.jpg]] 95]]
+		list [pixel::pmap_info $p] [within 1 [worst $p $grey]]
+	} -result {{32 16} ok}
+}
+
+::tcltest::cleanupTests
+namespace delete ::pixel_jpeg_test
+return

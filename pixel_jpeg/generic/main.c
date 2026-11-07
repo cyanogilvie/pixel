@@ -39,6 +39,27 @@ void custom_error_exit(j_common_ptr cinfo)
 }
 
 
+static void choose_bgra_output(j_decompress_ptr cinfo) // {{{1
+{
+	// Ask for 4-byte BGRA pixels.  This must come between jpeg_read_header
+	// and jpeg_start_decompress: libjpeg-turbo 3.1 and earlier happened to
+	// honour a change made after jpeg_start_decompress, but 3.2 ignores it
+	// and writes 3-byte RGB rows into the 4-byte pixels.  libjpeg-turbo
+	// converts YCbCr, RGB and grayscale to BGRA, with the unused byte 0xff
+	// (opaque).  It can't convert CMYK or YCCK: they come out as their own
+	// 4 channels, as they always have.
+	switch (cinfo->jpeg_color_space) {
+		case JCS_YCbCr:
+		case JCS_RGB:
+		case JCS_GRAYSCALE:
+			cinfo->out_color_space = JCS_EXT_BGRA;
+			break;
+		default:
+			break;
+	}
+}
+
+
 gimp_image_t *loadjpeg(char *filename) // {{{1
 {
 	struct jpeg_decompress_struct	cinfo;
@@ -56,10 +77,15 @@ gimp_image_t *loadjpeg(char *filename) // {{{1
 
 	jpeg_stdio_src(&cinfo, fp);
 	(void)jpeg_read_header(&cinfo, TRUE);
+	choose_bgra_output(&cinfo);
 	(void)jpeg_start_decompress(&cinfo);
 
-	cinfo.output_components = 4;
-	cinfo.out_color_space = JCS_EXT_BGRA;
+	if (cinfo.output_components != 4) {	// Rows that don't fill the pixels
+		jpeg_destroy_decompress(&cinfo);
+		fclose(fp);
+		free(dest);
+		return NULL;
+	}
 
 	dest->width = cinfo.output_width;
 	dest->height = cinfo.output_height;
@@ -242,16 +268,13 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, Tcl_Size length) // {{{1
 	}
 
 	(void)jpeg_read_header(&cinfo, TRUE);
+	choose_bgra_output(&cinfo);
 	(void)jpeg_start_decompress(&cinfo);
 
-	if (cinfo.out_color_space == JCS_GRAYSCALE) {
-		// Have to handle this manually.  According to the documentation,
-		// changing out_color_space, out_color_components and output_components
-		// to what we need should work, but doesn't.
-	} else {
-		cinfo.output_components = 4;
-		cinfo.out_color_components = 4;
-		cinfo.out_color_space = JCS_EXT_BGRA;
+	if (cinfo.output_components != 4) {	// Rows that don't fill the pixels
+		jpeg_destroy_decompress(&cinfo);
+		free(dest);
+		return NULL;
 	}
 
 	dest->width = cinfo.output_width;
@@ -259,35 +282,10 @@ gimp_image_t *decodejpeg(unsigned char *jpeg_data, Tcl_Size length) // {{{1
 	dest->bytes_per_pixel = 4;
 	r = dest->pixel_data = (_pel *)malloc(dest->width*dest->height*4);
 
-	if (cinfo.out_color_space == JCS_GRAYSCALE) {
-		JSAMPLE*	scanline = NULL;
-		JSAMPLE*	s = NULL;
-
-		scanline = (JSAMPLE*)malloc(sizeof(JSAMPLE) * dest->width);
-
-		while (cinfo.output_scanline < cinfo.output_height) {
-			int	c, i=dest->width;
-
-			row_pointer[0] = scanline;
-			s = scanline;
-			(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
-			while (i--) {
-				for (c=0; c<3; c++)
-					r->chan[c] = *s;
-
-				r->ch.a = 0xff;
-				s++;
-				r++;
-			}
-		}
-
-		free(scanline);  scanline=NULL; s=NULL;
-	} else {
-		while (cinfo.output_scanline < cinfo.output_height) {
-			row_pointer[0] = (JSAMPLE*)r;
-			(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
-			r += dest->width;
-		}
+	while (cinfo.output_scanline < cinfo.output_height) {
+		row_pointer[0] = (JSAMPLE*)r;
+		(void)jpeg_read_scanlines(&cinfo, row_pointer, 1);
+		r += dest->width;
 	}
 
 	(void)jpeg_finish_decompress(&cinfo);
