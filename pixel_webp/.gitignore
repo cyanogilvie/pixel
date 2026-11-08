@@ -1,0 +1,4 @@
+# meson wrap checkouts and cache
+subprojects/*/
+subprojects/packagecache
+subprojects/.wraplock

@@ -1,0 +1,267 @@
+% Pixel_webp(n) @PACKAGE_VERSION@ | WebP encoding and decoding for Pixel
+% Cyan Ogilvie
+% @PACKAGE_VERSION@
+
+
+# NAME
+
+Pixel\_webp - Encode pmaps as WebP images and decode WebP images to pmaps
+
+
+# SYNOPSIS
+
+**package require Pixel_webp** ?@PACKAGE_VERSION@?
+
+**pixel::webp::encode** ?*-option value* ...? *pmap* *quality*
+
+**pixel::webp::decode** ?*-option value* ...? *webp_data*
+
+**pixel::webp::info** *webp_data*
+
+
+# DESCRIPTION
+
+This package converts between Pixel's pmaps (32-bit BGRA images) and WebP
+images, using libwebp.  The encoder exposes the libwebp configuration
+(**WebPConfig**) as options, so that callers can trade size, speed and quality,
+control how the alpha channel is stored, and see what the encoder did.
+
+
+# COMMANDS
+
+**pixel::webp::encode** ?*-option value* ...? *pmap* *quality*
+:   Encode *pmap* and return the WebP image as a byte array.  *quality* is the
+    lossy quality, from 0 (smallest) to 100 (best), and may be fractional.
+    With **-lossless** it is instead the effort spent compressing, from 0
+    (fastest) to 100 (smallest).
+
+    With no options the result is the same as libwebp's simple
+    **WebPEncodeBGRA** API gives: a lossy image, encoded with method 4, with
+    the alpha channel (if any) stored losslessly.  The alpha channel is only
+    written when some pixel of *pmap* isn't fully opaque: an opaque *pmap*
+    gives a plain lossy WebP with no alpha.
+
+    The options, which must come before *pmap*, are:
+
+    **-preset** *preset*
+    :   The **WebPConfigPreset** the configuration starts from before the other
+        options are applied: **default** (the default), **picture**, **photo**,
+        **drawing**, **icon** or **text**.
+
+    **-method** *method*
+    :   The speed and size trade-off, from 0 (fastest, largest) to 6 (slowest,
+        smallest).  The default is 4.  It also sets the effort spent on a
+        lossless alpha channel: with **-alpha_quality 100**, method 6 can be
+        many times slower than method 5 on images with complex transparency.
+
+    **-lossless**
+    :   Encode losslessly (a VP8L image).  *quality* is then the compression
+        effort.
+
+    **-near_lossless** *level*
+    :   With **-lossless**, preprocess the image to compress better while
+        changing pixels by up to an amount set by *level*: 0 changes them the
+        most, 100 (the default) not at all.  It's an error without
+        **-lossless**.
+
+    **-alpha** *mode*
+    :   How the alpha channel of *pmap* is used: **auto** (the default) encodes
+        it if any pixel isn't opaque; **drop** ignores it, encoding the colour
+        values as if every pixel were opaque, and never writes an alpha
+        channel.
+
+    **-background** *rgb*
+    :   Blend *pmap* over the colour *rgb* (an integer **0xRRGGBB**) and encode
+        the opaque result, with no alpha channel.  It can't be combined with
+        **-alpha drop**.
+
+    **-alpha_quality** *quality*
+    :   The quality of the alpha channel, from 0 (smallest) to 100 (the
+        default: lossless).  Below 100 libwebp reduces the alpha values to
+        fewer levels before compressing them losslessly: 2 + *quality*/5 levels
+        at 70 and below, 16 + (*quality* - 70) * 8 above it.  Values from 70
+        down save the most: between 71 and 99 so many levels remain that the
+        alpha channel can come out larger than at 100.
+
+    **-alpha_filtering** *filter*
+    :   The predictive filter applied to the alpha channel before compressing
+        it: **none**, **fast** (the default) or **best** (much slower, for
+        little gain).
+
+    **-exact**
+    :   Keep the colour values of fully transparent pixels.  By default they are
+        discarded to compress better, which is right unless something will
+        later remove the alpha channel and needs the hidden colours.
+
+    **-use_sharp_yuv**
+    :   Use the slower, more accurate RGB to YUV conversion, which keeps fine
+        edges between saturated colours sharper.  Lossy only.
+
+    **-thread_level** *level*
+    :   Use threads while encoding: 0 (the default) uses none.  libwebp
+        @LIBWEBP_VERSION@ accepts 0 or 1, and at 1 encodes the alpha channel in
+        parallel with the colour data and splits up some of the analysis.  It
+        only helps where more than one CPU is available.
+
+    **-low_memory**
+    :   Reduce the memory used by lossy encoding, at the cost of more CPU.
+
+    **-target_size** *bytes*
+    :   Search for the quality that gives an image of about *bytes* bytes,
+        encoding the colour data up to **-pass** times: with the default of one
+        pass there is no search to speak of, so give **-pass** too.  0 (the
+        default) turns it off.  The alpha channel isn't included in the
+        search.
+
+    **-target_psnr** *dB*
+    :   Like **-target_size**, but searching for a PSNR of *dB*.  0 (the
+        default) turns it off.
+
+    **-pass** *passes*
+    :   The number of entropy-analysis passes, from 1 (the default) to 10:
+        the most that **-target_size** and **-target_psnr** take to approach
+        their target.
+
+    **-stats** *varname*
+    :   Set the variable *varname* to a dictionary of the statistics the
+        encoder collected (**WebPAuxStats**), described under **STATISTICS**.
+
+    The flags (**-lossless**, **-exact**, **-use_sharp_yuv**, **-low_memory**)
+    take no value: present turns them on.
+
+**pixel::webp::decode** ?*-option value* ...? *webp_data*
+:   Decode the WebP image in the byte array *webp_data* and return it as a
+    pmap.  A lossy or lossless image, with or without alpha, is supported; an
+    animated one isn't.  The options, which must come before *webp_data*, are
+    the libwebp decoder's (**WebPDecoderOptions**):
+
+    **-scale** *width* *height*
+    :   Decode to *width* by *height* pixels, scaling as part of decoding,
+        which is much cheaper than decoding at full size and then scaling.  A
+        0 dimension is derived from the other, keeping the aspect ratio
+        (rounding up), so **-scale 300 0** gives an image 300 pixels wide.
+        Each dimension can be up to 16383, and the image can be enlarged.
+        libwebp's scaler is a simple one: for the best quality, decode at full
+        size and scale with **pixel::scale_pmapf_lanczos**.
+
+    **-use_threads**
+    :   Decode using threads where libwebp can (the lossy filtering).  It only
+        helps where more than one CPU is available.
+
+    **-dithering_strength** *strength*
+    :   Dither the colour of a lossy image, from 0 (the default, off) to 100,
+        to hide the banding of strong compression.
+
+    **-alpha_dithering_strength** *strength*
+    :   Smooth an alpha channel that was reduced to fewer levels (encoded with
+        an **-alpha_quality** below 100), from 0 (the default, off) to 100,
+        hiding the steps between levels.  libwebp leaves an alpha channel with
+        only 2 levels (**-alpha_quality** below 5) as it is.
+
+**pixel::webp::info** *webp_data*
+:   Return a dictionary of what the header of the WebP image in *webp_data*
+    says, without decoding the image: **width** and **height** in pixels,
+    **has_alpha** and **has_animation** (booleans), and **format**: **lossy**,
+    **lossless** or **mixed** (an animation whose frames are of both kinds).
+    The start of the image is enough.
+
+
+# STATISTICS
+
+The dictionary set by **-stats** has these keys:
+
+**coded_size**
+:   The size of the WebP image, in bytes.
+
+**alpha_data_size**
+:   The bytes of it spent on the alpha channel: 0 when no alpha channel was
+    written.
+
+**psnr**
+:   A dictionary of the peak signal-to-noise ratio, in dB, of the **y**, **u**
+    and **v** planes, **all** of them, and the **alpha** channel, measured
+    against the encoder's input (after its RGB to YUV conversion).  99 means no
+    difference.
+
+**block_count**, **header_bytes**, **segment_size**, **segment_quant**, **segment_level**
+:   Statistics of a lossy image's colour data: the counts of intra4, intra16
+    and skipped macroblocks; the bytes spent on the header and on mode
+    partition 0; and the number of macroblocks, quantizer and filter strength
+    of each of the 4 segments.
+
+**lossless_features**, **histogram_bits**, **transform_bits**, **cross_color_transform_bits**, **cache_bits**, **palette_size**, **lossless_size**, **lossless_hdr_size**, **lossless_data_size**
+:   Statistics of the lossless encoder: of the whole image with
+    **-lossless**, otherwise of the alpha channel.  **lossless_features** is a
+    bitmask of the transforms used: 1 predictor, 2 cross-colour, 4 subtract
+    green, 8 colour indexing.
+
+
+# ERRORS
+
+Errors in the arguments follow **parse_args**: an unknown option, a missing
+argument or a value that isn't one of an option's choices have its usual
+messages and error codes.  The others are:
+
+**PIXEL WEBP RANGE** *name*
+:   A numeric argument or option was outside its range.
+
+**PIXEL WEBP ENCODE** *code*
+:   libwebp rejected the configuration or failed to encode the image.  *code*
+    is the name of libwebp's **WebPEncodingError**, without its **VP8_ENC_ERROR_**
+    prefix (for example **INVALID_CONFIGURATION** or **OUT_OF_MEMORY**).
+
+**PIXEL WEBP DECODE** *code*
+:   *webp_data* couldn't be decoded, or for **pixel::webp::info**, its header
+    couldn't be read.  *code* is **BITSTREAM_ERROR** for data
+    that isn't WebP or is corrupt, **NOT_ENOUGH_DATA** for a truncated
+    image, **ANIMATION** for an animated one, or another of libwebp's
+    **VP8StatusCode** names without its **VP8_STATUS_** prefix.
+
+
+# EXAMPLES
+
+Encode as libwebp's simple API does:
+
+~~~tcl
+set webp [pixel::webp::encode $pmap 90]
+~~~
+
+Encode an image with soft transparency faster and smaller, by reducing the
+alpha channel to 16 levels and encoding it in parallel with the colour data:
+
+~~~tcl
+set webp [pixel::webp::encode -alpha_quality 70 -thread_level 1 $pmap 90]
+~~~
+
+Flatten an image onto white, and find out how big each part of the result is:
+
+~~~tcl
+set webp [pixel::webp::encode -background 0xffffff -stats stats $pmap 85]
+puts "[dict get $stats coded_size] bytes, PSNR [dict get $stats psnr all] dB"
+~~~
+
+Encode losslessly, and check that the pixels survive:
+
+~~~tcl
+set copy [pixel::webp::decode [pixel::webp::encode -lossless $pmap 75]]
+~~~
+
+Make a thumbnail 200 pixels wide, after checking the image's size:
+
+~~~tcl
+if {[dict get [pixel::webp::info $webp] width] > 200} {
+    set thumb [pixel::webp::decode -scale 200 0 -use_threads $webp]
+}
+~~~
+
+
+# SEE ALSO
+
+Pixel(n), the libwebp encoder documentation:
+https://developers.google.com/speed/webp/docs/api
+
+
+# LICENSE
+
+This package is copyrighted by Cyan Ogilvie and other parties, and is made
+available under the same license terms as the Tcl Core (see license.terms).

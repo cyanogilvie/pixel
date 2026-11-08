@@ -1,0 +1,419 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> shiftwidth=4 ts=4
+#
+# pixel::webp::encode: the compatible two-argument form, the options, the
+# alpha handling and the -stats dict.
+
+if {[lsearch [namespace children] ::tcltest] == -1} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+::tcltest::loadTestedCommands
+package require Pixel
+package require Pixel_webp
+
+namespace eval ::pixel_webp_test {
+	namespace path ::tcltest
+
+	# A w x h pmap with every pixel from [script x y] -> 0xAARRGGBB
+	# (pixel::pmap_new / pmap_clr only fill with a repeated byte)
+	proc pmap {w h script} {
+		set p	[pixel::pmap_new $w $h 0]
+		for {set y 0} {$y < $h} {incr y} {
+			for {set x 0} {$x < $w} {incr x} {
+				pixel::put_pixel $p $x $y [apply [list {x y} $script] $x $y] 0
+			}
+		}
+		set p
+	}
+
+	# The RIFF chunk fourccs of a webp
+	proc chunks webp {
+		set res	{}
+		set ofs	12
+		while {$ofs + 8 <= [string length $webp]} {
+			binary scan $webp @${ofs}a4iu fourcc len
+			lappend res $fourcc
+			incr ofs [expr {8 + $len + ($len & 1)}]
+		}
+		set res
+	}
+
+	# The largest difference of any channel of any pixel between two pmaps
+	proc maxdiff {a b} {
+		lassign [pixel::pmap_info $a] w h
+		set worst	0
+		for {set y 0} {$y < $h} {incr y} {
+			for {set x 0} {$x < $w} {incr x} {
+				foreach ca [pixel::get_pixel $a $x $y] cb [pixel::get_pixel $b $x $y] {
+					set d	[expr {abs($ca - $cb)}]
+					if {$d > $worst} {set worst $d}
+				}
+			}
+		}
+		set worst
+	}
+
+	# Opaque, with detail in every channel
+	variable opaque		[pmap 32 32 {expr {0xff000000 | ($x*8) << 16 | ($y*8) << 8 | (($x+$y)*4)}}]
+	# Red with a horizontal alpha gradient
+	variable gradient	[pmap 64 32 {expr {(($x*4) << 24) | 0xff0000}}]
+	# Half transparent red, everywhere
+	variable halfred	[pmap 16 16 {expr {0x80ff0000}}]
+
+	test encode-1.1 {compatible form: pmap quality} -body { #<<<
+		variable opaque
+		set webp	[pixel::webp::encode $opaque 90]
+		list [string range $webp 0 3] [string range $webp 8 11] [pixel::pmap_info [pixel::webp::decode $webp]]
+	} -result {RIFF WEBP {32 32}}
+	#>>>
+	test encode-1.2 {defaults are the simple API's: same bytes as an explicit default configuration} -body { #<<<
+		variable gradient
+		expr {
+			[pixel::webp::encode $gradient 75] eq
+			[pixel::webp::encode -preset default -method 4 -alpha_quality 100 -alpha_filtering fast $gradient 75]
+		}
+	} -result 1
+	#>>>
+	test encode-1.3 {quality can be fractional} -body { #<<<
+		variable opaque
+		string range [pixel::webp::encode $opaque 87.5] 8 11
+	} -result WEBP
+	#>>>
+	test encode-1.4 {encode_noalpha is gone} -body { #<<<
+		info commands ::pixel::webp::encode_noalpha
+	} -result {}
+	#>>>
+	test encode-1.5 {the cached argspec survives repeated calls with different options} -body { #<<<
+		variable opaque
+		set sizes	{}
+		foreach m {0 4 6 4} {
+			lappend sizes [string length [pixel::webp::encode -method $m $opaque 80]]
+		}
+		expr {[lindex $sizes 1] == [lindex $sizes 3]}
+	} -result 1
+	#>>>
+	test encode-1.6 {each interp's command has its own argspec cache, released with the interp} -setup { #<<<
+		set child	[interp create]
+		foreach pkg {Pixel parse_args Pixel_webp} {
+			set v	[package present $pkg]
+			$child eval [list package ifneeded $pkg $v [package ifneeded $pkg $v]]
+		}
+	} -body {
+		$child eval {
+			package require Pixel_webp
+			string length [pixel::webp::encode -method 2 [pixel::pmap_new 8 8 0xffffffff] 50]
+		}
+	} -cleanup {
+		interp delete $child
+		unset -nocomplain child v pkg
+	} -match regexp -result {^[0-9]+$}
+	#>>>
+
+	test alpha-1.1 {an opaque pmap is encoded without alpha (simple VP8)} -body { #<<<
+		variable opaque
+		chunks [pixel::webp::encode $opaque 90]
+	} -result {{VP8 }}
+	#>>>
+	test alpha-1.2 {a translucent pmap gets an ALPH chunk} -body { #<<<
+		variable gradient
+		chunks [pixel::webp::encode $gradient 90]
+	} -result {VP8X ALPH {VP8 }}
+	#>>>
+	test alpha-1.3 {-alpha drop ignores the alpha channel} -body { #<<<
+		variable halfred
+		set webp	[pixel::webp::encode -alpha drop $halfred 90]
+		list [chunks $webp] [lindex [pixel::get_pixel [pixel::webp::decode $webp] 8 8] 3]
+	} -result {{{VP8 }} 255}
+	#>>>
+	test alpha-1.4 {-background blends over a colour, leaving no alpha} -body { #<<<
+		variable halfred
+		set webp	[pixel::webp::encode -background 0xffffff $halfred 100]
+		lassign [pixel::get_pixel [pixel::webp::decode $webp] 8 8] r g b a
+		list [chunks $webp] [expr {$r > 245}] [expr {abs($g-127) < 8 && abs($b-127) < 8}] $a
+	} -result {{{VP8 }} 1 1 255}
+	#>>>
+	test alpha-1.5 {lower -alpha_quality makes a smaller alpha plane} -body { #<<<
+		variable gradient
+		pixel::webp::encode -stats s100 $gradient 90
+		pixel::webp::encode -alpha_quality 0 -stats s0 $gradient 90
+		expr {[dict get $s0 alpha_data_size] < [dict get $s100 alpha_data_size]}
+	} -cleanup {
+		unset -nocomplain s0 s100
+	} -result 1
+	#>>>
+	test alpha-1.6 {-alpha_filtering takes none, fast or best} -body { #<<<
+		variable gradient
+		lmap f {none fast best} {
+			string range [pixel::webp::encode -alpha_filtering $f $gradient 90] 8 11
+		}
+	} -result {WEBP WEBP WEBP}
+	#>>>
+
+	test lossless-1.1 {-lossless round trips every pixel} -body { #<<<
+		variable opaque
+		variable gradient
+		list \
+			[maxdiff $opaque	[pixel::webp::decode [pixel::webp::encode -lossless $opaque 75]]] \
+			[maxdiff $gradient	[pixel::webp::decode [pixel::webp::encode -lossless -exact $gradient 75]]]
+	} -result {0 0}
+	#>>>
+	test lossless-1.2 {-lossless writes a VP8L image} -body { #<<<
+		variable gradient
+		chunks [pixel::webp::encode -lossless $gradient 75]
+	} -result VP8L
+	#>>>
+	test lossless-1.3 {-near_lossless with -lossless} -body { #<<<
+		variable opaque
+		set webp	[pixel::webp::encode -lossless -near_lossless 40 $opaque 75]
+		list [chunks $webp] [expr {[maxdiff $opaque [pixel::webp::decode $webp]] < 32}]
+	} -result {VP8L 1}
+	#>>>
+
+	test options-1.1 {the rest of the options are accepted} -body { #<<<
+		variable opaque
+		string range [pixel::webp::encode \
+			-preset photo -method 6 -use_sharp_yuv -thread_level 1 -low_memory \
+			-exact -pass 2 -target_size 2000 -target_psnr 0 \
+			$opaque 80] 8 11
+	} -result WEBP
+	#>>>
+	test options-1.2 {-use_sharp_yuv changes the encoding} -body { #<<<
+		variable opaque
+		expr {[pixel::webp::encode $opaque 80] ne [pixel::webp::encode -use_sharp_yuv $opaque 80]}
+	} -result 1
+	#>>>
+
+	test stats-1.1 {-stats sets a dict of the WebPAuxStats} -body { #<<<
+		variable gradient
+		set webp	[pixel::webp::encode -stats st $gradient 90]
+		list \
+			[expr {[dict get $st coded_size] == [string length $webp]}] \
+			[expr {[dict get $st alpha_data_size] > 0}] \
+			[lsort [dict keys [dict get $st psnr]]] \
+			[llength [dict get $st block_count]]
+	} -cleanup {
+		unset -nocomplain st webp
+	} -result {1 1 {all alpha u v y} 3}
+	#>>>
+	test stats-1.2 {no alpha data for an opaque pmap} -body { #<<<
+		variable opaque
+		pixel::webp::encode -stats st $opaque 90
+		dict get $st alpha_data_size
+	} -cleanup {
+		unset -nocomplain st
+	} -result 0
+	#>>>
+	test stats-1.3 {-stats names any variable, including an array element} -body { #<<<
+		variable opaque
+		apply {p {
+			pixel::webp::encode -stats a(x) $p 90
+			dict exists $a(x) coded_size
+		}} $opaque
+	} -result 1
+	#>>>
+
+	test errors-1.1 {unknown option} -body { #<<<
+		variable opaque
+		pixel::webp::encode -bogus 1 $opaque 90
+	} -returnCodes error -errorCode {TCL LOOKUP INDEX option -bogus} -match glob -result {bad option "-bogus": must be *}
+	#>>>
+	test errors-1.2 {quality is required} -body { #<<<
+		variable opaque
+		pixel::webp::encode $opaque
+	} -returnCodes error -errorCode {PARSE_ARGS REQUIRED quality} -result {argument quality is required}
+	#>>>
+	test errors-1.3 {not a pmap} -body { #<<<
+		pixel::webp::encode notapmap 90
+	} -returnCodes error -match glob -result *
+	#>>>
+	test errors-1.4 {ranges} -body { #<<<
+		variable opaque
+		lmap {opt val} {quality 101 -method 7 -alpha_quality -1 -near_lossless 101 -pass 0 -target_size -1 -background 0x1000000} {
+			if {$opt eq "quality"} {
+				catch {pixel::webp::encode $opaque $val} msg o
+			} elseif {$opt eq "-near_lossless"} {
+				catch {pixel::webp::encode -lossless $opt $val $opaque 90} msg o
+			} else {
+				catch {pixel::webp::encode $opt $val $opaque 90} msg o
+			}
+			dict get $o -errorcode
+		}
+	} -cleanup {
+		unset -nocomplain opt val msg o
+	} -result {{PIXEL WEBP RANGE quality} {PIXEL WEBP RANGE -method} {PIXEL WEBP RANGE -alpha_quality} {PIXEL WEBP RANGE -near_lossless} {PIXEL WEBP RANGE -pass} {PIXEL WEBP RANGE -target_size} {PIXEL WEBP RANGE -background}}
+	#>>>
+	test errors-1.5 {-near_lossless needs -lossless} -body { #<<<
+		variable opaque
+		pixel::webp::encode -near_lossless 60 $opaque 90
+	} -returnCodes error -result {-near_lossless only applies with -lossless}
+	#>>>
+	test errors-1.6 {-background and -alpha drop} -body { #<<<
+		variable opaque
+		pixel::webp::encode -alpha drop -background 0 $opaque 90
+	} -returnCodes error -result {-background and -alpha drop are exclusive}
+	#>>>
+	test errors-1.7 {enums} -body { #<<<
+		variable opaque
+		list \
+			[catch {pixel::webp::encode -preset cartoon $opaque 90} msg] $msg \
+			[catch {pixel::webp::encode -alpha keep $opaque 90} msg] $msg
+	} -cleanup {
+		unset -nocomplain msg
+	} -result {1 {bad -preset "cartoon": must be default, picture, photo, drawing, icon, or text} 1 {bad -alpha "keep": must be auto or drop}}
+	#>>>
+	test errors-1.8 {-stats to a variable that can't be set} -setup { #<<<
+		array set arr {}
+	} -body {
+		variable opaque
+		pixel::webp::encode -stats arr $opaque 90
+	} -cleanup {
+		unset -nocomplain arr
+	} -returnCodes error -match glob -result {can't set "arr": variable is array}
+	#>>>
+	test errors-1.9 {-thread_level is a level: negative is a range error, beyond what libwebp supports is invalid} -body { #<<<
+		variable opaque
+		list \
+			[catch {pixel::webp::encode -thread_level -1 $opaque 90} msg o] [dict get $o -errorcode] \
+			[catch {pixel::webp::encode -thread_level 1000 $opaque 90} msg o] [dict get $o -errorcode]
+	} -cleanup {
+		unset -nocomplain msg o
+	} -result {1 {PIXEL WEBP RANGE -thread_level} 1 {PIXEL WEBP ENCODE INVALID_CONFIGURATION}}
+	#>>>
+
+	test decode-1.1 {round trip dimensions and an opaque pixel} -body { #<<<
+		variable opaque
+		set p	[pixel::webp::decode [pixel::webp::encode -lossless $opaque 50]]
+		list [pixel::pmap_info $p] [pixel::get_pixel $p 3 5] [pixel::get_pixel $opaque 3 5]
+	} -cleanup {
+		unset -nocomplain p
+	} -result {{32 32} {24 40 32 255} {24 40 32 255}}
+	#>>>
+	test decode-1.2 {not webp} -body { #<<<
+		pixel::webp::decode "not a webp image at all"
+	} -returnCodes error -errorCode {PIXEL WEBP DECODE BITSTREAM_ERROR} -result {webp decode failed: BITSTREAM_ERROR}
+	#>>>
+	test decode-1.3 {truncated: the header parses, the image data is missing} -body { #<<<
+		variable opaque
+		set webp	[pixel::webp::encode $opaque 90]
+		pixel::webp::decode [string range $webp 0 [expr {[string length $webp]/2}]]
+	} -cleanup {
+		unset -nocomplain webp
+	} -returnCodes error -errorCode {PIXEL WEBP DECODE NOT_ENOUGH_DATA} -result {webp decode failed: NOT_ENOUGH_DATA}
+	#>>>
+	test decode-1.4 {empty} -body { #<<<
+		pixel::webp::decode ""
+	} -returnCodes error -match glob -errorCode {PIXEL WEBP DECODE *} -result {webp decode failed: *}
+	#>>>
+	test decode-1.5 {not bytes} -body { #<<<
+		pixel::webp::decode "☃"
+	} -returnCodes error -match glob -result {expected code point values below 0xff *}
+	#>>>
+	test decode-2.1 {-scale with both dimensions} -body { #<<<
+		variable gradient
+		pixel::pmap_info [pixel::webp::decode -scale 16 24 [pixel::webp::encode $gradient 90]]
+	} -result {16 24}
+	#>>>
+	test decode-2.2 {-scale with one dimension keeps the aspect ratio (rounding up, as libwebp does)} -body { #<<<
+		variable gradient
+		set webp	[pixel::webp::encode $gradient 90]
+		list \
+			[pixel::pmap_info [pixel::webp::decode -scale 32 0 $webp]] \
+			[pixel::pmap_info [pixel::webp::decode -scale 0 5 $webp]]
+	} -cleanup {
+		unset -nocomplain webp
+	} -result {{32 16} {10 5}}
+	#>>>
+	test decode-2.3 {-scale can enlarge} -body { #<<<
+		variable opaque
+		pixel::pmap_info [pixel::webp::decode -scale 100 0 [pixel::webp::encode -lossless $opaque 50]]
+	} -result {100 100}
+	#>>>
+	test decode-2.4 {-use_threads, -dithering_strength and -alpha_dithering_strength} -body { #<<<
+		variable gradient
+		set webp	[pixel::webp::encode -alpha_quality 30 $gradient 50]
+		lmap opts {-use_threads {-dithering_strength 100} {-alpha_dithering_strength 100}} {
+			pixel::pmap_info [pixel::webp::decode {*}$opts $webp]
+		}
+	} -cleanup {
+		unset -nocomplain webp
+	} -result {{64 32} {64 32} {64 32}}
+	#>>>
+	test decode-2.5 {-alpha_dithering_strength smooths reduced alpha levels (libwebp needs more than 2)} -body { #<<<
+		variable gradient
+		set webp	[pixel::webp::encode -alpha_quality 30 $gradient 90]
+		set plain	[pixel::webp::decode $webp]
+		set smooth	[pixel::webp::decode -alpha_dithering_strength 100 $webp]
+		set levels	{}
+		set slevels	{}
+		for {set x 0} {$x < 64} {incr x} {
+			dict set levels		[lindex [pixel::get_pixel $plain $x 16] 3] 1
+			dict set slevels	[lindex [pixel::get_pixel $smooth $x 16] 3] 1
+		}
+		expr {[dict size $slevels] > [dict size $levels]}
+	} -cleanup {
+		unset -nocomplain webp plain smooth levels slevels x
+	} -result 1
+	#>>>
+	test decode-3.1 {-scale ranges} -body { #<<<
+		variable opaque
+		set webp	[pixel::webp::encode $opaque 90]
+		lmap dims {{-1 10} {10 16384} {0 0} {x 10}} {
+			catch {pixel::webp::decode -scale {*}$dims $webp} msg o
+			list $msg [dict get $o -errorcode]
+		}
+	} -cleanup {
+		unset -nocomplain webp dims msg o
+	} -match glob -result {{{bad -scale width "-1": must be between 0 and 16383} {PIXEL WEBP RANGE {-scale width}}} {{bad -scale height "16384": must be between 0 and 16383} {PIXEL WEBP RANGE {-scale height}}} {{-scale needs a width or a height} NONE} {{expected integer but got "x"} *}}
+	#>>>
+	test decode-3.2 {-scale takes two values} -body { #<<<
+		pixel::webp::decode -scale 10
+	} -returnCodes error -match glob -result {wrong # args*}
+	#>>>
+	test decode-3.3 {dithering ranges} -body { #<<<
+		variable opaque
+		set webp	[pixel::webp::encode $opaque 90]
+		lmap opt {-dithering_strength -alpha_dithering_strength} {
+			catch {pixel::webp::decode $opt 101 $webp} msg o
+			dict get $o -errorcode
+		}
+	} -cleanup {
+		unset -nocomplain webp opt msg o
+	} -result {{PIXEL WEBP RANGE -dithering_strength} {PIXEL WEBP RANGE -alpha_dithering_strength}}
+	#>>>
+
+	test info-1.1 {lossy, opaque} -body { #<<<
+		variable opaque
+		pixel::webp::info [pixel::webp::encode $opaque 90]
+	} -result {width 32 height 32 has_alpha 0 has_animation 0 format lossy}
+	#>>>
+	test info-1.2 {lossy with alpha} -body { #<<<
+		variable gradient
+		pixel::webp::info [pixel::webp::encode $gradient 90]
+	} -result {width 64 height 32 has_alpha 1 has_animation 0 format lossy}
+	#>>>
+	test info-1.3 {lossless} -body { #<<<
+		variable gradient
+		dict get [pixel::webp::info [pixel::webp::encode -lossless $gradient 50]] format
+	} -result lossless
+	#>>>
+	test info-1.4 {only the header is needed} -body { #<<<
+		variable opaque
+		set webp	[pixel::webp::encode $opaque 90]
+		dict get [pixel::webp::info [string range $webp 0 40]] width
+	} -cleanup {
+		unset -nocomplain webp
+	} -result 32
+	#>>>
+	test info-1.5 {not webp} -body { #<<<
+		pixel::webp::info "not a webp image at all"
+	} -returnCodes error -errorCode {PIXEL WEBP DECODE BITSTREAM_ERROR} -result {webp decode failed: BITSTREAM_ERROR}
+	#>>>
+	test info-1.6 {wrong # args} -body { #<<<
+		pixel::webp::info
+	} -returnCodes error -errorCode {PARSE_ARGS REQUIRED webp_data} -result {argument webp_data is required}
+	#>>>
+}
+
+::tcltest::cleanupTests
+namespace delete ::pixel_webp_test
+return
