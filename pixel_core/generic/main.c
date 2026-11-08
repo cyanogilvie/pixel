@@ -1433,8 +1433,10 @@ static int glue_scale_pmap_lanczos(ClientData cdata, Tcl_Interp* interp, int obj
 
 static int initvars(Tcl_Interp* interp) //{{{1
 {
+	// Tcl_SetVar2Ex, not Tcl_ObjSetVar2 with a new name Tcl_Obj: Tcl_ObjSetVar2
+	// doesn't free a name with no references, so each load leaked them all
 #define MIRROR_FLAG(name, value) \
-	if (Tcl_ObjSetVar2(interp, Tcl_NewStringObj((name), -1), NULL, \
+	if (Tcl_SetVar2Ex(interp, (name), NULL, \
 			Tcl_NewIntObj((value)), TCL_LEAVE_ERR_MSG) == NULL) return TCL_ERROR;
 
 	MIRROR_FLAG("pixel::MD_BLUR",			MD_BLUR);
