@@ -38,12 +38,10 @@ static void dup_internal_rep(Tcl_Obj* src, Tcl_Obj* dest) //<<<
 
 //	fprintf(stderr, "tcl_pmap: Called dup_internal_rep\n");
 
+	// pmap_new, as free_internal_rep frees it with pmap_free (it was ckalloc'd
+	// here, which free() can't free: a dup'd pmap crashed when it was freed)
 	size = src_pmap->width * src_pmap->height * src_pmap->bytes_per_pixel;
-	dest_pmap = (gimp_image_t*)ckalloc(sizeof(gimp_image_t));
-	dest_pmap->pixel_data = (_pel*)ckalloc(size);
-
-	dest_pmap->width = src_pmap->width;
-	dest_pmap->height = src_pmap->height;
+	dest_pmap = pmap_new(src_pmap->width, src_pmap->height, (_pel){.c = 0});
 	dest_pmap->bytes_per_pixel = src_pmap->bytes_per_pixel;
 	memcpy(dest_pmap->pixel_data, src_pmap->pixel_data, size);
 	
@@ -127,11 +125,10 @@ static int set_pmap_from_any(Tcl_Interp* interp, Tcl_Obj *obj) //<<<
 		THROW_ERROR("Supplied pixel data is the wrong size");
 	}
 
-	pmap = (gimp_image_t*)ckalloc(sizeof(gimp_image_t));
-	pmap->width = width;
-	pmap->height = height;
+	// pmap_new, as free_internal_rep frees it with pmap_free (it was ckalloc'd
+	// here, which free() can't free: a pmap made from a list crashed when freed)
+	pmap = pmap_new(width, height, (_pel){.c = 0});
 	pmap->bytes_per_pixel = bytes_per_pixel;
-	pmap->pixel_data = (_pel *)ckalloc(size);
 	memcpy(pmap->pixel_data, pixel_data, size);
 
 	if (oldtype != NULL && oldtype->freeIntRepProc != NULL)
