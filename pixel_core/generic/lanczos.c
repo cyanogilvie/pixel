@@ -1,4 +1,5 @@
 #include <pixelInt.h>
+#include "scale.h"
 
 #define PI			3.141592653589793
 
@@ -730,156 +731,22 @@ static int glue_lowpass_pmap_lanczos3(ClientData /*unused*/, Tcl_Interp* interp,
 static int glue_scale_pmapf_lanczos3(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{
 {
 	struct pmapf*	src = NULL;
-	struct pmapf*	dst = NULL;
-	struct pmapf*	t = NULL;
-	int				new_w, new_h, wt;
+	int				new_w, new_h, wt = 0;
 
+	// wt: the kernel's reach in input pixels each side (0 or omitted: chosen for
+	// each dimension's ratio)
 	enum {A_cmd, A_PMAPF, A_WIDTH, A_HEIGHT, A_args, A_WT=A_args, A_objc};
 	CHECK_RANGE_ARGS("pmapf width height ?wt?");
 
 	TEST_OK(Pixel_GetPMAPFFromObj(interp, objv[A_PMAPF], &src));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WIDTH], &new_w));
 	TEST_OK(Tcl_GetIntFromObj(interp, objv[A_HEIGHT], &new_h));
-	if (objc >= 5) {
-		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
-	} else {
-		const int src_w = (int)src->width;
+	if (objc > A_WT)		TEST_OK(Tcl_GetIntFromObj(interp, objv[A_WT], &wt));
+	if (new_w < 1 || new_h < 1)	THROW_PRINTF("invalid size %dx%d", new_w, new_h);
+	if (wt < 0 || wt > 64)		THROW_PRINTF("invalid wt %d: must be between 0 and 64", wt);
 
-		if (new_w > src_w) {
-			wt = 4;
-		} else if (new_w * 8 < src_w) {
-			wt = 15;
-		} else if (new_w * 5 < src_w) {
-			wt = 13;
-		} else if (new_w * 3 < src_w) {
-			wt = 10;
-		} else {
-			wt = 9;
-		}
-	}
-
-
-
-
-#if 0
-	dst = pmapf_new(new_w, new_h);
-	t = pmapf_new(src->width, dst->height);
-
-	// first: scale height
-	lanczos_half_scale_float(
-			src->pixel_data,	// in
-			t->pixel_data,		// out
-			src->height,		// orig_dim
-			dst->height,		// new_dim
-			wt,
-			fminf(.5, dst->height/(2.0*src->height)),	// f
-			t->width,			// dsinc
-			t->width,			// iiend
-			1,					// dinc
-			src->width,			// sinc
-			1					// sif
-			);
-
-	// second: scale width
-	lanczos_half_scale_float(
-			t->pixel_data,		// in
-			dst->pixel_data,	// out
-			t->width,			// orig_dim
-			dst->width,			// new_dim
-			wt,
-			fminf(.5, dst->width/(2.0*t->width)),	// f
-			1,					// dsinc
-			t->height,			// iiend
-			dst->width,			// dinc
-			1,					// sinc
-			t->width			// sif
-			);
-
-	pmapf_free(&t);
-	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
-
+	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(pmapf_scale(src, new_w, new_h, wt)));
 	return TCL_OK;
-
-#else
-
-
-
-	// Scale to the smallest output dimension first (reduces the peak memory requirements)
-	if (new_w > new_h) {
-		t = pmapf_new(src->width, new_h);
-
-		// first: scale height
-		lanczos_half_scale_float(
-				src->pixel_data,	// in
-				t->pixel_data,		// out
-				src->height,		// orig_dim
-				new_h,				// new_dim
-				wt,
-				fminf(.5, new_h/(2.0*src->height)),	// f
-				t->width,			// dsinc
-				t->width,			// iiend
-				1,					// dinc
-				src->width,			// sinc
-				1					// sif
-				);
-
-		dst = pmapf_new(new_w, new_h);
-
-		// second: scale width
-		lanczos_half_scale_float(
-				t->pixel_data,		// in
-				dst->pixel_data,	// out
-				t->width,			// orig_dim
-				dst->width,			// new_dim
-				wt,
-				fminf(.5, dst->width/(2.0*t->width)),	// f
-				1,					// dsinc
-				t->height,			// iiend
-				dst->width,			// dinc
-				1,					// sinc
-				t->width			// sif
-				);
-	} else {
-		t = pmapf_new(new_w, src->height);
-
-		// first: scale width
-		lanczos_half_scale_float(
-				src->pixel_data,	// in
-				t->pixel_data,		// out
-				src->width,			// orig_dim
-				new_w,				// new_dim
-				wt,
-				fminf(.5, new_w/(2.0*src->width)),	// f
-				1,					// dsinc
-				t->height,			// iiend
-				new_w,				// dinc
-				1,					// sinc
-				src->width			// sif
-				);
-
-		dst = pmapf_new(new_w, new_h);
-
-		// second: scale height
-		lanczos_half_scale_float(
-				t->pixel_data,		// in
-				dst->pixel_data,	// out
-				t->height,			// orig_dim
-				dst->height,		// new_dim
-				wt,
-				fminf(.5, dst->height/(2.0*t->height)),	// f
-				dst->width,			// dsinc
-				t->width,			// iiend
-				1,					// dinc
-				t->width,			// sinc
-				1					// sif
-				);
-	}
-
-	pmapf_free(&t);
-	Tcl_SetObjResult(interp, Pixel_NewPMAPFObj(dst));
-
-	return TCL_OK;
-#endif
 }
 
 //}}}

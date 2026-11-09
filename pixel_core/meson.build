@@ -46,6 +46,7 @@ pkg_sources = files(
   'generic/misc.c',
   'generic/scale_pmap.c',
   'generic/lanczos.c',
+  'generic/scale.c',
   'generic/perceptual_scaling.c',
 )
 
