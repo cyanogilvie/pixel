@@ -45,6 +45,10 @@ Pixel \- Raster graphics extension for Tcl
 \fBpixel::rle_decode\fI rle-data\fR
 .br
 \fBpixel::pmap2bmp\fI pmap\fR
+.br
+\fBpixel::scale_pmapf_lanczos\fI pmapf width height ?wt?\fR (returns pmapf)
+.br
+\fBpixel::buffer_cache\fI ?limit?\fR
 .SH DESCRIPTION
 The Pixel extension for Tcl provides a framework for working with low level
 raster graphics.  Through the use of additional modules, packaged as seperate
@@ -65,3 +69,22 @@ free a \fBpmap\fR.
 .PP
 See the individual man pages for each of the commands in the core Pixel package
 .PP
+.SH SCALING
+\fBpixel::scale_pmapf_lanczos\fR scales a \fBpmapf\fR (floating point, linear
+light) to \fIwidth\fR x \fIheight\fR with a windowed sinc: a sinc cut off at the
+output's Nyquist frequency, under a sinc window reaching \fIwt\fR input pixels each
+side (0 or omitted: chosen for each dimension's ratio).  Each pixel is a swatch
+whose sample is at its centre, so the output covers exactly the input's extent:
+output pixel \fIo\fR is centred on input index (\fIo\fR+0.5)*\fIr\fR-0.5, for the
+ratio \fIr\fR of input to output size, and a mirror symmetric image stays
+symmetric.  Working in linear light, it averages light, not sRGB values, so fine
+bright detail keeps its contrast.  On aarch64 it uses NEON.
+.SH MEMORY
+A large pixel buffer fresh from the kernel costs more in page faults than a pass
+over its pixels.  \fBpixel::buffer_cache\fR \fIlimit\fR lets freed \fBpmap\fR and
+\fBpmapf\fR pixel buffers of 4 MB or more be kept, up to \fIlimit\fR bytes in all,
+for the next allocations they fit, instead of being returned to the system.
+The default is 0: none are kept.  The cache is shared by all threads.  It
+returns a dictionary of the \fBlimit\fR, the bytes \fBheld\fR now and how many
+\fBbuffers\fR.  Size the limit to the memory the process can spare: what's held
+stays resident.
