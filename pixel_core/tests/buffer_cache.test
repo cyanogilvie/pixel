@@ -1,0 +1,114 @@
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+#
+# pixel::buffer_cache: recycling freed large pixel buffers (at least 4 MB)
+
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+::tcltest::loadTestedCommands
+
+# A w x h pmap of a repeating pattern
+proc pattern_pmap {w h} { #<<<
+	set row	{}
+	for {set x 0} {$x < $w} {incr x} {append row [binary format cucucucu [expr {$x & 0xff}] [expr {($x*7) & 0xff}] [expr {($x*13) & 0xff}] 255]}
+	list $w $h 4 [string repeat $row $h]
+}
+
+#>>>
+
+test buffer_cache-1.1 {off by default} -body { #<<<
+	pixel::buffer_cache
+} -result {limit 0 held 0 buffers 0}
+#>>>
+test buffer_cache-1.2 {a freed large pmapf is kept, up to the limit} -setup { #<<<
+	pixel::buffer_cache [expr {64<<20}]
+} -body {
+	set p	[pixel::pmapf_new 1100 1100]
+	unset p
+	pixel::buffer_cache
+} -cleanup {
+	pixel::buffer_cache 0
+	unset -nocomplain p
+} -result [list limit [expr {64<<20}] held [expr {1100*1100*16}] buffers 1]
+#>>>
+test buffer_cache-1.3 {a kept buffer is reused for an allocation it fits (not more than twice the size)} -setup { #<<<
+	pixel::buffer_cache [expr {64<<20}]
+	set p	[pixel::pmapf_new 1100 1100]
+	unset p
+} -body {
+	set p	[pixel::pmapf_new 1000 1000]
+	dict get [pixel::buffer_cache] buffers
+} -cleanup {
+	pixel::buffer_cache 0
+	unset -nocomplain p
+} -result 0
+#>>>
+test buffer_cache-1.4 {small buffers aren't kept} -setup { #<<<
+	pixel::buffer_cache [expr {64<<20}]
+} -body {
+	set p	[pixel::pmapf_new 100 100]
+	unset p
+	dict get [pixel::buffer_cache] buffers
+} -cleanup {
+	pixel::buffer_cache 0
+	unset -nocomplain p
+} -result 0
+#>>>
+test buffer_cache-1.5 {what's held never exceeds the limit} -setup { #<<<
+	pixel::buffer_cache [expr {64<<20}]
+} -body {
+	set ps	{}
+	for {set i 0} {$i < 6} {incr i} {lappend ps [pixel::pmapf_new 1100 [expr {1100+$i}]]}
+	unset ps
+	expr {[dict get [pixel::buffer_cache] held] <= (64<<20)}
+} -cleanup {
+	pixel::buffer_cache 0
+	unset -nocomplain ps i
+} -result 1
+#>>>
+test buffer_cache-1.6 {lowering the limit frees what's held} -setup { #<<<
+	pixel::buffer_cache [expr {64<<20}]
+	set p	[pixel::pmapf_new 1100 1100]
+	unset p
+} -body {
+	pixel::buffer_cache 0
+} -cleanup {
+	unset -nocomplain p
+} -result {limit 0 held 0 buffers 0}
+#>>>
+test buffer_cache-1.7 {a recycled buffer doesn't change results} -body { #<<<
+	set src	[pixel::pmap_to_pmapf [pattern_pmap 1300 900]]
+	set want	[lindex [pixel::pmapf_to_pmap [pixel::scale_pmapf_lanczos $src 1100 700]] 3]
+	pixel::buffer_cache [expr {256<<20}]
+	# Leave garbage in buffers the next allocations will get
+	set junk	[pixel::pmapf_new 1100 700]
+	pixel::pmapf_clr $junk {1 0 1 1}
+	unset junk
+	set got	[lindex [pixel::pmapf_to_pmap [pixel::scale_pmapf_lanczos $src 1100 700]] 3]
+	expr {$got eq $want}
+} -cleanup {
+	pixel::buffer_cache 0
+	unset -nocomplain src want got junk
+} -result 1
+#>>>
+test buffer_cache-1.8 {a large buffer other code allocated is freed, not kept} -setup { #<<<
+	pixel::buffer_cache [expr {64<<20}]
+} -body {
+	# pixel::dup mallocs its copy's pixels itself
+	set p	[pixel::dup [pattern_pmap 1100 1100]]
+	unset p
+	pixel::buffer_cache
+} -cleanup {
+	pixel::buffer_cache 0
+	unset -nocomplain p
+} -result [list limit [expr {64<<20}] held 0 buffers 0]
+#>>>
+test buffer_cache-2.1 {a negative limit is an error} -body { #<<<
+	pixel::buffer_cache -1
+} -returnCodes error -result {limit must not be negative}
+#>>>
+
+::tcltest::cleanupTests
+return

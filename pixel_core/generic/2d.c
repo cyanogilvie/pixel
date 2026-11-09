@@ -37,6 +37,148 @@ void asm_memcpy( _pel *dest_buf, _pel *src_buf, uint32 len );
 #endif
 
 //int g_total_pmaps = 0;
+// Recycling of large pixel buffers <<<
+// A large buffer fresh from the kernel costs more in page faults (zeroing each
+// new page) than a pass over its pixels: a 3000x3000 pmapf took ~60 ms to
+// allocate and touch, against ~5 ms to fill once touched.  So freed buffers of
+// at least PIXBUF_MIN bytes may be kept, up to a limit (pixel::buffer_cache,
+// default 0: off), for the next pmap or pmapf allocation they fit.
+//
+// Every large buffer pixbuf_alloc hands out is registered with its capacity, so
+// the limit bounds the bytes really held, and a buffer some other code
+// allocated (and pmap_free frees) is recognised as foreign and just freed.  The
+// registry and cache are shared by all threads (a buffer may be freed by
+// another thread than allocated it), behind a mutex taken only for large
+// buffers: a few times per image.
+#define PIXBUF_MIN		(4u<<20)
+#define PIXBUF_SLOTS	8
+
+typedef struct {
+	void*	p;
+	size_t	bytes;		// Its capacity
+} pixbuf;
+
+static Tcl_Mutex		pixbuf_mutex;
+static int				pixbuf_registry_init = 0;
+static Tcl_HashTable	pixbuf_registry;		// Large buffers from pixbuf_alloc, out or cached: pointer -> capacity
+static size_t			pixbuf_limit = 0;		// Bytes the cache may hold
+static size_t			pixbuf_held = 0;
+static int				pixbuf_n = 0;
+static pixbuf			pixbuf_slot[PIXBUF_SLOTS];
+
+static void pixbuf_registry_ensure(void) //{{{
+{
+	// With pixbuf_mutex held
+	if (!pixbuf_registry_init) {
+		Tcl_InitHashTable(&pixbuf_registry, TCL_ONE_WORD_KEYS);
+		pixbuf_registry_init = 1;
+	}
+}
+
+//}}}
+static void pixbuf_drain(size_t keep) //{{{
+{
+	// With pixbuf_mutex held: free cached buffers (largest first) until no more than keep bytes are held
+	while (pixbuf_n && pixbuf_held > keep) {
+		int				big = 0;
+		Tcl_HashEntry*	he;
+		for (int i=1; i<pixbuf_n; i++) if (pixbuf_slot[i].bytes > pixbuf_slot[big].bytes) big = i;
+		he = Tcl_FindHashEntry(&pixbuf_registry, pixbuf_slot[big].p);
+		if (he) Tcl_DeleteHashEntry(he);
+		free(pixbuf_slot[big].p);
+		pixbuf_held -= pixbuf_slot[big].bytes;
+		pixbuf_slot[big] = pixbuf_slot[--pixbuf_n];
+	}
+}
+
+//}}}
+static void* pixbuf_alloc(size_t bytes) //{{{
+{
+	void*	p = NULL;
+
+	if (bytes < PIXBUF_MIN) {
+		if (posix_memalign(&p, 64, bytes ? bytes : 1)) Tcl_Panic("Could not allocate %zu bytes of pixel data", bytes);
+		return p;
+	}
+
+	Tcl_MutexLock(&pixbuf_mutex);
+	pixbuf_registry_ensure();
+	{
+		// The smallest cached buffer that fits, if it isn't more than twice the size
+		int	best = -1;
+		for (int i=0; i<pixbuf_n; i++)
+			if (pixbuf_slot[i].bytes >= bytes && pixbuf_slot[i].bytes <= 2*bytes && (best < 0 || pixbuf_slot[i].bytes < pixbuf_slot[best].bytes))
+				best = i;
+		if (best >= 0) {
+			p = pixbuf_slot[best].p;		// Stays registered, with its capacity
+			pixbuf_held -= pixbuf_slot[best].bytes;
+			pixbuf_slot[best] = pixbuf_slot[--pixbuf_n];
+		}
+	}
+	if (p == NULL) {
+		int		isnew;
+		if (posix_memalign(&p, 64, bytes)) Tcl_Panic("Could not allocate %zu bytes of pixel data", bytes);
+		Tcl_SetHashValue(Tcl_CreateHashEntry(&pixbuf_registry, p, &isnew), (void*)(uintptr_t)bytes);
+	}
+	Tcl_MutexUnlock(&pixbuf_mutex);
+	return p;
+}
+
+//}}}
+static void pixbuf_free(void* p, size_t bytes) //{{{
+{
+	if (p == NULL) return;
+	if (bytes < PIXBUF_MIN) {
+		free(p);
+		return;
+	}
+
+	Tcl_HashEntry*	he;
+	size_t			cap;
+
+	Tcl_MutexLock(&pixbuf_mutex);
+	pixbuf_registry_ensure();
+	he = Tcl_FindHashEntry(&pixbuf_registry, p);
+	if (he == NULL) {
+		// Not one of ours: allocated by other code
+		Tcl_MutexUnlock(&pixbuf_mutex);
+		free(p);
+		return;
+	}
+	cap = (size_t)(uintptr_t)Tcl_GetHashValue(he);
+	if (pixbuf_limit >= cap) {
+		// Make room, then keep it (still registered)
+		pixbuf_drain(pixbuf_limit - cap);
+		if (pixbuf_n == PIXBUF_SLOTS) pixbuf_drain(pixbuf_held - 1);		// Full: drop the largest
+		pixbuf_slot[pixbuf_n++] = (pixbuf){.p = p, .bytes = cap};
+		pixbuf_held += cap;
+		Tcl_MutexUnlock(&pixbuf_mutex);
+		return;
+	}
+	Tcl_DeleteHashEntry(he);
+	Tcl_MutexUnlock(&pixbuf_mutex);
+	free(p);
+}
+
+//}}}
+// Set the limit (bytes; negative: leave it), returning the limit, the bytes held and how many buffers
+void pixbuf_cache_info(Tcl_WideInt limit, Tcl_WideInt* out_limit, Tcl_WideInt* out_held, int* out_n) //{{{
+{
+	Tcl_MutexLock(&pixbuf_mutex);
+	pixbuf_registry_ensure();
+	if (limit >= 0) {
+		pixbuf_limit = (size_t)limit;
+		pixbuf_drain(pixbuf_limit);
+	}
+	*out_limit	= (Tcl_WideInt)pixbuf_limit;
+	*out_held	= (Tcl_WideInt)pixbuf_held;
+	*out_n		= pixbuf_n;
+	Tcl_MutexUnlock(&pixbuf_mutex);
+}
+
+//}}}
+// Recycling of large pixel buffers >>>
+
 gimp_image_t *pmap_new(int x, int y, _pel /*colour*/) //{{{1
 {
 	gimp_image_t	*new;
@@ -46,12 +188,11 @@ gimp_image_t *pmap_new(int x, int y, _pel /*colour*/) //{{{1
 	new->width = x;
 	new->height = y;
 	new->bytes_per_pixel = 4;
-	// Allocate memory aligned to 32 bytes (for SIMD).  Pixel data is
-	// intentionally left uninitialised — every caller writes the buffer
+	// Aligned for SIMD (64 bytes, a cache line), maybe a recycled buffer.  Pixel
+	// data is intentionally left uninitialised — every caller writes the buffer
 	// before reading it, and zeroing this memory in a hot graphics path is
 	// significant wasted work.
-	if (0 != posix_memalign((void**)&new->pixel_data, 32, sizeof(_pel) * x * y))
-		Tcl_Panic("Could not allocate memory for pixel data");
+	new->pixel_data = pixbuf_alloc(sizeof(_pel) * (size_t)x * y);
 
 	return new;
 }
@@ -438,7 +579,7 @@ void pmap_free(gimp_image_t **pmap) // {{{1
 {
 //	g_total_pmaps--;
 //	fprintf(stderr, "freeing pmap: w: %d h: %d  %p %d\n", (*pmap)->width, (*pmap)->height, *pmap, g_total_pmaps);
-	free((*pmap)->pixel_data);
+	pixbuf_free((*pmap)->pixel_data, (size_t)(*pmap)->width * (*pmap)->height * (*pmap)->bytes_per_pixel);
 	(*pmap)->pixel_data = NULL;
 	free(*pmap);
 	*pmap = NULL;
@@ -1244,10 +1385,8 @@ struct pmapf* pmapf_new(int width, int height) //{{{
 	out->width = width;
 	out->height = height;
 	out->bytes_per_pixel = sizeof(pelf);	// Used to signal floating point pixel data
-	//out->pixel_data = (pelf*)malloc(sizeof(pelf) * out->width * out->height);
-	// Allocate memory aligned to 32 bytes (for SIMD)
-	if (0 != posix_memalign((void**)&out->pixel_data, 32, sizeof(pelf) * out->width * out->height))
-		Tcl_Panic("Could not allocate memory for pelf data");
+	// Aligned for SIMD (64 bytes, a cache line), maybe a recycled buffer
+	out->pixel_data = pixbuf_alloc(sizeof(pelf) * (size_t)out->width * out->height);
 
 	return out;
 }
@@ -1256,7 +1395,7 @@ struct pmapf* pmapf_new(int width, int height) //{{{
 void pmapf_free(struct pmapf** pmapf) //{{{
 {
 	if ((*pmapf)->pixel_data) {
-		free((*pmapf)->pixel_data);
+		pixbuf_free((*pmapf)->pixel_data, sizeof(pelf) * (size_t)(*pmapf)->width * (*pmapf)->height);
 		(*pmapf)->pixel_data = NULL;
 	}
 	(*pmapf)->pixel_data = NULL;

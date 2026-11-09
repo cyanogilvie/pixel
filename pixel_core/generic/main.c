@@ -1998,6 +1998,31 @@ static int glue_checkerboard(ClientData /*unused*/, Tcl_Interp* interp, int objc
 }
 
 //}}}
+static int glue_buffer_cache(ClientData /*unused*/, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) //{{{1
+{
+	// pixel::buffer_cache ?limit?: how many bytes of freed large pixel buffers
+	// the process may keep for reuse (0: none, the default).  Returns a dict of
+	// limit, held (bytes kept now) and buffers
+	Tcl_WideInt	limit = -1, cur_limit, held;
+	int			n;
+
+	enum {A_cmd, A_args, A_LIMIT=A_args, A_objc};
+	CHECK_RANGE_ARGS("?limit?");
+	if (objc > A_LIMIT) {
+		TEST_OK(Tcl_GetWideIntFromObj(interp, objv[A_LIMIT], &limit));
+		if (limit < 0) THROW_ERROR("limit must not be negative");
+	}
+
+	pixbuf_cache_info(limit, &cur_limit, &held, &n);
+
+	Tcl_Obj*	res = Tcl_NewDictObj();
+	Tcl_DictObjPut(NULL, res, Tcl_NewStringObj("limit", -1),	Tcl_NewWideIntObj(cur_limit));
+	Tcl_DictObjPut(NULL, res, Tcl_NewStringObj("held", -1),		Tcl_NewWideIntObj(held));
+	Tcl_DictObjPut(NULL, res, Tcl_NewStringObj("buffers", -1),	Tcl_NewIntObj(n));
+	Tcl_SetObjResult(interp, res);
+	return TCL_OK;
+}
+
 int Pixel_Init(Tcl_Interp *interp) // {{{1
 {
 	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) return TCL_ERROR;
@@ -2006,6 +2031,7 @@ int Pixel_Init(Tcl_Interp *interp) // {{{1
 
 	init_2d();
 
+	NEW_CMD("pixel::buffer_cache", glue_buffer_cache);
 	NEW_CMD("pixel::pmap_new", glue_pmap_new);
 	NEW_CMD("pixel::pmap_clr", glue_pmap_clr);
 	NEW_CMD("pixel::pmap_cut", glue_pmap_cut);
