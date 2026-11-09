@@ -11,7 +11,11 @@ uint8	inv_scale_lookup_square[256][256];
 uint8	inv_scale_lookup_sine[256][256];
 uint8	inv_scale_lookup_linear[256][256];
 float	sRGB_to_linear_floats[256];
+static float	alpha_floats[256];		// a/255.0, as pmap_to_pmapf always computed it
 #define L2SRGB	4096
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#	include <arm_neon.h>
+#endif
 uint8_t	linear_floats_to_sRGB[L2SRGB];
 
 uint32	r_mask, g_mask, b_mask;
@@ -1214,6 +1218,7 @@ void do_dirty_tricks() // {{{1
 			a / (255*12.92)  :
 			powf((a/255.0 + 0.055)/(1 + 0.055), 2.4);
 		//fprintf(stderr, "a: %d -> %.4f (%.2f)\n", a, sRGB_to_linear_floats[a], sRGB_to_linear_floats[a] * 255);
+		alpha_floats[a] = a / 255.0;
 	}
 
 	// Precompute the lookup from linear floats * (L2SRGB-1) to sRGB 8bit samples
@@ -1291,24 +1296,18 @@ inline int clamp_int(int in, int max) //{{{
 //}}}
 struct pmapf* pmap_to_pmapf(gimp_image_t* in) //{{{
 {
-	uint32_t		x, y;
-	int				c;
-	struct pmapf*	out;
-	_pel*			s;
-	pelf*			d;
+	struct pmapf*			out = pmapf_new(in->width, in->height);
+	const uint8_t* restrict	s = (const uint8_t*)in->pixel_data;
+	float* restrict			d = (float*)out->pixel_data;
+	const size_t			n = (size_t)in->width * in->height;
 
-	out = pmapf_new(in->width, in->height);
-
-	s = (_pel*)(in->pixel_data);
-	d = out->pixel_data;
-
-	for (y=0; y<in->height; y++) {
-		for (x=0; x<in->width; x++, s++, d++) {
-			for (c=0; c<3; c++)
-				d->chan[c] = sRGB_to_linear_floats[s->chan[c]];
-
-			d->chan[CHAN_A] = s->chan[CHAN_A] / 255.0;
-		}
+	// Lookups: colour through sRGB_to_linear_floats, alpha through alpha_floats
+	// (the same values as before, without a double division per pixel)
+	for (size_t i=0; i<n; i++, s+=4, d+=4) {
+		d[CHAN_B] = sRGB_to_linear_floats[s[CHAN_B]];
+		d[CHAN_G] = sRGB_to_linear_floats[s[CHAN_G]];
+		d[CHAN_R] = sRGB_to_linear_floats[s[CHAN_R]];
+		d[CHAN_A] = alpha_floats[s[CHAN_A]];
 	}
 
 	return out;
@@ -1317,30 +1316,41 @@ struct pmapf* pmap_to_pmapf(gimp_image_t* in) //{{{
 //}}}
 gimp_image_t* pmapf_to_pmap(struct pmapf* in) //{{{
 {
-	uint32_t		x, y;
-	int				c;
-	gimp_image_t*	out;
-	_pel*			d;
-	pelf*			s;
+	gimp_image_t*			out = pmap_new(in->width, in->height, (_pel){.c = 0});
+	const float* restrict	s = (const float*)in->pixel_data;
+	uint8_t* restrict		d = (uint8_t*)out->pixel_data;
+	const size_t			n = (size_t)in->width * in->height;
 
-	out = pmap_new(in->width, in->height, (_pel){.c = 0});
-
-	s = in->pixel_data;
-	d = (_pel*)(out->pixel_data);
-
-	for (y=0; y<in->height; y++) {
-		for (x=0; x<in->width; x++, s++, d++) {
-			for (c=0; c<3; c++)
-				d->chan[c] = linear_floats_to_sRGB[(int)(clamp_chan(s->chan[c]) * (L2SRGB-1))];
-
-			d->chan[CHAN_A] = 0xff * clamp_chan(s->chan[CHAN_A] + .5/256);
-		}
+	// Colour: clamp to [0, 1], scale to the lookup's index (truncating), look up
+	// the sRGB byte.  Alpha: 0xff * clamp(a + .5/256), truncated.  (In float, as
+	// before: .5/256 is exact, so adding it in double and rounding to float, as
+	// the scalar version did, gives the same value.)
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+	const float32x4_t	zero = vdupq_n_f32(0.0f), one = vdupq_n_f32(1.0f);
+	const float32x4_t	cscale = vdupq_n_f32((float)(L2SRGB-1));
+	const float32x4_t	ascale = vdupq_n_f32((float)0xff), abias = vdupq_n_f32(.5f/256);
+	for (size_t i=0; i<n; i++, s+=4, d+=4) {
+		const float32x4_t	v = vld1q_f32(s);
+		const int32x4_t		ci = vcvtq_s32_f32(vmulq_f32(vminq_f32(vmaxq_f32(v, zero), one), cscale));
+		const int32x4_t		ai = vcvtq_s32_f32(vmulq_f32(vminq_f32(vmaxq_f32(vaddq_f32(v, abias), zero), one), ascale));
+		d[CHAN_B] = linear_floats_to_sRGB[vgetq_lane_s32(ci, CHAN_B)];
+		d[CHAN_G] = linear_floats_to_sRGB[vgetq_lane_s32(ci, CHAN_G)];
+		d[CHAN_R] = linear_floats_to_sRGB[vgetq_lane_s32(ci, CHAN_R)];
+		d[CHAN_A] = (uint8_t)vgetq_lane_s32(ai, CHAN_A);
 	}
+#else
+	for (size_t i=0; i<n; i++, s+=4, d+=4) {
+		for (int c=0; c<3; c++)
+			d[c] = linear_floats_to_sRGB[(int)(clamp_chan(s[c]) * (L2SRGB-1))];
+		d[CHAN_A] = 0xff * clamp_chan(s[CHAN_A] + .5f/256);
+	}
+#endif
 
 	return out;
 }
 
 //}}}
+
 
 void init_2d () // {{{1
 {
