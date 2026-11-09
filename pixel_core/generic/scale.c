@@ -297,57 +297,6 @@ static int default_wt(int orig, int new) //{{{
 }
 
 //}}}
-#ifndef SCALE_SCRATCH_KEEP
-#	define SCALE_SCRATCH_KEEP	(256u<<20)	// Bytes: a thread keeps its scratch buffer between calls up to this size
-#endif
-
-// The intermediate image between the two passes lives in a per-thread scratch
-// buffer, reused from call to call: a fresh allocation of that size costs more
-// in page faults (the kernel zeroing new pages) than a pass over it does.
-typedef struct {
-	void*	buf;
-	size_t	bytes;
-	int		exit_handler;
-} scale_tsd;
-static Tcl_ThreadDataKey	scratch_key;
-
-static void scratch_free(void* cdata) //{{{
-{
-	scale_tsd*	t = cdata;
-	free(t->buf);
-	t->buf = NULL;
-	t->bytes = 0;
-}
-
-//}}}
-static pelf* scratch_get(size_t bytes, int* owned) //{{{
-{
-	scale_tsd*	t = Tcl_GetThreadData(&scratch_key, sizeof(scale_tsd));
-	void*		p;
-
-	if (bytes > SCALE_SCRATCH_KEEP) {
-		// Too big to keep: the caller frees it
-		if (posix_memalign(&p, 64, bytes)) Tcl_Panic("Could not allocate %zu bytes for scaling", bytes);
-		*owned = 1;
-		return p;
-	}
-	if (t->bytes < bytes) {
-		free(t->buf);
-		t->buf = NULL;
-		t->bytes = 0;
-		if (posix_memalign(&p, 64, bytes)) Tcl_Panic("Could not allocate %zu bytes for scaling", bytes);
-		t->buf = p;
-		t->bytes = bytes;
-		if (!t->exit_handler) {
-			Tcl_CreateThreadExitHandler(scratch_free, t);
-			t->exit_handler = 1;
-		}
-	}
-	*owned = 0;
-	return t->buf;
-}
-
-//}}}
 static int scratch_stride(int width) //{{{
 {
 	// Pixels per row of the intermediate: a whole number of 64 byte cache lines
@@ -389,12 +338,14 @@ struct pmapf* pmapf_scale(const struct pmapf* src, int new_w, int new_h, int wt)
 		struct taps*	th = taps_lanczos(sw, new_w, wt_h);
 		struct taps*	tv = taps_lanczos(sh, new_h, wt_v);
 		const int		ms = scratch_stride(new_w);
-		int				owned;
-		pelf*			mid = scratch_get(sizeof(pelf) * (size_t)ms * sh, &owned);
+		const size_t	bytes = sizeof(pelf) * (size_t)ms * sh;
+		// From the pixel buffer allocator, so it's recycled as the pmaps are
+		// (pixel::buffer_cache), and not held at all when that's off
+		pelf*			mid = pixbuf_alloc(bytes);
 
 		apply_h(src->pixel_data, sw, sh, mid, ms, th);
 		apply_v(mid, ms, new_w, out->pixel_data, new_w, tv);
-		if (owned) free(mid);
+		pixbuf_free(mid, bytes);
 		taps_free(th);
 		taps_free(tv);
 	}

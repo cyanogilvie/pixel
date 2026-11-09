@@ -92,7 +92,7 @@ static void pixbuf_drain(size_t keep) //{{{
 }
 
 //}}}
-static void* pixbuf_alloc(size_t bytes) //{{{
+void* pixbuf_alloc(size_t bytes) //{{{
 {
 	void*	p = NULL;
 
@@ -125,7 +125,7 @@ static void* pixbuf_alloc(size_t bytes) //{{{
 }
 
 //}}}
-static void pixbuf_free(void* p, size_t bytes) //{{{
+void pixbuf_free(void* p, size_t bytes) //{{{
 {
 	if (p == NULL) return;
 	if (bytes < PIXBUF_MIN) {

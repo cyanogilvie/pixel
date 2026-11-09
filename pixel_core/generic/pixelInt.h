@@ -9,6 +9,8 @@
 #include <pixel.h>
 
 // 2d.c: the recycling of large pixel buffers (pixel::buffer_cache)
+MODULE_SCOPE void* pixbuf_alloc(size_t bytes);		// 64 byte aligned; large ones may be recycled
+MODULE_SCOPE void pixbuf_free(void* p, size_t bytes);
 MODULE_SCOPE void pixbuf_cache_info(Tcl_WideInt limit, Tcl_WideInt* out_limit, Tcl_WideInt* out_held, int* out_n);
 
 #if !HAVE_UNREACHABLE
