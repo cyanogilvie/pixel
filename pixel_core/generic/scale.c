@@ -2,8 +2,11 @@
 // precomputed kernel tables: one entry per output pixel, giving the first input
 // pixel it draws on and the weights of the run of input pixels from there.
 //
-// Output pixel o of a dimension scaled from orig to new (ratio r = orig/new) is
-// centred on input index o*r, as lanczos.c's lanczos_half_scale_float has it.
+// Pixel coordinates are centre-aligned: pixel p covers [p, p+1) and its sample
+// is the light at p+0.5, so output pixel o of a dimension scaled from orig to
+// new (ratio r = orig/new) is centred at input coordinate (o+0.5)*r, which is
+// input index (o+0.5)*r - 0.5.  Output and input cover the same extent, so a
+// mirror symmetric image stays symmetric.
 //
 // The kernel is the windowed sinc of lanczos.c: a sinc cut off at the output's
 // Nyquist frequency, under a sinc window wt input pixels wide each side,
@@ -93,7 +96,7 @@ static struct taps* taps_lanczos(int orig, int new, int wt) //{{{
 	struct taps*	t = taps_new(new, 2*wt+1);
 
 	for (int o=0; o<new; o++) {
-		const double	v = o * r;						// Centre of output o, as an input index
+		const double	v = (o + 0.5) * r - 0.5;		// Centre of output o, as an input index
 		const int		vi = (int)floor(v);
 		int				lo = vi - wt, hi = vi + wt;
 		double			acc = 0.0;

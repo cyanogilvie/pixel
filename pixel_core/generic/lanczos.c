@@ -353,11 +353,15 @@ void lanczos_half_scale(_pel* in, _pel* out, int orig_dim, int new_dim, int wt, 
 	_pel*			ds = out;
 
 	// Loop across the dimension to be scaled (oi in "out" coords, v in "in" coords)
-	// v is the fractional projection of oi into "in" coord space
-	for (oi=0, v=0; oi<new_dim; oi++, v+=vinc, ds+=dsinc) {
+	// v is the fractional projection of oi into "in" coord space: the centre of
+	// output pixel oi, (oi+0.5)*vinc in continuous coordinates, as an input
+	// index (pixel p's centre is at p+0.5), so output and input cover the same
+	// extent.  Computed for each oi rather than stepped, which drifted
+	for (oi=0; oi<new_dim; oi++, ds+=dsinc) {
 		_pel*		d=ds;
 		//fixedpoint	acc=0;
-		int			vi=v, kend=w, k, kstart=0;
+		v = (oi + 0.5f) * vinc - 0.5f;
+		int			vi=(int)floorf(v), kend=w, k, kstart=0;
 		float		frac=v-vi;
 
 		// Adjust the start and end ranges of k to fit within the soure buffer
@@ -502,11 +506,15 @@ void lanczos_half_scale_f(_pel* in, _pel* out, const int orig_dim, const int new
 	_pel*			ds = out;
 
 	// Loop across the dimension to be scaled (oi in "out" coords, v in "in" coords)
-	// v is the fractional projection of oi into "in" coord space
-	for (oi=0, v=0; oi<new_dim; oi++, v+=vinc, ds+=dsinc) {
+	// v is the fractional projection of oi into "in" coord space: the centre of
+	// output pixel oi, (oi+0.5)*vinc in continuous coordinates, as an input
+	// index (pixel p's centre is at p+0.5), so output and input cover the same
+	// extent.  Computed for each oi rather than stepped, which drifted
+	for (oi=0; oi<new_dim; oi++, ds+=dsinc) {
 		_pel*		d=ds;
 		//fixedpoint	acc=0;
-		int			vi=v, kend=w, k, kstart=0;
+		v = (oi + 0.5f) * vinc - 0.5f;
+		int			vi=(int)floorf(v), kend=w, k, kstart=0;
 		float		frac=v-vi;
 
 		// Adjust the start and end ranges of k to fit within the soure buffer

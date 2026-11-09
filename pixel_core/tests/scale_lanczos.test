@@ -38,6 +38,95 @@ test scale_lanczos-2.1 {scale down, portrait} -body { #<<<
 } -result {20 180}
 #>>>
 
+# A pmap mirror symmetric left to right and top to bottom: a hash of the distance
+# from the nearest edge, so it has detail at every scale
+proc mirror_pmap {w h} { #<<<
+	set px	{}
+	for {set y 0} {$y < $h} {incr y} {
+		set my	[expr {min($y, $h-1-$y)}]
+		for {set x 0} {$x < $w} {incr x} {
+			set mx	[expr {min($x, $w-1-$x)}]
+			set v	[expr {($mx*7919 + $my*104729 + ($mx*$my)%251) & 0xffffff}]
+			append px [binary format cucucucu [expr {$v & 0xff}] [expr {($v>>8) & 0xff}] [expr {($v>>16) & 0xff}] 255]
+		}
+	}
+	list $w $h 4 $px
+}
+
+#>>>
+# The largest difference of any channel between a pmap and its mirror image (left to right)
+proc mirror_diff pmap { #<<<
+	lassign $pmap w h bpp px
+	binary scan $px cu* b
+	set worst	0
+	for {set y 0} {$y < $h} {incr y} {
+		for {set x 0} {$x < $w/2} {incr x} {
+			set i	[expr {4*($y*$w + $x)}]
+			set j	[expr {4*($y*$w + $w-1-$x)}]
+			for {set c 0} {$c < 4} {incr c} {
+				set d	[expr {abs([lindex $b $i+$c] - [lindex $b $j+$c])}]
+				if {$d > $worst} {set worst $d}
+			}
+		}
+	}
+	set worst
+}
+
+#>>>
+test scale_lanczos-3.1 {output pixels are centred on the input's: a mirror symmetric image stays symmetric, scaled down} -body { #<<<
+	set p	[pixel::pmap_to_pmapf [mirror_pmap 301 200]]
+	lmap {w h} {97 61  150 100  211 140} {
+		mirror_diff [pixel::pmapf_to_pmap [pixel::scale_pmapf_lanczos $p $w $h]]
+	}
+} -cleanup {
+	unset -nocomplain p w h
+} -match regexp -result {^[01] [01] [01]$}
+#>>>
+test scale_lanczos-3.2 {centred, scaled up} -body { #<<<
+	set p	[pixel::pmap_to_pmapf [mirror_pmap 61 40]]
+	lmap {w h} {97 61  200 150} {
+		mirror_diff [pixel::pmapf_to_pmap [pixel::scale_pmapf_lanczos $p $w $h]]
+	}
+} -cleanup {
+	unset -nocomplain p w h
+} -match regexp -result {^[01] [01]$}
+#>>>
+test scale_lanczos-3.3 {centred, the 8 bit scale_pmap_lanczos too} -body { #<<<
+	set p	[mirror_pmap 301 200]
+	lmap {w h} {97 61  150 100} {
+		mirror_diff [pixel::scale_pmap_lanczos $p $w $h]
+	}
+} -cleanup {
+	unset -nocomplain p w h
+} -match regexp -result {^[01] [01]$}
+#>>>
+test scale_lanczos-3.4 {a uniform image stays uniform (the kernels are normalized, at the edges too)} -body { #<<<
+	set p	[pixel::pmap_to_pmapf [list 64 48 4 [string repeat [binary format cucucucu 200 100 50 255] [expr {64*48}]]]]
+	lassign [pixel::pmapf_to_pmap [pixel::scale_pmapf_lanczos $p 23 17]] w h bpp px
+	lsort -unique [regexp -all -inline .... $px]
+} -cleanup {
+	unset -nocomplain p w h bpp px
+} -result [list [binary format cucucucu 200 100 50 255]]
+#>>>
+test scale_lanczos-3.5 {the same size is a copy} -body { #<<<
+	set p	[pixel::pmap_to_pmapf [mirror_pmap 31 20]]
+	expr {[lindex [pixel::pmapf_to_pmap [pixel::scale_pmapf_lanczos $p 31 20]] 3] eq [lindex [pixel::pmapf_to_pmap $p] 3]}
+} -cleanup {
+	unset -nocomplain p
+} -result 1
+#>>>
+test scale_lanczos-3.6 {wt: 0 chooses, out of range is an error} -body { #<<<
+	set p	[pixel::pmap_to_pmapf [mirror_pmap 31 20]]
+	list \
+		[pixel::pmapf_info [pixel::scale_pmapf_lanczos $p 10 7 0]] \
+		[pixel::pmapf_info [pixel::scale_pmapf_lanczos $p 10 7 3]] \
+		[catch {pixel::scale_pmapf_lanczos $p 10 7 -1} msg] $msg \
+		[catch {pixel::scale_pmapf_lanczos $p 0 7} msg] $msg
+} -cleanup {
+	unset -nocomplain p msg
+} -result {{10 7} {10 7} 1 {invalid wt -1: must be between 0 and 64} 1 {invalid size 0x7}}
+#>>>
+
 ::tcltest::cleanupTests
 return
 
